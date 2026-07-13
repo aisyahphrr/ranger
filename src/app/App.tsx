@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import {
-  Home, Search, ShoppingBag, MessageCircle, User, Clock,
+  Home, Search, ShoppingBag, MessageCircle, User, Clock, MessageSquare,
   Wallet, ChevronRight, Star, MapPin, Bell, ArrowLeft, Heart,
   Package, Truck, CheckCircle, X, Plus, Minus, Map,
   TrendingUp, Settings, LogOut, BarChart2, ShoppingCart,
@@ -21,7 +21,8 @@ type Screen =
   | "splash" | "onboarding" | "login" | "otp" | "role"
   | "c_home" | "c_jelajah" | "c_pesanan" | "c_inbox" | "c_profil"
   | "c_marketplace" | "c_catering" | "c_laundry" | "c_kos"
-  | "d_home" | "d_order" | "d_riwayat" | "d_pendapatan" | "d_profil";
+  | "d_home" | "d_order" | "d_riwayat" | "d_pendapatan" | "d_profil"
+  | "c_cart" | "c_qris" | "c_tracking" | "c_rating" | "c_driver_chat" | "c_support_chat" | "c_catering_chat";
 type Role = "customer" | "driver";
 type Nav = { navigate: (s: Screen) => void };
 
@@ -123,22 +124,24 @@ function StatusBar({ light = false }: { light?: boolean }) {
 
 function BackHeader({ title, onBack, right }: { title: string; onBack: () => void; right?: React.ReactNode }) {
   return (
-    <div className="flex items-center px-4 h-14 shrink-0 border-b border-border bg-white">
-      <button onClick={onBack} className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-muted transition-colors -ml-1">
+    <div className="flex items-center px-4 h-14 shrink-0 border-b border-border bg-white relative">
+      <button onClick={onBack} className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-muted transition-colors -ml-1 relative z-10 cursor-pointer">
         <ArrowLeft size={20} />
       </button>
-      <span className="flex-1 text-center text-base font-bold text-foreground -ml-9">{title}</span>
-      <div className="w-9 flex justify-end">{right}</div>
+      <span className="flex-1 text-center text-base font-bold text-foreground -ml-9 pointer-events-none select-none">{title}</span>
+      <div className="w-9 flex justify-end relative z-10">{right}</div>
     </div>
   );
 }
 
-function CustomerNav({ screen, navigate }: { screen: Screen; navigate: (s: Screen) => void }) {
+function CustomerNav({ screen, navigate, unreadChatCount, unreadSupportCount, unreadCateringCount }: { screen: Screen; navigate: (s: Screen) => void; unreadChatCount: number; unreadSupportCount: number; unreadCateringCount: number }) {
+  const unreadNotifs = NOTIFS.filter(n => !n.read).length;
+  const inboxBadge = unreadChatCount + unreadSupportCount + unreadCateringCount + unreadNotifs;
   const items: { id: Screen; label: string; icon: React.ElementType; badge?: number }[] = [
     { id: "c_home", label: "Beranda", icon: Home },
     { id: "c_jelajah", label: "Jelajah", icon: Map },
     { id: "c_pesanan", label: "Pesanan", icon: ShoppingBag, badge: 1 },
-    { id: "c_inbox", label: "Inbox", icon: MessageCircle, badge: 2 },
+    { id: "c_inbox", label: "Inbox", icon: MessageCircle, badge: inboxBadge },
     { id: "c_profil", label: "Profil", icon: User },
   ];
   return (
@@ -594,9 +597,50 @@ function RoleScreen({ navigate, setRole }: Nav & { setRole: (r: Role) => void })
 }
 
 // ─── CUSTOMER HOME ────────────────────────────────────────────────────────────
-function CustomerHome({ navigate }: Nav) {
+function CustomerHome({ navigate, dompetBalance, addToCart }: Nav & { dompetBalance: number; addToCart: (p: typeof PRODUCTS[0]) => void }) {
   const [liked, setLiked] = useState<Set<number>>(new Set([2, 5]));
   const toggleLike = (id: number) => setLiked(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
+
+  const [selectedProduct, setSelectedProduct] = useState<typeof PRODUCTS[0] | null>(null);
+  const [activePhotoIndex, setActivePhotoIndex] = useState(0);
+
+  const getProductPhotos = (p: typeof PRODUCTS[0]) => {
+    const list = [p.img];
+    if (p.id === 1) {
+      list.push(uImg("1546069901-ba9599a7e63c", 300, 300));
+      list.push(uImg("1606787366850-de6330128bfc", 300, 300));
+    } else if (p.id === 2) {
+      list.push(uImg("1523381210434-271e8be1f52b", 300, 300));
+      list.push(uImg("1597983073492-70b925b42d76", 300, 300));
+    } else if (p.id === 3) {
+      list.push(uImg("1618331835737-f58889acacf1", 300, 300));
+      list.push(uImg("1599490656923-5e2697843079", 300, 300));
+    } else {
+      list.push(uImg("1512621776951-a57141f2eefd", 300, 300));
+      list.push(uImg("1563245372-f21724e3856d", 300, 300));
+    }
+    return list;
+  };
+
+  const getProductReviews = (p: typeof PRODUCTS[0]) => {
+    if (p.id === 1) {
+      return [
+        { id: 1, name: "Anita Wijaya", rating: 5, date: "Kemarin", text: "Porsinya pas banget untuk makan siang, ayam bakar timbelnya empuk pol dan sambel goang-nya seger bgt!" },
+        { id: 2, name: "Rian Hidayat", rating: 4, date: "3 hari lalu", text: "Nasi timbelnya pulen, dibungkus daun pisang jadi wangi. Sayang tahu tempe-nya agak kecil." },
+        { id: 3, name: "Dewi Lestari", rating: 5, date: "5 hari lalu", text: "Langganan kantor nih kalau makan siang, bersih dan pengiriman driver Rangers cepet banget." }
+      ];
+    }
+    if (p.id === 2) {
+      return [
+        { id: 1, name: "Yanto Kusuma", rating: 5, date: "2 hari lalu", text: "Bahannya dingin dan motif kawungnya rapi banget. Jahitan kuat dan fit-nya pas di badan." },
+        { id: 2, name: "Sari Wulandari", rating: 5, date: "1 minggu lalu", text: "Kado buat suami, dia suka banget. Warna batiknya tidak luntur saat dicuci pertama kali." }
+      ];
+    }
+    return [
+      { id: 1, name: "Budi Santoso", rating: 5, date: "Kemarin", text: "Kualitas barang juara, sangat direkomendasikan untuk dibeli!" },
+      { id: 2, name: "Aisyah Putri", rating: 4, date: "4 hari lalu", text: "Bagus sekali, respon seller ramah dan pengirimannya super cepat." }
+    ];
+  };
   const services = [
     { label: "Marketplace", icon: Store, color: "#1B7A4E", bg: "#E8F5EE", screen: "c_marketplace" as Screen },
     { label: "Catering", icon: Coffee, color: "#FF7043", bg: "#FFF3E0", screen: "c_catering" as Screen },
@@ -621,6 +665,24 @@ function CustomerHome({ navigate }: Nav) {
             <span className="absolute top-0.5 right-0.5 w-2.5 h-2.5 bg-accent rounded-full border border-[#1B7A4E]" />
           </button>
         </div>
+        
+        {/* WALLET CARD */}
+        <div className="mx-5 mt-4 bg-white/10 backdrop-blur-md rounded-2xl p-3 border border-white/10 flex items-center justify-between text-white shadow-sm">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center">
+              <Wallet size={16} className="text-yellow-300" />
+            </div>
+            <div>
+              <p className="text-[9px] text-green-200 font-semibold uppercase tracking-wider">Dompet Rangers</p>
+              <p className="text-sm font-extrabold">{rp(dompetBalance)}</p>
+            </div>
+          </div>
+          <button onClick={() => navigate("c_qris")} className="px-3 py-1.5 bg-white/20 hover:bg-white/30 transition-colors rounded-xl text-[10px] font-bold flex items-center gap-1 cursor-pointer">
+            <QrCode size={11} />
+            <span>Bayar</span>
+          </button>
+        </div>
+
         {/* search */}
         <button onClick={() => navigate("c_jelajah")} className="mx-5 mt-4 flex items-center gap-3 bg-white rounded-2xl px-4 py-3 w-[calc(100%-40px)]">
           <Search size={16} className="text-muted-foreground" />
@@ -664,10 +726,22 @@ function CustomerHome({ navigate }: Nav) {
           </div>
           <div className="grid grid-cols-2 gap-3 px-4">
             {PRODUCTS.slice(0, 4).map((p) => (
-              <div key={p.id} className="bg-white rounded-2xl overflow-hidden shadow-sm relative">
+              <div 
+                key={p.id} 
+                onClick={() => {
+                  setSelectedProduct(p);
+                  setActivePhotoIndex(0);
+                }}
+                className="bg-white rounded-2xl overflow-hidden shadow-sm relative cursor-pointer border border-black/[0.02] hover:border-primary/10 transition-all"
+              >
                 <img src={p.img} alt={p.name} className="w-full h-28 object-cover bg-muted" />
-                <button onClick={() => toggleLike(p.id)}
-                  className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/90 flex items-center justify-center shadow-sm">
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleLike(p.id);
+                  }}
+                  className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/90 flex items-center justify-center shadow-sm hover:scale-105 active:scale-95 transition-transform"
+                >
                   <Heart size={13} className={liked.has(p.id) ? "fill-red-500 text-red-500" : "text-muted-foreground"} />
                 </button>
                 <div className="p-3">
@@ -731,6 +805,155 @@ function CustomerHome({ navigate }: Nav) {
           </div>
         </div>
       </div>
+
+      {/* Product Detail Modal */}
+      {selectedProduct && (() => {
+        const photos = getProductPhotos(selectedProduct);
+        const reviews = getProductReviews(selectedProduct);
+        return (
+          <div className="absolute inset-0 bg-black/60 z-50 flex flex-col justify-end">
+            <style>{`
+              @keyframes slide-up {
+                from { transform: translateY(100%); }
+                to { transform: translateY(0); }
+              }
+              .animate-slide-up {
+                animation: slide-up 0.28s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+              }
+            `}</style>
+            <div className="flex-1" onClick={() => setSelectedProduct(null)} />
+            <div className="bg-white rounded-t-[28px] max-h-[82%] flex flex-col overflow-hidden shadow-2xl relative animate-slide-up">
+              
+              {/* Close & Like float overlays */}
+              <button 
+                onClick={() => setSelectedProduct(null)} 
+                className="absolute top-4 left-4 w-8 h-8 rounded-full bg-black/40 text-white flex items-center justify-center backdrop-blur-sm z-10 cursor-pointer hover:bg-black/60 transition-colors"
+              >
+                <X size={16} />
+              </button>
+              <button 
+                onClick={() => toggleLike(selectedProduct.id)} 
+                className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/90 text-red-500 flex items-center justify-center shadow-md z-10 cursor-pointer hover:scale-105 active:scale-95 transition-transform"
+              >
+                <Heart size={14} className={liked.has(selectedProduct.id) ? "fill-red-500 text-red-500" : "text-muted-foreground"} />
+              </button>
+
+              {/* Scrollable details */}
+              <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: "none" }}>
+                {/* Hero Product Photo */}
+                <div className="w-full h-56 relative bg-muted shrink-0">
+                  <img src={photos[activePhotoIndex]} alt={selectedProduct.name} className="w-full h-full object-cover" />
+                </div>
+
+                {/* Gallery Thumbnails */}
+                <div className="flex gap-2.5 px-4 mt-3">
+                  {photos.map((ph, idx) => (
+                    <button 
+                      key={idx} 
+                      onClick={() => setActivePhotoIndex(idx)} 
+                      className={`w-12 h-12 rounded-xl overflow-hidden border-2 transition-all shrink-0 cursor-pointer ${activePhotoIndex === idx ? "border-primary scale-105" : "border-transparent opacity-75"}`}
+                    >
+                      <img src={ph} className="w-full h-full object-cover" />
+                    </button>
+                  ))}
+                </div>
+
+                {/* Product Name & Price */}
+                <div className="px-4 mt-4 flex flex-col gap-1">
+                  <span className="text-[9px] font-extrabold text-primary bg-primary/10 px-2 py-0.5 rounded-full w-max uppercase tracking-wider">
+                    {selectedProduct.cat}
+                  </span>
+                  <h3 className="text-base font-extrabold text-foreground leading-tight mt-1">{selectedProduct.name}</h3>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <Stars rating={selectedProduct.rating} size={12} />
+                    <span className="text-xs text-muted-foreground font-semibold">· {selectedProduct.sold}x Terjual</span>
+                  </div>
+                  <p className="text-lg font-black text-primary mt-1">{rp(selectedProduct.price)}</p>
+                </div>
+
+                <div className="h-px bg-border/60 mx-4 my-4" />
+
+                {/* Merchant Store Profile Card */}
+                <div className="mx-4 bg-slate-50 border border-slate-100 rounded-2xl p-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-base shrink-0">
+                      🏪
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-extrabold text-foreground truncate leading-normal">{selectedProduct.store}</p>
+                      <p className="text-[9px] text-muted-foreground truncate leading-tight">Kamojang Ring 1 · Buka 08:00 - 18:00</p>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className="bg-amber-50 text-amber-700 text-[8px] font-black border border-amber-200 px-1 py-0.2 rounded-full whitespace-nowrap">
+                          ★ 4.8 / 5.0
+                        </span>
+                        <span className="text-[8px] text-muted-foreground font-semibold whitespace-nowrap">50+ Ulasan</span>
+                      </div>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => {
+                      setMarketplaceSearch(selectedProduct.store);
+                      setSelectedProduct(null);
+                      navigate("c_marketplace");
+                    }}
+                    className="text-[9px] font-extrabold text-primary border border-primary/20 bg-white px-2.5 py-1.5 rounded-xl hover:bg-primary/5 active:scale-95 transition-all shrink-0 cursor-pointer"
+                  >
+                    Profil Toko
+                  </button>
+                </div>
+
+                <div className="h-px bg-border/60 mx-4 my-4" />
+
+                {/* Community Reviews Section */}
+                <div className="px-4 pb-6 flex flex-col gap-3">
+                  <h4 className="text-xs font-bold text-foreground">Ulasan Komunitas</h4>
+                  <div className="flex flex-col gap-2.5">
+                    {reviews.map(rev => (
+                      <div key={rev.id} className="bg-white border border-border/80 rounded-xl p-3 shadow-sm flex flex-col gap-1.5">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="w-5 h-5 rounded-full bg-primary/10 text-primary text-[10px] font-black flex items-center justify-center uppercase">
+                              {rev.name[0]}
+                            </div>
+                            <span className="text-[10px] font-extrabold text-foreground">{rev.name}</span>
+                          </div>
+                          <span className="text-[8px] text-muted-foreground font-semibold">{rev.date}</span>
+                        </div>
+                        <div className="flex gap-0.5">
+                          {Array.from({ length: rev.rating }).map((_, i) => (
+                            <Star key={i} size={8} className="fill-amber-400 text-amber-400" />
+                          ))}
+                        </div>
+                        <p className="text-[10px] font-medium text-foreground leading-normal">"{rev.text}"</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Action Sticky Footer */}
+              <div className="p-4 border-t border-border bg-white flex items-center justify-between gap-4 shrink-0 shadow-[0_-4px_16px_rgba(0,0,0,0.03)]">
+                <div>
+                  <p className="text-[8px] text-muted-foreground font-bold uppercase tracking-wider">Total Harga</p>
+                  <p className="text-base font-black text-primary leading-tight mt-0.5">{rp(selectedProduct.price)}</p>
+                </div>
+                <button 
+                  onClick={() => {
+                    addToCart(selectedProduct);
+                    setSelectedProduct(null);
+                  }}
+                  className="flex-1 py-3 bg-primary hover:bg-primary/95 text-white font-bold text-xs rounded-xl shadow-md cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  <ShoppingCart size={13} />
+                  <span>Masukkan Keranjang</span>
+                </button>
+              </div>
+
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
@@ -738,20 +961,103 @@ function CustomerHome({ navigate }: Nav) {
 // ─── CUSTOMER SUB-SCREENS ─────────────────────────────────────────────────────
 const CATS = ["Semua", "Makanan", "Minuman", "Fashion", "Kesehatan", "Kerajinan"];
 
-function MarketplaceScreen({ navigate }: Nav) {
+function MarketplaceScreen({ 
+  navigate, 
+  addToCart, 
+  cart,
+  marketplaceSearch,
+  setMarketplaceSearch
+}: Nav & { 
+  addToCart: (p: typeof PRODUCTS[0]) => void; 
+  cart: any[];
+  marketplaceSearch: string;
+  setMarketplaceSearch: (s: string) => void;
+}) {
   const [cat, setCat] = useState("Semua");
+  const searchQuery = marketplaceSearch;
+  const setSearchQuery = setMarketplaceSearch;
   const [liked, setLiked] = useState<Set<number>>(new Set([2, 5]));
   const toggleLike = (id: number) => setLiked(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
-  const filtered = cat === "Semua" ? PRODUCTS : PRODUCTS.filter(p => p.cat === cat);
+  
+  const [selectedProduct, setSelectedProduct] = useState<typeof PRODUCTS[0] | null>(null);
+  const [activePhotoIndex, setActivePhotoIndex] = useState(0);
+
+  const filtered = PRODUCTS.filter(p => {
+    const matchesCat = cat === "Semua" || p.cat === cat;
+    const matchesQuery = p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         p.store.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesCat && matchesQuery;
+  });
+
+  const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+
+  const getProductPhotos = (p: typeof PRODUCTS[0]) => {
+    const list = [p.img];
+    if (p.id === 1) {
+      list.push(uImg("1546069901-ba9599a7e63c", 300, 300));
+      list.push(uImg("1606787366850-de6330128bfc", 300, 300));
+    } else if (p.id === 2) {
+      list.push(uImg("1523381210434-271e8be1f52b", 300, 300));
+      list.push(uImg("1597983073492-70b925b42d76", 300, 300));
+    } else if (p.id === 3) {
+      list.push(uImg("1618331835737-f58889acacf1", 300, 300));
+      list.push(uImg("1599490656923-5e2697843079", 300, 300));
+    } else {
+      list.push(uImg("1512621776951-a57141f2eefd", 300, 300));
+      list.push(uImg("1563245372-f21724e3856d", 300, 300));
+    }
+    return list;
+  };
+
+  const getProductReviews = (p: typeof PRODUCTS[0]) => {
+    if (p.id === 1) {
+      return [
+        { id: 1, name: "Anita Wijaya", rating: 5, date: "Kemarin", text: "Porsinya pas banget untuk makan siang, ayam bakar timbelnya empuk pol dan sambel goang-nya seger bgt!" },
+        { id: 2, name: "Rian Hidayat", rating: 4, date: "3 hari lalu", text: "Nasi timbelnya pulen, dibungkus daun pisang jadi wangi. Sayang tahu tempe-nya agak kecil." },
+        { id: 3, name: "Dewi Lestari", rating: 5, date: "5 hari lalu", text: "Langganan kantor nih kalau makan siang, bersih dan pengiriman driver Rangers cepet banget." }
+      ];
+    }
+    if (p.id === 2) {
+      return [
+        { id: 1, name: "Yanto Kusuma", rating: 5, date: "2 hari lalu", text: "Bahannya dingin dan motif kawungnya rapi banget. Jahitan kuat dan fit-nya pas di badan." },
+        { id: 2, name: "Sari Wulandari", rating: 5, date: "1 minggu lalu", text: "Kado buat suami, dia suka banget. Warna batiknya tidak luntur saat dicuci pertama kali." }
+      ];
+    }
+    return [
+      { id: 1, name: "Budi Santoso", rating: 5, date: "Kemarin", text: "Kualitas barang juara, sangat direkomendasikan untuk dibeli!" },
+      { id: 2, name: "Aisyah Putri", rating: 4, date: "4 hari lalu", text: "Bagus sekali, respon seller ramah dan pengirimannya super cepat." }
+    ];
+  };
+
   return (
-    <div className="flex flex-col h-full bg-[#F7FAF8]">
+    <div className="flex flex-col h-full bg-[#F7FAF8] relative">
       <div className="bg-white shrink-0">
         <StatusBar />
         <BackHeader title="Marketplace UMKM" onBack={() => navigate("c_home")}
-          right={<button onClick={() => navigate("c_pesanan")} className="relative"><ShoppingCart size={20} /><span className="absolute -top-1 -right-1 w-4 h-4 bg-accent text-white text-[9px] font-bold rounded-full flex items-center justify-center">2</span></button>} />
-        <div className="px-4 py-3 flex items-center gap-2 bg-muted mx-4 mb-3 rounded-2xl">
+          right={
+            <button onClick={() => navigate("c_cart")} className="relative p-1 cursor-pointer">
+              <ShoppingCart size={20} />
+              {cartCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-accent text-white text-[9px] font-bold rounded-full flex items-center justify-center animate-pulse">
+                  {cartCount}
+                </span>
+              )}
+            </button>
+          } 
+        />
+        <div className="px-4 py-3 flex items-center gap-2 bg-muted mx-4 mb-3 rounded-2xl border border-border focus-within:ring-2 focus-within:ring-primary/20 transition-all">
           <Search size={15} className="text-muted-foreground shrink-0" />
-          <input placeholder="Cari produk UMKM..." className="flex-1 bg-transparent text-sm outline-none" />
+          <input 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Cari produk UMKM..." 
+            className="flex-1 bg-transparent text-sm outline-none" 
+          />
+          {searchQuery && (
+            <button onClick={() => setSearchQuery("")} className="text-muted-foreground hover:text-foreground cursor-pointer">
+              <X size={14} />
+            </button>
+          )}
         </div>
         <div className="flex gap-2 overflow-x-auto px-4 pb-3" style={{ scrollbarWidth: "none" }}>
           {CATS.map(c => (
@@ -765,16 +1071,29 @@ function MarketplaceScreen({ navigate }: Nav) {
       <div className="flex-1 overflow-y-auto px-4 pt-3 pb-4" style={{ scrollbarWidth: "none" }}>
         {filtered.length === 0 ? (
           <div className="flex flex-col items-center py-16 gap-3">
-            <ShoppingBag size={40} className="text-muted-foreground opacity-40" />
-            <p className="text-muted-foreground text-sm">Belum ada produk di kategori ini</p>
+            <ShoppingBag size={40} className="text-muted-foreground opacity-40 animate-bounce" />
+            <p className="text-muted-foreground text-sm font-semibold">Produk tidak ditemukan</p>
+            <p className="text-muted-foreground/60 text-xs text-center px-6">Coba kata kunci lain atau bersihkan filter pencarian Anda</p>
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-3">
             {filtered.map(p => (
-              <div key={p.id} className="bg-white rounded-2xl overflow-hidden shadow-sm relative">
+              <div 
+                key={p.id} 
+                onClick={() => {
+                  setSelectedProduct(p);
+                  setActivePhotoIndex(0);
+                }}
+                className="bg-white rounded-2xl overflow-hidden shadow-sm relative border border-black/[0.03] hover:border-primary/20 transition-all cursor-pointer"
+              >
                 <img src={p.img} alt={p.name} className="w-full h-32 object-cover bg-muted" />
-                <button onClick={() => toggleLike(p.id)}
-                  className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/90 flex items-center justify-center shadow-sm">
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleLike(p.id);
+                  }}
+                  className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/90 flex items-center justify-center shadow-sm hover:scale-105 active:scale-95 transition-transform"
+                >
                   <Heart size={13} className={liked.has(p.id) ? "fill-red-500 text-red-500" : "text-muted-foreground"} />
                 </button>
                 <div className="p-3">
@@ -788,7 +1107,13 @@ function MarketplaceScreen({ navigate }: Nav) {
                     <span className="text-[10px] text-muted-foreground">{p.sold}x</span>
                   </div>
                   <p className="text-primary font-extrabold text-sm mt-1">{rp(p.price)}</p>
-                  <button className="w-full mt-2 py-1.5 bg-primary/10 text-primary text-xs font-bold rounded-xl">
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      addToCart(p);
+                    }}
+                    className="w-full mt-2 py-1.5 bg-primary/10 text-primary text-xs font-bold rounded-xl active:bg-primary active:text-white transition-all hover:bg-primary/25 cursor-pointer"
+                  >
                     + Keranjang
                   </button>
                 </div>
@@ -797,13 +1122,263 @@ function MarketplaceScreen({ navigate }: Nav) {
           </div>
         )}
       </div>
+
+      {/* Product Detail Modal */}
+      {selectedProduct && (() => {
+        const photos = getProductPhotos(selectedProduct);
+        const reviews = getProductReviews(selectedProduct);
+        return (
+          <div className="absolute inset-0 bg-black/60 z-50 flex flex-col justify-end">
+            <style>{`
+              @keyframes slide-up {
+                from { transform: translateY(100%); }
+                to { transform: translateY(0); }
+              }
+              .animate-slide-up {
+                animation: slide-up 0.28s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+              }
+            `}</style>
+            <div className="flex-1" onClick={() => setSelectedProduct(null)} />
+            <div className="bg-white rounded-t-[28px] max-h-[82%] flex flex-col overflow-hidden shadow-2xl relative animate-slide-up">
+              
+              {/* Close & Like float overlays */}
+              <button 
+                onClick={() => setSelectedProduct(null)} 
+                className="absolute top-4 left-4 w-8 h-8 rounded-full bg-black/40 text-white flex items-center justify-center backdrop-blur-sm z-10 cursor-pointer hover:bg-black/60 transition-colors"
+              >
+                <X size={16} />
+              </button>
+              <button 
+                onClick={() => toggleLike(selectedProduct.id)} 
+                className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/90 text-red-500 flex items-center justify-center shadow-md z-10 cursor-pointer hover:scale-105 active:scale-95 transition-transform"
+              >
+                <Heart size={14} className={liked.has(selectedProduct.id) ? "fill-red-500 text-red-500" : "text-muted-foreground"} />
+              </button>
+
+              {/* Scrollable details */}
+              <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: "none" }}>
+                {/* Hero Product Photo */}
+                <div className="w-full h-56 relative bg-muted shrink-0">
+                  <img src={photos[activePhotoIndex]} alt={selectedProduct.name} className="w-full h-full object-cover" />
+                </div>
+
+                {/* Gallery Thumbnails */}
+                <div className="flex gap-2.5 px-4 mt-3">
+                  {photos.map((ph, idx) => (
+                    <button 
+                      key={idx} 
+                      onClick={() => setActivePhotoIndex(idx)} 
+                      className={`w-12 h-12 rounded-xl overflow-hidden border-2 transition-all shrink-0 cursor-pointer ${activePhotoIndex === idx ? "border-primary scale-105" : "border-transparent opacity-75"}`}
+                    >
+                      <img src={ph} className="w-full h-full object-cover" />
+                    </button>
+                  ))}
+                </div>
+
+                {/* Product Name & Price */}
+                <div className="px-4 mt-4 flex flex-col gap-1">
+                  <span className="text-[9px] font-extrabold text-primary bg-primary/10 px-2 py-0.5 rounded-full w-max uppercase tracking-wider">
+                    {selectedProduct.cat}
+                  </span>
+                  <h3 className="text-base font-extrabold text-foreground leading-tight mt-1">{selectedProduct.name}</h3>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <Stars rating={selectedProduct.rating} size={12} />
+                    <span className="text-xs text-muted-foreground font-semibold">· {selectedProduct.sold}x Terjual</span>
+                  </div>
+                  <p className="text-lg font-black text-primary mt-1">{rp(selectedProduct.price)}</p>
+                </div>
+
+                <div className="h-px bg-border/60 mx-4 my-4" />
+
+                {/* Merchant Store Profile Card */}
+                <div className="mx-4 bg-slate-50 border border-slate-100 rounded-2xl p-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-base shrink-0">
+                      🏪
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-extrabold text-foreground truncate leading-normal">{selectedProduct.store}</p>
+                      <p className="text-[9px] text-muted-foreground truncate leading-tight">Kamojang Ring 1 · Buka 08:00 - 18:00</p>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className="bg-amber-50 text-amber-700 text-[8px] font-black border border-amber-200 px-1 py-0.2 rounded-full whitespace-nowrap">
+                          ★ 4.8 / 5.0
+                        </span>
+                        <span className="text-[8px] text-muted-foreground font-semibold whitespace-nowrap">50+ Ulasan</span>
+                      </div>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => {
+                      setSearchQuery(selectedProduct.store);
+                      setSelectedProduct(null);
+                    }}
+                    className="text-[9px] font-extrabold text-primary border border-primary/20 bg-white px-2.5 py-1.5 rounded-xl hover:bg-primary/5 active:scale-95 transition-all shrink-0 cursor-pointer"
+                  >
+                    Profil Toko
+                  </button>
+                </div>
+
+                <div className="h-px bg-border/60 mx-4 my-4" />
+
+                {/* Community Reviews Section */}
+                <div className="px-4 pb-6 flex flex-col gap-3">
+                  <h4 className="text-xs font-bold text-foreground">Ulasan Komunitas</h4>
+                  <div className="flex flex-col gap-2.5">
+                    {reviews.map(rev => (
+                      <div key={rev.id} className="bg-white border border-border/80 rounded-xl p-3 shadow-sm flex flex-col gap-1.5">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="w-5 h-5 rounded-full bg-primary/10 text-primary text-[10px] font-black flex items-center justify-center uppercase">
+                              {rev.name[0]}
+                            </div>
+                            <span className="text-[10px] font-extrabold text-foreground">{rev.name}</span>
+                          </div>
+                          <span className="text-[8px] text-muted-foreground font-semibold">{rev.date}</span>
+                        </div>
+                        <div className="flex gap-0.5">
+                          {Array.from({ length: rev.rating }).map((_, i) => (
+                            <Star key={i} size={8} className="fill-amber-400 text-amber-400" />
+                          ))}
+                        </div>
+                        <p className="text-[10px] font-medium text-foreground leading-normal">"{rev.text}"</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Action Sticky Footer */}
+              <div className="p-4 border-t border-border bg-white flex items-center justify-between gap-4 shrink-0 shadow-[0_-4px_16px_rgba(0,0,0,0.03)]">
+                <div>
+                  <p className="text-[8px] text-muted-foreground font-bold uppercase tracking-wider">Total Harga</p>
+                  <p className="text-base font-black text-primary leading-tight mt-0.5">{rp(selectedProduct.price)}</p>
+                </div>
+                <button 
+                  onClick={() => {
+                    addToCart(selectedProduct);
+                    setSelectedProduct(null);
+                  }}
+                  className="flex-1 py-3 bg-primary hover:bg-primary/95 text-white font-bold text-xs rounded-xl shadow-md cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  <ShoppingCart size={13} />
+                  <span>Masukkan Keranjang</span>
+                </button>
+              </div>
+
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
 
-function CateringScreen({ navigate }: Nav) {
+
+const CATERING_PACKAGES: Record<number, { id: number; name: string; desc: string; price: number; img: string }[]> = {
+  1: [
+    { id: 101, name: "Paket A - Timbel Ayam Bakar", desc: "Nasi timbel wangi daun pisang, ayam bakar madu empuk, tahu tempe goreng, lalapan segar & sambal terasi.", price: 25000, img: uImg("1565299624946-b28f40a0ae38", 150, 150) },
+    { id: 102, name: "Paket B - Liwet Kakap Bakar", desc: "Nasi liwet gurih teri pete, kakap bakar bumbu kuning, bakwan jagung, sambal cobek terasi.", price: 35000, img: uImg("1546069901-ba9599a7e63c", 150, 150) },
+    { id: 103, name: "Paket Prasmanan Sunda (Min. 50 Pax)", desc: "Menu prasmanan lengkap (nasi, ayam/daging, sayur sup, karedok, dessert es kelapa muda, air mineral). Free sewa alat.", price: 45000, img: uImg("1563245372-f21724e3856d", 150, 150) },
+  ],
+  2: [
+    { id: 201, name: "Paket Nasi Box Syukuran", desc: "Nasi kuning wangi, ayam goreng lengkuas, sambal goreng kentang ati, telur balado, kerupuk udang.", price: 30000, img: uImg("1546069901-ba9599a7e63c", 150, 150) },
+    { id: 202, name: "Tumpeng Kuning Premium (20 Pax)", desc: "Tumpeng ukuran besar lengkap dengan hiasan, ayam kuning 20 potong, perkedel kentang, mie goreng, kering tempe.", price: 650000, img: uImg("1563245372-f21724e3856d", 150, 150) },
+    { id: 203, name: "Paket Bento Box Kantor", desc: "Nasi putih, rollade asam manis, capcay sayur bakso, nugget ayam premium, buah potong semangka.", price: 22000, img: uImg("1512621776951-a57141f2eefd", 150, 150) },
+  ],
+  3: [
+    { id: 301, name: "Paket Sehat Diet Kenyang", desc: "Nasi merah organik, ayam suwir sambal matah rendah kalori, pepes tahu jamur tiram, tumis buncis bawang putih.", price: 27500, img: uImg("1512621776951-a57141f2eefd", 150, 150) },
+    { id: 302, name: "Paket Lauk Keluarga (4-5 Orang)", desc: "1 box lauk pauk (pilihan ayam bakar/ikan nila goreng), sayur lodeh mangkuk besar, sambal tomat & tempe bacem.", price: 85000, img: uImg("1563245372-f21724e3856d", 150, 150) },
+  ]
+};
+
+function CateringScreen({
+  navigate,
+  setCateringChatMessages,
+  setUnreadCateringCount,
+  setCateringStoreName,
+  myOrders,
+  setMyOrders,
+  showToast
+}: Nav & {
+  setCateringChatMessages: React.Dispatch<React.SetStateAction<any[]>>;
+  setUnreadCateringCount: React.Dispatch<React.SetStateAction<number>>;
+  setCateringStoreName: (n: string) => void;
+  myOrders: any[];
+  setMyOrders: React.Dispatch<React.SetStateAction<any[]>>;
+  showToast: (m: string) => void;
+}) {
+  const [selectedMerchant, setSelectedMerchant] = useState<typeof RESTAURANTS[0] | null>(null);
+  const [selectedPackage, setSelectedPackage] = useState<any | null>(null);
+  const [paxCount, setPaxCount] = useState(10);
+  const [bookingDate, setBookingDate] = useState("Besok (H+1)");
+  const [note, setNote] = useState("");
+
+  const handleOpenMerchant = (m: typeof RESTAURANTS[0]) => {
+    setSelectedMerchant(m);
+    const pkgs = CATERING_PACKAGES[m.id] || [];
+    setSelectedPackage(pkgs[0] || null);
+    setPaxCount(10);
+    setNote("");
+  };
+
+  const handleChatAdmin = () => {
+    if (!selectedMerchant) return;
+    const storeName = selectedMerchant.name;
+    setCateringStoreName(storeName);
+    setCateringChatMessages([
+      { id: "1", sender: "catering", text: `Halo kak Budi! Terima kasih sudah menghubungi kami. Ada yang bisa kami bantu terkait rencana pesanan katering Anda di ${storeName}?`, time: "Baru saja" }
+    ]);
+    setUnreadCateringCount(0);
+    setSelectedMerchant(null);
+    navigate("c_catering_chat");
+  };
+
+  const handlePesanPO = () => {
+    if (!selectedMerchant || !selectedPackage) return;
+    const totalPrice = selectedPackage.price * paxCount;
+    const newOrderId = `RNG-PO${Math.floor(100 + Math.random() * 900)}`;
+
+    const newOrder = {
+      id: newOrderId,
+      type: "Catering",
+      icon: Coffee,
+      color: "#FF7043",
+      item: `${selectedPackage.name} (${paxCount} Pax)`,
+      detail: selectedMerchant.name,
+      status: "Diproses",
+      statusColor: "orange",
+      date: bookingDate,
+      total: totalPrice,
+      items: [{ id: selectedPackage.id, name: selectedPackage.name, price: selectedPackage.price, quantity: paxCount, img: selectedPackage.img, store: selectedMerchant.name }],
+      progressState: 0,
+      payMethod: "Dompet Rangers (Pre-Order)",
+      reviewText: "",
+      reviewRating: 0,
+      address: "Jl. Aster No. 7, Kamojang (Kos Putri Melati)",
+      driverNote: note,
+      voucherCode: null,
+      discount: 0,
+      tip: 0,
+      subtotal: totalPrice,
+      shippingFee: 0
+    };
+
+    setMyOrders(prev => [newOrder, ...prev]);
+
+    setCateringStoreName(selectedMerchant.name);
+    setCateringChatMessages([
+      { id: "1", sender: "catering", text: `Halo kak Budi! Booking Pre-Order (${newOrderId}) Anda untuk ${selectedPackage.name} sebanyak ${paxCount} Pax pada tanggal ${bookingDate} telah kami terima. Apakah ada request menu khusus?`, time: "Baru saja" }
+    ]);
+    setUnreadCateringCount(1);
+    
+    showToast("Booking Pre-Order Berhasil! Mengalihkan ke Inbox...");
+    setSelectedMerchant(null);
+    navigate("c_inbox");
+  };
+
   return (
-    <div className="flex flex-col h-full bg-[#F7FAF8]">
+    <div className="flex flex-col h-full bg-[#F7FAF8] relative">
       <div className="bg-white shrink-0">
         <StatusBar />
         <BackHeader title="Catering" onBack={() => navigate("c_home")} />
@@ -812,17 +1387,23 @@ function CateringScreen({ navigate }: Nav) {
           <input placeholder="Cari restoran atau menu..." className="flex-1 bg-transparent text-sm outline-none" />
         </div>
       </div>
+      
       {/* promo */}
       <div className="mx-4 mt-3 rounded-2xl bg-gradient-to-r from-orange-500 to-red-500 p-4 flex items-center gap-4 shrink-0">
         <div>
-          <p className="text-white font-extrabold text-sm">Pesan Catering Sekarang!</p>
-          <p className="text-orange-100 text-xs mt-0.5">Min. 10 pax, antar ke lokasi Anda</p>
+          <p className="text-white font-extrabold text-sm">Sistem Booking & PO Catering</p>
+          <p className="text-orange-100 text-[10px] mt-0.5">Diskusikan dengan Admin, kelola pesanan langsung dari Inbox</p>
         </div>
         <Coffee size={32} className="text-white/80 shrink-0" />
       </div>
+
       <div className="flex-1 overflow-y-auto px-4 pt-3 pb-4 flex flex-col gap-3" style={{ scrollbarWidth: "none" }}>
         {RESTAURANTS.map(r => (
-          <div key={r.id} className="bg-white rounded-2xl overflow-hidden shadow-sm">
+          <div 
+            key={r.id} 
+            onClick={() => handleOpenMerchant(r)}
+            className="bg-white rounded-2xl overflow-hidden shadow-sm border border-black/[0.02] hover:border-orange-500/20 transition-all cursor-pointer"
+          >
             <div className="relative h-32">
               <img src={r.img} alt={r.name} className="w-full h-full object-cover bg-muted" />
               <span className={`absolute top-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded-full ${r.open ? "bg-green-500 text-white" : "bg-gray-500 text-white"}`}>
@@ -842,13 +1423,197 @@ function CateringScreen({ navigate }: Nav) {
                 <Pill color="gray">📍 {r.distance}</Pill>
                 <Pill color="gray">Min {rp(r.minOrder)}</Pill>
               </div>
-              <button className={`w-full mt-3 py-2.5 rounded-xl text-sm font-bold ${r.open ? "bg-primary text-white" : "bg-muted text-muted-foreground cursor-not-allowed"}`}>
-                {r.open ? "Pesan Sekarang" : "Sedang Tutup"}
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleOpenMerchant(r);
+                }}
+                className={`w-full mt-3 py-2.5 rounded-xl text-sm font-bold cursor-pointer transition-all ${r.open ? "bg-primary text-white hover:bg-primary-dark" : "bg-muted text-muted-foreground cursor-not-allowed"}`}
+              >
+                {r.open ? "Pesan / Booking PO" : "Sedang Tutup"}
               </button>
             </div>
           </div>
         ))}
       </div>
+
+      {/* Catering Merchant Popup Modal */}
+      {selectedMerchant && (() => {
+        const packages = CATERING_PACKAGES[selectedMerchant.id] || [];
+        const isTumpeng = selectedPackage?.id === 202;
+        return (
+          <div className="absolute inset-0 bg-black/60 z-50 flex flex-col justify-end">
+            <style>{`
+              @keyframes slide-up {
+                from { transform: translateY(100%); }
+                to { transform: translateY(0); }
+              }
+              .animate-slide-up {
+                animation: slide-up 0.28s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+              }
+            `}</style>
+            <div className="flex-1" onClick={() => setSelectedMerchant(null)} />
+            <div className="bg-white rounded-t-[28px] max-h-[85%] flex flex-col overflow-hidden shadow-2xl relative animate-slide-up">
+              
+              {/* Header Modal */}
+              <div className="p-4 border-b border-border flex items-center justify-between shrink-0 bg-white">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">🍱</span>
+                  <div>
+                    <h3 className="text-sm font-extrabold text-foreground leading-tight">{selectedMerchant.name}</h3>
+                    <p className="text-[10px] text-muted-foreground font-semibold">Pre-Order & Booking Catering</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setSelectedMerchant(null)} 
+                  className="w-7 h-7 rounded-full bg-muted flex items-center justify-center text-muted-foreground cursor-pointer"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+
+              {/* Scrollable Modal Content */}
+              <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4" style={{ scrollbarWidth: "none" }}>
+                
+                {/* Store Profile Intro */}
+                <div className="flex gap-3 items-center bg-slate-50 border border-slate-100 p-3 rounded-2xl">
+                  <img src={selectedMerchant.img} alt={selectedMerchant.name} className="w-12 h-12 rounded-xl object-cover shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold text-foreground leading-normal truncate">{selectedMerchant.name}</p>
+                    <p className="text-[9px] text-muted-foreground truncate leading-tight">{selectedMerchant.cuisine} · {selectedMerchant.distance}</p>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <span className="bg-amber-50 text-amber-700 text-[8px] font-black border border-amber-200 px-1 py-0.2 rounded-full whitespace-nowrap">
+                        ★ {selectedMerchant.rating}
+                      </span>
+                      <span className="text-[8px] text-muted-foreground font-semibold">Mitra Resmi Rangers</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section 1: Packages List */}
+                <div className="flex flex-col gap-2">
+                  <h4 className="text-xs font-bold text-foreground">Pilih Paket Catering</h4>
+                  <div className="flex flex-col gap-2">
+                    {packages.map(p => {
+                      const isSelected = selectedPackage?.id === p.id;
+                      return (
+                        <div 
+                          key={p.id}
+                          onClick={() => {
+                            setSelectedPackage(p);
+                            if (p.id === 202) {
+                              setPaxCount(1);
+                            } else {
+                              setPaxCount(10);
+                            }
+                          }}
+                          className={`flex gap-3 p-3 rounded-xl border-2 transition-all cursor-pointer ${isSelected ? "border-primary bg-primary/[0.02]" : "border-border hover:bg-slate-50"}`}
+                        >
+                          <img src={p.img} alt={p.name} className="w-14 h-14 rounded-lg object-cover bg-muted shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between">
+                              <p className="text-xs font-bold text-foreground leading-tight truncate">{p.name}</p>
+                              {isSelected && <Check size={12} className="text-primary shrink-0 ml-1 mt-0.5" />}
+                            </div>
+                            <p className="text-[10px] text-muted-foreground leading-snug mt-0.5 line-clamp-2">{p.desc}</p>
+                            <p className="text-primary font-extrabold text-xs mt-1.5">{rp(p.price)} <span className="text-muted-foreground text-[9px] font-medium">{p.id === 202 ? "/ unit" : "/ pax"}</span></p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Section 2: PO Configuration */}
+                {selectedPackage && (
+                  <div className="flex flex-col gap-3.5 bg-slate-50 border border-slate-100 p-4 rounded-2xl">
+                    <h4 className="text-xs font-bold text-foreground border-b border-border pb-1.5 -mt-1">Pengaturan Pre-Order (PO)</h4>
+                    
+                    {/* Portion Pax Count */}
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs font-bold text-foreground">{isTumpeng ? "Jumlah Unit" : "Jumlah Pax (Porsi)"}</p>
+                        <p className="text-[9px] text-muted-foreground mt-0.5">{isTumpeng ? "Min. order 1 unit" : "Min. order 10 pax untuk katering box"}</p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <button 
+                          onClick={() => setPaxCount(prev => Math.max(isTumpeng ? 1 : 10, prev - (isTumpeng ? 1 : 5)))}
+                          className="w-8 h-8 rounded-lg bg-white border border-border flex items-center justify-center text-foreground hover:bg-slate-100 cursor-pointer shadow-sm"
+                        >
+                          <Minus size={13} />
+                        </button>
+                        <span className="text-xs font-extrabold text-foreground w-8 text-center">{paxCount}</span>
+                        <button 
+                          onClick={() => setPaxCount(prev => prev + (isTumpeng ? 1 : 5))}
+                          className="w-8 h-8 rounded-lg bg-white border border-border flex items-center justify-center text-foreground hover:bg-slate-100 cursor-pointer shadow-sm"
+                        >
+                          <Plus size={13} />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Delivery Date selection */}
+                    <div className="flex flex-col gap-1.5">
+                      <p className="text-xs font-bold text-foreground">Pilih Hari Pengiriman</p>
+                      <div className="flex gap-2">
+                        {["Besok (H+1)", "Lusa (H+2)", "Minggu Depan (H+7)"].map(d => (
+                          <button 
+                            key={d} 
+                            onClick={() => setBookingDate(d)}
+                            className={`flex-1 py-2 text-[10px] font-bold rounded-xl border transition-all cursor-pointer ${bookingDate === d ? "bg-primary text-white border-primary shadow-sm" : "bg-white text-muted-foreground border-border hover:bg-slate-100"}`}
+                          >
+                            {d}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Notes for Merchant */}
+                    <div className="flex flex-col gap-1">
+                      <p className="text-xs font-bold text-foreground">Catatan Tambahan</p>
+                      <input 
+                        value={note}
+                        onChange={e => setNote(e.target.value)}
+                        placeholder="Contoh: Sambal pisah / tambah sendok / jam antar"
+                        className="w-full px-3 py-2 bg-white border border-border rounded-xl text-xs outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium"
+                      />
+                    </div>
+
+                  </div>
+                )}
+
+              </div>
+
+              {/* Modal Sticky Footer */}
+              {selectedPackage && (
+                <div className="p-4 border-t border-border bg-white flex items-center justify-between gap-3 shrink-0 shadow-[0_-4px_16px_rgba(0,0,0,0.03)]">
+                  <div>
+                    <p className="text-[8px] text-muted-foreground font-bold uppercase tracking-wider">Estimasi Harga PO</p>
+                    <p className="text-base font-black text-primary leading-tight mt-0.5">{rp(selectedPackage.price * paxCount)}</p>
+                  </div>
+                  <div className="flex-1 flex gap-2">
+                    <button 
+                      onClick={handleChatAdmin}
+                      className="px-3.5 py-3 border-2 border-primary text-primary hover:bg-primary/5 font-extrabold text-xs rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                    >
+                      <MessageSquare size={13} />
+                      <span>Chat Admin</span>
+                    </button>
+                    <button 
+                      onClick={handlePesanPO}
+                      className="flex-1 py-3 bg-primary hover:bg-primary/95 text-white font-bold text-xs rounded-xl shadow-md cursor-pointer flex items-center justify-center gap-1.5"
+                    >
+                      <span>Pesan Sekarang (PO)</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+            </div>
+          </div>
+        );
+      })()}
+
     </div>
   );
 }
@@ -1535,12 +2300,19 @@ const statusColor: Record<string, string> = {
   red: "bg-red-100 text-red-600",
 };
 
-function PesananScreen({ navigate }: Nav) {
+function PesananScreen({ 
+  navigate, 
+  myOrders, 
+  setActiveTrackingOrderId 
+}: Nav & { 
+  myOrders: any[]; 
+  setActiveTrackingOrderId: (id: string | null) => void; 
+}) {
   const [tab, setTab] = useState(0);
   const tabs = ["Aktif", "Selesai", "Dibatalkan"];
   const filtered = [
-    ORDERS.filter(o => o.status === "Dikirim" || o.status === "Diproses" || o.status === "Aktif"),
-    ORDERS.filter(o => o.status === "Selesai"),
+    myOrders.filter(o => o.status === "Dikirim" || o.status === "Diproses" || o.status === "Aktif"),
+    myOrders.filter(o => o.status === "Selesai"),
     [],
   ][tab];
   return (
@@ -1571,7 +2343,7 @@ function PesananScreen({ navigate }: Nav) {
             {filtered.map(o => {
               const Icon = o.icon;
               return (
-                <div key={o.id} className="bg-white rounded-2xl p-4 shadow-sm">
+                <div key={o.id} className="bg-white rounded-2xl p-4 shadow-sm border border-black/[0.02]">
                   <div className="flex items-start gap-3">
                     <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: o.color + "20" }}>
                       <Icon size={18} style={{ color: o.color }} />
@@ -1579,7 +2351,7 @@ function PesananScreen({ navigate }: Nav) {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
                         <p className="text-[10px] text-muted-foreground font-semibold">#{o.id} · {o.type}</p>
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${statusColor[o.statusColor]}`}>{o.status}</span>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${statusColor[o.statusColor] || statusColor.green}`}>{o.status}</span>
                       </div>
                       <p className="font-bold text-sm text-foreground mt-0.5 truncate">{o.item}</p>
                       <p className="text-muted-foreground text-xs">{o.detail}</p>
@@ -1591,10 +2363,36 @@ function PesananScreen({ navigate }: Nav) {
                       <p className="font-extrabold text-sm text-foreground">{rp(o.total)}</p>
                     </div>
                     <div className="flex gap-2">
-                      <button className="text-xs font-bold px-3 py-1.5 rounded-xl border border-border text-muted-foreground">Detail</button>
-                      <button className="text-xs font-bold px-3 py-1.5 rounded-xl bg-primary/10 text-primary">Beli Lagi</button>
+                      <button 
+                        onClick={() => {
+                          setActiveTrackingOrderId(o.id);
+                          if (o.status === "Selesai" && !o.reviewRating) {
+                            navigate("c_rating");
+                          } else {
+                            navigate("c_tracking");
+                          }
+                        }}
+                        className="text-xs font-bold px-3.5 py-1.5 rounded-xl bg-primary text-white hover:bg-primary-dark transition-colors cursor-pointer"
+                      >
+                        {o.status === "Selesai" ? (o.reviewRating ? "Lacak / Detail" : "Beri Ulasan") : "Lacak"}
+                      </button>
                     </div>
                   </div>
+                  {o.reviewRating > 0 && (
+                    <div className="mt-2.5 p-2.5 bg-slate-50 rounded-xl border border-dashed border-border flex flex-col gap-1">
+                      <div className="flex items-center gap-1">
+                        <span className="text-[10px] font-bold text-muted-foreground">Rating Anda:</span>
+                        <div className="flex">
+                          {[1, 2, 3, 4, 5].map(star => (
+                            <Star key={star} size={10} className={star <= o.reviewRating ? "fill-amber-400 text-amber-400" : "text-gray-300"} />
+                          ))}
+                        </div>
+                      </div>
+                      {o.reviewText && (
+                        <p className="text-[10px] text-muted-foreground italic leading-relaxed">"{o.reviewText}"</p>
+                      )}
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -1605,7 +2403,32 @@ function PesananScreen({ navigate }: Nav) {
   );
 }
 
-function InboxScreen({ navigate }: Nav) {
+function InboxScreen({
+  navigate,
+  driverChatMessages,
+  unreadChatCount,
+  setUnreadChatCount,
+  supportChatMessages,
+  unreadSupportCount,
+  setUnreadSupportCount,
+  cateringChatMessages,
+  unreadCateringCount,
+  setUnreadCateringCount,
+  cateringStoreName
+}: Nav & {
+  driverChatMessages: { id: string; sender: "driver" | "user"; text: string; time: string }[];
+  unreadChatCount: number;
+  setUnreadChatCount: (c: number) => void;
+  supportChatMessages: { id: string; sender: "support" | "user"; text: string; time: string }[];
+  unreadSupportCount: number;
+  setUnreadSupportCount: (c: number) => void;
+  cateringChatMessages: { id: string; sender: "catering" | "user"; text: string; time: string }[];
+  unreadCateringCount: number;
+  setUnreadCateringCount: (c: number) => void;
+  cateringStoreName: string;
+}) {
+  const [activeTab, setActiveTab] = useState<"chat" | "notif">("chat");
+
   const notifColors: Record<string, string> = {
     order: "bg-blue-100", promo: "bg-orange-100", info: "bg-green-100", system: "bg-gray-100",
   };
@@ -1615,34 +2438,161 @@ function InboxScreen({ navigate }: Nav) {
   const notifIcons: Record<string, React.ElementType> = {
     order: Package, promo: Tag, info: Info, system: Bell,
   };
+  
+  const unreadNotifs = NOTIFS.filter(n => !n.read).length;
+  const totalUnreadChats = unreadChatCount + unreadSupportCount + unreadCateringCount;
+
   return (
     <div className="flex flex-col h-full bg-[#F7FAF8]">
       <div className="bg-white shrink-0">
         <StatusBar />
-        <div className="flex items-center justify-between px-5 pb-3 pt-1">
-          <h2 className="font-extrabold text-lg text-foreground">Notifikasi</h2>
-          <button className="text-xs font-bold text-primary">Tandai semua dibaca</button>
+        <div className="px-5 pb-1 pt-1">
+          <h2 className="font-extrabold text-lg text-foreground">Inbox</h2>
+        </div>
+        <div className="flex border-b border-border">
+          <button 
+            onClick={() => setActiveTab("chat")}
+            className={`flex-1 py-3 text-xs font-extrabold text-center border-b-2 transition-all relative cursor-pointer ${activeTab === "chat" ? "border-primary text-primary" : "border-transparent text-muted-foreground"}`}
+          >
+            Chat
+            {totalUnreadChats > 0 && (
+              <span className="ml-1.5 bg-green-500 text-white font-extrabold text-[9px] px-1.5 py-0.5 rounded-full">
+                {totalUnreadChats}
+              </span>
+            )}
+          </button>
+          <button 
+            onClick={() => setActiveTab("notif")}
+            className={`flex-1 py-3 text-xs font-extrabold text-center border-b-2 transition-all relative cursor-pointer ${activeTab === "notif" ? "border-primary text-primary" : "border-transparent text-muted-foreground"}`}
+          >
+            Notifikasi
+            {unreadNotifs > 0 && (
+              <span className="ml-1.5 bg-accent text-white font-extrabold text-[9px] px-1.5 py-0.5 rounded-full">
+                {unreadNotifs}
+              </span>
+            )}
+          </button>
         </div>
       </div>
-      <div className="flex-1 overflow-y-auto pb-4" style={{ scrollbarWidth: "none" }}>
-        {NOTIFS.map((n) => {
-          const Icon = notifIcons[n.type];
-          return (
-            <div key={n.id} className={`flex gap-3 px-4 py-3.5 border-b border-border relative ${!n.read ? "bg-white" : "bg-transparent"}`}>
-              {!n.read && <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-r-full" />}
-              <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${notifColors[n.type]}`}>
-                <Icon size={16} className={notifTextColors[n.type]} />
+
+      <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: "none" }}>
+        {activeTab === "chat" ? (
+          <div className="flex flex-col">
+            {/* Real-time Driver Chat Row */}
+            <div 
+              onClick={() => {
+                setUnreadChatCount(0);
+                navigate("c_driver_chat");
+              }}
+              className={`flex gap-3 px-4 py-4 border-b border-border relative bg-white cursor-pointer hover:bg-muted/30 transition-colors`}
+            >
+              {unreadChatCount > 0 && <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-r-full" />}
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0 text-lg relative">
+                🏍️
+                {unreadChatCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 bg-green-500 w-2.5 h-2.5 rounded-full border-2 border-white" />
+                )}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between gap-2">
-                  <p className={`text-sm leading-tight ${!n.read ? "font-bold text-foreground" : "font-semibold text-foreground"}`}>{n.title}</p>
-                  <span className="text-[10px] text-muted-foreground shrink-0 mt-0.5">{n.time}</span>
+                  <p className={`text-xs ${unreadChatCount > 0 ? "font-extrabold text-foreground" : "font-bold text-foreground"}`}>
+                    Pak Rahman (Rangers Driver)
+                  </p>
+                  <span className="text-[9px] text-muted-foreground shrink-0">
+                    {driverChatMessages[driverChatMessages.length - 1]?.time || "Baru saja"}
+                  </span>
                 </div>
-                <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{n.msg}</p>
+                <p className={`text-xs truncate mt-1 leading-normal ${unreadChatCount > 0 ? "font-bold text-foreground" : "text-muted-foreground"}`}>
+                  {driverChatMessages[driverChatMessages.length - 1]?.text || "Mulai chat..."}
+                </p>
               </div>
             </div>
-          );
-        })}
+
+            {/* Real-time Catering Admin Chat Row */}
+            {cateringChatMessages.length > 0 && (
+              <div 
+                onClick={() => {
+                  setUnreadCateringCount(0);
+                  navigate("c_catering_chat");
+                }}
+                className={`flex gap-3 px-4 py-4 border-b border-border relative bg-white cursor-pointer hover:bg-muted/30 transition-colors`}
+              >
+                {unreadCateringCount > 0 && <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-r-full" />}
+                <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center shrink-0 text-lg relative">
+                  🍱
+                  {unreadCateringCount > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 bg-green-500 w-2.5 h-2.5 rounded-full border-2 border-white" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className={`text-xs ${unreadCateringCount > 0 ? "font-extrabold text-foreground" : "font-bold text-foreground"}`}>
+                      Admin {cateringStoreName || "Catering"}
+                    </p>
+                    <span className="text-[9px] text-muted-foreground shrink-0">
+                      {cateringChatMessages[cateringChatMessages.length - 1]?.time || "Baru saja"}
+                    </span>
+                  </div>
+                  <p className={`text-xs truncate mt-1 leading-normal ${unreadCateringCount > 0 ? "font-bold text-foreground" : "text-muted-foreground"}`}>
+                    {cateringChatMessages[cateringChatMessages.length - 1]?.text || "Mulai chat..."}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Real-time Support Chat Row */}
+            <div 
+              onClick={() => {
+                setUnreadSupportCount(0);
+                navigate("c_support_chat");
+              }}
+              className={`flex gap-3 px-4 py-4 border-b border-border relative bg-white cursor-pointer hover:bg-muted/30 transition-colors`}
+            >
+              {unreadSupportCount > 0 && <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-r-full" />}
+              <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center shrink-0 text-lg relative">
+                🛡️
+                {unreadSupportCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 bg-green-500 w-2.5 h-2.5 rounded-full border-2 border-white" />
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-start justify-between gap-2">
+                  <p className={`text-xs ${unreadSupportCount > 0 ? "font-extrabold text-foreground" : "font-bold text-foreground"}`}>
+                    Rangers Care (Bantuan)
+                  </p>
+                  <span className="text-[9px] text-muted-foreground shrink-0">
+                    {supportChatMessages[supportChatMessages.length - 1]?.time || "Kemarin"}
+                  </span>
+                </div>
+                <p className={`text-xs truncate mt-1 leading-normal ${unreadSupportCount > 0 ? "font-bold text-foreground" : "text-muted-foreground"}`}>
+                  {supportChatMessages[supportChatMessages.length - 1]?.text || "Mulai chat..."}
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : (
+          /* Notifications Tab Content */
+          <div className="flex flex-col">
+            {NOTIFS.map((n) => {
+              const Icon = notifIcons[n.type];
+              return (
+                <div key={n.id} className={`flex gap-3 px-4 py-3.5 border-b border-border relative ${!n.read ? "bg-white" : "bg-transparent"}`}>
+                  {!n.read && <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-r-full" />}
+                  <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${notifColors[n.type]}`}>
+                    <Icon size={16} className={notifTextColors[n.type]} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className={`text-xs leading-tight ${!n.read ? "font-bold text-foreground" : "font-semibold text-foreground"}`}>{n.title}</p>
+                      <span className="text-[9px] text-muted-foreground shrink-0 mt-0.5">{n.time}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{n.msg}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1726,6 +2676,1442 @@ function ProfilCustomer({ navigate }: Nav) {
     </div>
   );
 }
+
+// ─── NEW CUSTOMER SCREENS ──────────────────────────────────────────────────────
+function CartScreen({
+  navigate,
+  cart,
+  setCart,
+  dompetBalance,
+  setDompetBalance,
+  myOrders,
+  setMyOrders,
+  setActiveTrackingOrderId,
+  showToast,
+  setTempCheckout,
+  setDriverChatMessages,
+  setUnreadChatCount
+}: {
+  navigate: (s: Screen) => void;
+  cart: any[];
+  setCart: React.Dispatch<React.SetStateAction<any[]>>;
+  dompetBalance: number;
+  setDompetBalance: React.Dispatch<React.SetStateAction<number>>;
+  myOrders: any[];
+  setMyOrders: React.Dispatch<React.SetStateAction<any[]>>;
+  setActiveTrackingOrderId: (id: string | null) => void;
+  showToast: (m: string) => void;
+  setTempCheckout: (data: any) => void;
+  setDriverChatMessages: (msgs: any[]) => void;
+  setUnreadChatCount: (c: number) => void;
+}) {
+  const [payMethod, setPayMethod] = useState<"dompet" | "qris">("dompet");
+  const [address, setAddress] = useState("Jl. Aster No. 7, Kamojang, Kab. Garut (Kos Putri Melati)");
+  const [driverNote, setDriverNote] = useState("");
+  const [voucherInput, setVoucherInput] = useState("");
+  const [appliedVoucher, setAppliedVoucher] = useState<string | null>(null);
+  const [discount, setDiscount] = useState(0);
+  const [tip, setTip] = useState(0);
+  const [promoError, setPromoError] = useState("");
+
+  const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const shippingFee = cart.length > 0 ? 8000 : 0;
+  const total = Math.max(0, subtotal + shippingFee + tip - discount);
+
+  const updateQty = (id: number, delta: number) => {
+    setCart(prev => prev.map(item => {
+      if (item.id === id) {
+        const newQty = item.quantity + delta;
+        return newQty > 0 ? { ...item, quantity: newQty } : null;
+      }
+      return item;
+    }).filter(Boolean) as any[]);
+  };
+
+  const handleApplyPromo = () => {
+    const code = voucherInput.toUpperCase().trim();
+    if (code === "BERSIH20") {
+      setAppliedVoucher(code);
+      setDiscount(Math.round(subtotal * 0.2));
+      setPromoError("");
+      showToast("Voucher BERSIH20 berhasil diterapkan (Diskon 20%)!");
+    } else if (code === "KAMOJANG") {
+      setAppliedVoucher(code);
+      setDiscount(Math.min(subtotal, 10000));
+      setPromoError("");
+      showToast("Voucher KAMOJANG berhasil diterapkan (Potongan Rp 10.000)!");
+    } else {
+      setPromoError("Kode voucher tidak valid!");
+      setAppliedVoucher(null);
+      setDiscount(0);
+    }
+  };
+
+  const handleCheckout = () => {
+    if (cart.length === 0) return;
+
+    const checkoutData = {
+      address,
+      driverNote,
+      voucherCode: appliedVoucher,
+      discount,
+      tip,
+      subtotal,
+      shippingFee,
+      total
+    };
+
+    if (payMethod === "dompet") {
+      if (dompetBalance < total) {
+        showToast("Saldo Dompet Rangers tidak mencukupi!");
+        return;
+      }
+      setDompetBalance(prev => prev - total);
+      const newOrderId = `RNG${Math.floor(100 + Math.random() * 900)}`;
+      const firstItem = cart[0];
+      const detailStr = cart.length > 1 ? `${firstItem.name} + ${cart.length - 1} item lainnya` : firstItem.name;
+      
+      const newOrder = {
+        id: newOrderId,
+        type: "Marketplace",
+        icon: Store,
+        color: "#1B7A4E",
+        item: detailStr,
+        detail: firstItem.store,
+        status: "Diproses",
+        statusColor: "orange",
+        date: "Hari Ini",
+        total: total,
+        items: [...cart],
+        progressState: 0,
+        payMethod: "Dompet Rangers",
+        reviewText: "",
+        reviewRating: 0,
+        address,
+        driverNote,
+        voucherCode: appliedVoucher,
+        discount,
+        tip,
+        subtotal,
+        shippingFee
+      };
+
+      setMyOrders(prev => [newOrder, ...prev]);
+      setActiveTrackingOrderId(newOrderId);
+      setCart([]);
+      
+      // Reset Chat states for Gojek chat integration
+      setDriverChatMessages([
+        { id: "1", sender: "driver", text: "Halo kak, pesanan sudah saya terima ya. Sedang disiapkan toko.", time: "Baru saja" }
+      ]);
+      setUnreadChatCount(1);
+      
+      showToast("Pembayaran Berhasil! Mengalihkan ke tracking...");
+      navigate("c_tracking");
+    } else {
+      setTempCheckout(checkoutData);
+      navigate("c_qris");
+    }
+  };
+
+  return (
+    <div className="flex flex-col h-full bg-[#F7FAF8]">
+      <StatusBar />
+      <BackHeader title="Keranjang Belanja" onBack={() => navigate("c_marketplace")} />
+      
+      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4" style={{ scrollbarWidth: "none" }}>
+        {cart.length === 0 ? (
+          <div className="flex-1 flex flex-col items-center justify-center py-20 gap-3">
+            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center text-muted-foreground opacity-50">
+              <ShoppingCart size={32} />
+            </div>
+            <p className="text-muted-foreground text-sm font-semibold">Keranjang Anda Kosong</p>
+            <p className="text-muted-foreground/60 text-xs text-center max-w-xs">Ayo telusuri Marketplace UMKM Kamojang dan temukan produk favoritmu!</p>
+            <button onClick={() => navigate("c_marketplace")} className="mt-4 bg-primary text-white text-xs font-bold px-5 py-2.5 rounded-xl cursor-pointer">
+              Cari Produk
+            </button>
+          </div>
+        ) : (
+          <>
+            {/* Alamat Pengiriman (Gojek-style) */}
+            <div className="bg-white rounded-2xl p-4 shadow-sm flex flex-col gap-3">
+              <div className="flex items-center gap-1.5">
+                <MapPin size={15} className="text-primary" />
+                <h3 className="text-xs font-extrabold text-foreground uppercase tracking-wider">Alamat Pengiriman</h3>
+              </div>
+              <textarea 
+                value={address}
+                onChange={e => setAddress(e.target.value)}
+                placeholder="Tulis alamat pengiriman secara detail..."
+                className="w-full h-14 p-2.5 bg-muted rounded-xl text-xs outline-none focus:ring-2 focus:ring-primary/20 transition-all resize-none border border-transparent font-medium"
+              />
+              <div className="flex items-center gap-2 bg-muted px-3 py-2.5 rounded-xl">
+                <Edit3 size={12} className="text-muted-foreground shrink-0" />
+                <input 
+                  value={driverNote}
+                  onChange={e => setDriverNote(e.target.value)}
+                  placeholder="Catatan untuk driver (contoh: Pagar hitam, titip satpam)"
+                  className="flex-1 bg-transparent text-[11px] outline-none font-medium"
+                />
+              </div>
+            </div>
+
+            {/* List items */}
+            <div className="bg-white rounded-2xl p-4 shadow-sm flex flex-col gap-3">
+              <h3 className="text-xs font-extrabold text-muted-foreground uppercase tracking-wider mb-1">Daftar Produk</h3>
+              {cart.map(item => (
+                <div key={item.id} className="flex gap-3 pb-3 border-b border-border last:border-0 last:pb-0">
+                  <img src={item.img} alt={item.name} className="w-16 h-16 rounded-xl object-cover bg-muted shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold text-foreground leading-tight truncate">{item.name}</p>
+                    <p className="text-[10px] text-muted-foreground truncate">{item.store}</p>
+                    <p className="text-primary font-bold text-xs mt-1">{rp(item.price)}</p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button onClick={() => updateQty(item.id, -1)} className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center text-foreground hover:bg-gray-200 cursor-pointer">
+                      <Minus size={12} />
+                    </button>
+                    <span className="text-xs font-bold text-foreground w-4 text-center">{item.quantity}</span>
+                    <button onClick={() => updateQty(item.id, 1)} className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center text-foreground hover:bg-gray-200 cursor-pointer">
+                      <Plus size={12} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Voucher / Promo (Gojek-style) */}
+            <div className="bg-white rounded-2xl p-4 shadow-sm">
+              <div className="flex items-center gap-1.5 mb-2">
+                <Tag size={15} className="text-primary" />
+                <h3 className="text-xs font-extrabold text-foreground uppercase tracking-wider">Makin Hemat Pakai Promo</h3>
+              </div>
+              <div className="flex gap-2">
+                <input 
+                  value={voucherInput}
+                  onChange={e => setVoucherInput(e.target.value)}
+                  placeholder="Masukkan kode voucher (BERSIH20 / KAMOJANG)"
+                  className="flex-1 px-3 py-2 bg-muted rounded-xl text-xs outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium border border-transparent"
+                />
+                <button 
+                  onClick={handleApplyPromo}
+                  className="px-4 py-2 bg-primary text-white text-xs font-bold rounded-xl cursor-pointer"
+                >
+                  Terapkan
+                </button>
+              </div>
+              {appliedVoucher && (
+                <p className="text-[10px] text-green-600 font-bold mt-2 flex items-center gap-1">
+                  ✓ Voucher {appliedVoucher} berhasil digunakan! Potongan {rp(discount)}.
+                </p>
+              )}
+              {promoError && (
+                <p className="text-[10px] text-red-600 font-bold mt-2">
+                  ✗ {promoError}
+                </p>
+              )}
+            </div>
+
+            {/* Tip Driver (Gojek-style) */}
+            <div className="bg-white rounded-2xl p-4 shadow-sm flex flex-col gap-2.5">
+              <div className="flex items-center gap-1.5">
+                <Gift size={15} className="text-primary" />
+                <h3 className="text-xs font-extrabold text-foreground uppercase tracking-wider">Kasi Tip Apresiasi ke Driver</h3>
+              </div>
+              <p className="text-[10px] text-muted-foreground leading-relaxed -mt-1">
+                Tip 100% akan diteruskan kepada Rangers Driver untuk mengapresiasi jasanya.
+              </p>
+              <div className="flex gap-2">
+                {[0, 2000, 5000, 10000].map(val => (
+                  <button 
+                    key={val} 
+                    onClick={() => setTip(val)}
+                    className={`flex-1 py-2 text-[10px] font-bold rounded-xl border transition-all cursor-pointer ${tip === val ? "bg-primary text-white border-primary shadow-sm" : "bg-white text-muted-foreground border-border hover:bg-muted"}`}
+                  >
+                    {val === 0 ? "Tanpa Tip" : `+${val.toLocaleString("id-ID")}`}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Payment Method Selector */}
+            <div className="bg-white rounded-2xl p-4 shadow-sm">
+              <h3 className="text-xs font-extrabold text-muted-foreground uppercase tracking-wider mb-3">Pilih Metode Pembayaran</h3>
+              <div className="flex flex-col gap-2.5">
+                <button 
+                  onClick={() => setPayMethod("dompet")}
+                  className={`w-full p-3 rounded-xl border-2 flex items-center justify-between text-left transition-all cursor-pointer ${payMethod === "dompet" ? "border-primary bg-secondary/30" : "border-border hover:bg-muted"}`}
+                >
+                  <div className="flex items-center gap-3">
+                    <Wallet size={20} className={payMethod === "dompet" ? "text-primary" : "text-muted-foreground"} />
+                    <div>
+                      <p className="text-xs font-bold text-foreground">Dompet Rangers</p>
+                      <p className="text-[10px] text-muted-foreground">Saldo: {rp(dompetBalance)}</p>
+                    </div>
+                  </div>
+                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${payMethod === "dompet" ? "border-primary bg-primary" : "border-muted-foreground"}`}>
+                    {payMethod === "dompet" && <Check size={12} className="text-white" />}
+                  </div>
+                </button>
+
+                <button 
+                  onClick={() => setPayMethod("qris")}
+                  className={`w-full p-3 rounded-xl border-2 flex items-center justify-between text-left transition-all cursor-pointer ${payMethod === "qris" ? "border-primary bg-secondary/30" : "border-border hover:bg-muted"}`}
+                >
+                  <div className="flex items-center gap-3">
+                    <QrCode size={20} className={payMethod === "qris" ? "text-primary" : "text-muted-foreground"} />
+                    <div>
+                      <p className="text-xs font-bold text-foreground">Scan QRIS Otomatis</p>
+                      <p className="text-[10px] text-muted-foreground">Bayar aman instan lewat e-wallet/bank</p>
+                    </div>
+                  </div>
+                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${payMethod === "qris" ? "border-primary bg-primary" : "border-muted-foreground"}`}>
+                    {payMethod === "qris" && <Check size={12} className="text-white" />}
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            {/* Price breakdown */}
+            <div className="bg-white rounded-2xl p-4 shadow-sm flex flex-col gap-2">
+              <h3 className="text-xs font-extrabold text-muted-foreground uppercase tracking-wider mb-1">Rincian Pembayaran</h3>
+              <div className="flex justify-between text-xs">
+                <span className="text-muted-foreground">Subtotal Produk</span>
+                <span className="text-foreground font-semibold">{rp(subtotal)}</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-muted-foreground">Ongkos Kirim Kurir</span>
+                <span className="text-foreground font-semibold">{rp(shippingFee)}</span>
+              </div>
+              {discount > 0 && (
+                <div className="flex justify-between text-xs text-green-600 font-medium">
+                  <span>Diskon Voucher ({appliedVoucher})</span>
+                  <span>-{rp(discount)}</span>
+                </div>
+              )}
+              {tip > 0 && (
+                <div className="flex justify-between text-xs text-foreground font-medium">
+                  <span>Apresiasi Tip Kurir</span>
+                  <span>+{rp(tip)}</span>
+                </div>
+              )}
+              <div className="h-px bg-border my-1" />
+              <div className="flex justify-between text-sm">
+                <span className="font-bold text-foreground">Total Pembayaran</span>
+                <span className="font-extrabold text-primary">{rp(total)}</span>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+
+      {cart.length > 0 && (
+        <div className="p-4 bg-white border-t border-border flex flex-col gap-3">
+          {payMethod === "dompet" && dompetBalance < total && (
+            <div className="px-3 py-2 bg-red-50 rounded-xl text-[10px] text-red-600 font-semibold flex items-center gap-1.5">
+              <AlertCircle size={12} />
+              <span>Saldo Dompet Rangers kurang {rp(total - dompetBalance)}</span>
+            </div>
+          )}
+          <button 
+            onClick={handleCheckout}
+            disabled={payMethod === "dompet" && dompetBalance < total}
+            className="w-full py-4 bg-primary text-white font-bold text-base rounded-2xl disabled:bg-muted disabled:text-muted-foreground cursor-pointer flex items-center justify-center gap-2 shadow-sm"
+          >
+            <span>Bayar Sekarang ({rp(total)})</span>
+            <ChevronRight size={18} />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function QrisScreen({
+  navigate,
+  cart,
+  setCart,
+  myOrders,
+  setMyOrders,
+  setActiveTrackingOrderId,
+  showToast,
+  tempCheckout,
+  setDriverChatMessages,
+  setUnreadChatCount
+}: {
+  navigate: (s: Screen) => void;
+  cart: any[];
+  setCart: React.Dispatch<React.SetStateAction<any[]>>;
+  myOrders: any[];
+  setMyOrders: React.Dispatch<React.SetStateAction<any[]>>;
+  setActiveTrackingOrderId: (id: string | null) => void;
+  showToast: (m: string) => void;
+  tempCheckout: any;
+  setDriverChatMessages: (msgs: any[]) => void;
+  setUnreadChatCount: (c: number) => void;
+}) {
+  const total = tempCheckout ? tempCheckout.total : (cart.reduce((sum, item) => sum + item.price * item.quantity, 0) + 8000);
+
+  const handleQrisSuccess = () => {
+    const newOrderId = `RNG${Math.floor(100 + Math.random() * 900)}`;
+    const firstItem = cart[0];
+    const detailStr = cart.length > 1 ? `${firstItem.name} + ${cart.length - 1} item lainnya` : firstItem.name;
+
+    const newOrder = {
+      id: newOrderId,
+      type: "Marketplace",
+      icon: Store,
+      color: "#1B7A4E",
+      item: detailStr,
+      detail: firstItem.store,
+      status: "Diproses",
+      statusColor: "orange",
+      date: "Hari Ini",
+      total: total,
+      items: [...cart],
+      progressState: 0,
+      payMethod: "QRIS Otomatis",
+      reviewText: "",
+      reviewRating: 0,
+      address: tempCheckout?.address || "Jl. Aster No. 7, Kamojang, Kab. Garut (Kos Putri Melati)",
+      driverNote: tempCheckout?.driverNote || "",
+      voucherCode: tempCheckout?.voucherCode || null,
+      discount: tempCheckout?.discount || 0,
+      tip: tempCheckout?.tip || 0,
+      subtotal: tempCheckout?.subtotal || (total - 8000),
+      shippingFee: tempCheckout?.shippingFee || 8000
+    };
+
+    setMyOrders(prev => [newOrder, ...prev]);
+    setActiveTrackingOrderId(newOrderId);
+    setCart([]);
+
+    // Reset Chat states for QRIS checkout
+    setDriverChatMessages([
+      { id: "1", sender: "driver", text: "Halo kak, pesanan sudah saya terima ya. Sedang disiapkan toko.", time: "Baru saja" }
+    ]);
+    setUnreadChatCount(1);
+
+    showToast("Pembayaran QRIS Sukses!");
+    navigate("c_tracking");
+  };
+
+  return (
+    <div className="flex flex-col h-full bg-[#1B7A4E]">
+      <StatusBar light />
+      <div className="flex-1 flex flex-col items-center justify-center p-6 text-white text-center">
+        <h2 className="text-xl font-extrabold mb-1">Pembayaran QRIS</h2>
+        <p className="text-green-200 text-xs mb-6">PGE Kamojang Community Payment Gate</p>
+
+        <div className="bg-white rounded-3xl p-6 shadow-xl w-full max-w-xs text-foreground flex flex-col items-center">
+          <div className="flex items-center justify-between w-full mb-3 border-b border-border pb-2">
+            <span className="text-[10px] font-bold text-gray-400 tracking-wider">QRIS STANDAR NASIONAL</span>
+            <span className="text-[10px] font-bold text-primary">RANGERS APP</span>
+          </div>
+          
+          <div className="text-xs text-muted-foreground mb-1">Jumlah Tagihan</div>
+          <div className="text-xl font-extrabold text-foreground mb-4">{rp(total)}</div>
+          
+          <div className="w-48 h-48 border-4 border-gray-100 p-2 rounded-2xl flex items-center justify-center relative mb-4">
+            <svg viewBox="0 0 100 100" className="w-full h-full text-foreground fill-current">
+              <rect x="0" y="0" width="25" height="25" fill="#000" />
+              <rect x="5" y="5" width="15" height="15" fill="#fff" />
+              <rect x="9" y="9" width="7" height="7" fill="#000" />
+              
+              <rect x="75" y="0" width="25" height="25" fill="#000" />
+              <rect x="75" y="5" width="15" height="15" fill="#fff" />
+              <rect x="79" y="9" width="7" height="7" fill="#000" />
+
+              <rect x="0" y="75" width="25" height="25" fill="#000" />
+              <rect x="5" y="75" width="15" height="15" fill="#fff" />
+              <rect x="9" y="79" width="7" height="7" fill="#000" />
+
+              <rect x="35" y="10" width="10" height="20" />
+              <rect x="55" y="5" width="15" height="10" />
+              <rect x="40" y="40" width="20" height="20" />
+              <rect x="10" y="45" width="15" height="15" />
+              <rect x="70" y="40" width="15" height="15" />
+              <rect x="30" y="70" width="20" height="15" />
+              <rect x="65" y="70" width="15" height="20" />
+              <rect x="45" y="85" width="15" height="10" />
+              
+              <circle cx="50" cy="50" r="12" fill="#fff" />
+              <circle cx="50" cy="50" r="9" fill="#1B7A4E" />
+              <path d="M47 52 L50 47 L53 52" fill="#fff" />
+            </svg>
+            <div className="absolute inset-0 bg-black/5 rounded-2xl flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+              <span className="bg-white px-2 py-1 rounded text-[9px] font-bold shadow">Simulasi QRIS</span>
+            </div>
+          </div>
+
+          <p className="text-[10px] text-muted-foreground text-center">
+            Pindai QR di atas menggunakan aplikasi perbankan or e-wallet Anda
+          </p>
+        </div>
+
+        <button 
+          onClick={handleQrisSuccess}
+          className="w-full max-w-xs mt-8 py-3.5 bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-extrabold rounded-2xl text-sm transition-all shadow-md cursor-pointer"
+        >
+          ✅ Simulasikan Bayar Sukses
+        </button>
+
+        <button 
+          onClick={() => navigate("c_cart")}
+          className="text-xs text-green-200 mt-4 hover:underline cursor-pointer"
+        >
+          Batal & Kembali ke Keranjang
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function TrackingScreen({
+  navigate,
+  activeTrackingOrderId,
+  myOrders,
+  setMyOrders,
+  showToast,
+  unreadChatCount,
+  addDriverMessage
+}: {
+  navigate: (s: Screen) => void;
+  activeTrackingOrderId: string | null;
+  myOrders: any[];
+  setMyOrders: React.Dispatch<React.SetStateAction<any[]>>;
+  showToast: (m: string) => void;
+  unreadChatCount: number;
+  addDriverMessage: (text: string) => void;
+}) {
+  const order = myOrders.find(o => o.id === activeTrackingOrderId);
+  const [phase, setPhase] = useState(0); 
+  const [tick, setTick] = useState(0);
+
+  const triggerDriverMessage = (nextPhase: number) => {
+    let msg = "";
+    if (nextPhase === 1) msg = "Saya sedang menuju ke toko ya kak.";
+    if (nextPhase === 2) msg = "Makanan sudah serah terima, ini saya bersiap jalan ke alamat kakak.";
+    if (nextPhase === 3) msg = "Saya sudah dekat di area tujuan kak, mohon ditunggu.";
+    if (nextPhase === 4) msg = "Saya sudah di depan lokasi pengiriman ya kak.";
+    
+    if (msg) {
+      setTimeout(() => {
+        addDriverMessage(msg);
+      }, 1500); // Realistic 1.5s delay
+    }
+  };
+
+  useEffect(() => {
+    if (!order) return;
+    
+    const interval = setInterval(() => {
+      setTick(prevTick => {
+        if (prevTick >= 100) {
+          setPhase(prevPhase => {
+            if (prevPhase < 4) {
+              const nextPhase = prevPhase + 1;
+              triggerDriverMessage(nextPhase);
+              setMyOrders(prevOrders => prevOrders.map(o => {
+                if (o.id === activeTrackingOrderId) {
+                  let newStatus = o.status;
+                  let newColor = o.statusColor;
+                  if (nextPhase === 1) { newStatus = "Dikirim"; newColor = "blue"; }
+                  if (nextPhase === 4) { newStatus = "Selesai"; newColor = "green"; }
+                  return { ...o, status: newStatus, statusColor: newColor, progressState: nextPhase };
+                }
+                return o;
+              }));
+              return nextPhase;
+            }
+            clearInterval(interval);
+            return prevPhase;
+          });
+          return 0;
+        }
+        
+        const step = (phase === 0 || phase === 2) ? 6 : 3;
+        return Math.min(100, prevTick + step);
+      });
+    }, 150);
+
+    return () => clearInterval(interval);
+  }, [phase, order, activeTrackingOrderId]);
+
+  if (!order) {
+    return (
+      <div className="flex flex-col h-full bg-[#F7FAF8] items-center justify-center p-6 text-center">
+        <StatusBar />
+        <AlertCircle size={40} className="text-red-500 mb-2" />
+        <p className="font-bold text-foreground text-sm">Pesanan Tidak Ditemukan</p>
+        <button onClick={() => navigate("c_pesanan")} className="mt-4 bg-primary text-white px-4 py-2 rounded-xl text-xs cursor-pointer">
+          Kembali
+        </button>
+      </div>
+    );
+  }
+
+  const homeX = 60, homeY = 150;
+  const storeX = 140, storeY = 50;
+  const startX = 100, startY = 180;
+
+  let driverX = startX;
+  let driverY = startY;
+
+  if (phase === 0) {
+    driverX = startX;
+    driverY = startY;
+  } else if (phase === 1) {
+    const ratio = tick / 100;
+    driverX = startX + (storeX - startX) * ratio;
+    driverY = startY + (storeY - startY) * ratio;
+  } else if (phase === 2) {
+    driverX = storeX;
+    driverY = storeY;
+  } else if (phase === 3) {
+    const ratio = tick / 100;
+    driverX = storeX + (homeX - storeX) * ratio;
+    driverY = storeY + (homeY - storeY) * ratio;
+  } else {
+    driverX = homeX;
+    driverY = homeY;
+  }
+
+  const phaseDetails = [
+    { title: "Pesanan Diterima", desc: "Toko sedang menyiapkan & memasak makanan Anda", icon: Coffee, color: "text-orange-500" },
+    { title: "Kurir Menuju Toko", desc: "Rangers Driver sedang menjemput pesanan Anda", icon: Bike, color: "text-blue-500" },
+    { title: "Pesanan Diambil", desc: "Driver telah menerima makanan dari toko dan bersiap berangkat", icon: Package, color: "text-purple-500" },
+    { title: "Dalam Perjalanan", desc: "Kurir sedang mengantarkan pesanan ke alamat rumah Anda", icon: Truck, color: "text-primary" },
+    { title: "Sampai di Lokasi", desc: "Pesanan Anda telah tiba! Selamat menikmati hidangan Anda", icon: CheckCircle, color: "text-green-500" }
+  ];
+
+  const currentPhase = phaseDetails[phase];
+
+  const handleFastForward = () => {
+    if (phase < 4) {
+      const nextPhase = phase + 1;
+      setPhase(nextPhase);
+      setTick(0);
+      triggerDriverMessage(nextPhase);
+      setMyOrders(prevOrders => prevOrders.map(o => {
+        if (o.id === activeTrackingOrderId) {
+          let newStatus = o.status;
+          let newColor = o.statusColor;
+          if (nextPhase === 1) { newStatus = "Dikirim"; newColor = "blue"; }
+          if (nextPhase === 4) { newStatus = "Selesai"; newColor = "green"; }
+          return { ...o, status: newStatus, statusColor: newColor, progressState: nextPhase };
+        }
+        return o;
+      }));
+      if (nextPhase === 4) {
+        showToast("Pesanan disimulasikan selesai!");
+      }
+    }
+  };
+
+  const etaMins = [15, 12, 9, 5, 0][phase];
+
+  return (
+    <div className="flex flex-col h-full bg-white relative">
+      <StatusBar />
+      <BackHeader title={`Lacak Order: #${order.id}`} onBack={() => navigate("c_pesanan")} />
+      
+      <div className="w-full h-64 bg-slate-100 relative overflow-hidden border-b border-border">
+        <svg viewBox="0 0 200 200" className="w-full h-full object-cover">
+          {/* Slate map base */}
+          <rect x="0" y="0" width="200" height="200" fill="#F8FAFC" />
+          
+          {/* Faint block layouts representing urban buildings */}
+          <rect x="15" y="10" width="70" height="30" fill="#F1F5F9" rx="3" />
+          <rect x="115" y="10" width="70" height="25" fill="#F1F5F9" rx="3" />
+          <rect x="15" y="70" width="70" height="60" fill="#F1F5F9" rx="3" />
+          <rect x="115" y="70" width="70" height="60" fill="#F1F5F9" rx="3" />
+          <rect x="15" y="160" width="30" height="30" fill="#F1F5F9" rx="3" />
+          <rect x="115" y="160" width="70" height="30" fill="#F1F5F9" rx="3" />
+          <rect x="55" y="160" width="45" height="30" fill="#ECFDF5" rx="3" /> {/* Park */}
+          
+          {/* Kamojang River representation */}
+          <path d="M 0,110 Q 50,115 100,105 T 200,120" stroke="#E0F2FE" strokeWidth="5" fill="none" opacity="0.8" />
+          
+          {/* Base roads layout */}
+          <path d="M 100,0 L 100,200" stroke="#FFF" strokeWidth="8" strokeLinecap="round" />
+          <path d="M 100,0 L 100,200" stroke="#E2E8F0" strokeWidth="4" strokeLinecap="round" />
+          
+          <path d="M 100,50 L 140,50" stroke="#FFF" strokeWidth="8" strokeLinecap="round" />
+          <path d="M 100,50 L 140,50" stroke="#E2E8F0" strokeWidth="4" strokeLinecap="round" />
+
+          <path d="M 100,150 L 60,150" stroke="#FFF" strokeWidth="8" strokeLinecap="round" />
+          <path d="M 100,150 L 60,150" stroke="#E2E8F0" strokeWidth="4" strokeLinecap="round" />
+
+          <path d="M 100,180 L 60,150" stroke="#FFF" strokeWidth="8" strokeLinecap="round" />
+          <path d="M 100,180 L 60,150" stroke="#E2E8F0" strokeWidth="4" strokeLinecap="round" />
+
+          {/* Active Navigation Route Highlights */}
+          {phase === 1 && (
+            <path d="M 100,180 L 100,50 L 140,50" stroke="#3B82F6" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeDasharray="4 2" />
+          )}
+          {phase >= 3 && (
+            <path d="M 140,50 L 100,50 L 100,150 L 60,150" stroke="#10B981" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+          )}
+
+          {/* Merchant Location Pin */}
+          <polygon points={`${storeX - 3.5},${storeY - 4} ${storeX + 3.5},${storeY - 4} ${storeX},${storeY}`} fill="#EF4444" />
+          <circle cx={storeX} cy={storeY - 11} r="7.5" fill="#EF4444" stroke="#FFF" strokeWidth="1.5" />
+          <rect x={storeX - 2.5} y={storeY - 13} width="5" height="4" fill="#FFF" rx="0.5" />
+          <polygon points={`${storeX - 3.5},${storeY - 13} ${storeX + 3.5},${storeY - 13} ${storeX + 2},${storeY - 15} ${storeX - 2},${storeY - 15}`} fill="#FFF" />
+          <g transform={`translate(${storeX}, ${storeY - 24})`}>
+            <rect x="-32" y="-7" width="64" height="14" fill="white" rx="3" stroke="#E2E8F0" strokeWidth="1" />
+            <text x="0" y="3" fontSize="7" fontWeight="extrabold" fill="#1E293B" textAnchor="middle">
+              {order.detail || "Merchant"}
+            </text>
+          </g>
+
+          {/* Home Location Pin */}
+          <polygon points={`${homeX - 3.5},${homeY - 4} ${homeX + 3.5},${homeY - 4} ${homeX},${homeY}`} fill="#2563EB" />
+          <circle cx={homeX} cy={homeY - 11} r="7.5" fill="#2563EB" stroke="#FFF" strokeWidth="1.5" />
+          <polygon points={`${homeX},${homeY - 15} ${homeX - 3},${homeY - 12} ${homeX + 3},${homeY - 12}`} fill="#FFF" />
+          <rect x={homeX - 2} y={homeY - 12} width="4" height="4" fill="#FFF" />
+          <g transform={`translate(${homeX}, ${homeY + 15})`}>
+            <rect x="-26" y="-7" width="52" height="14" fill="white" rx="3" stroke="#E2E8F0" strokeWidth="1" />
+            <text x="0" y="3" fontSize="7" fontWeight="extrabold" fill="#1E293B" textAnchor="middle">
+              Lokasi Anda
+            </text>
+          </g>
+
+          {/* Driver Locator GPS Indicator */}
+          {phase < 4 && (
+            <g>
+              <circle cx={driverX} cy={driverY} r="10" fill="#10B981" opacity="0.35" className="animate-pulse" />
+              <circle cx={driverX} cy={driverY} r="6.5" fill="#10B981" stroke="#FFF" strokeWidth="1.5" />
+              <polygon points={`${driverX},${driverY - 3.5} ${driverX - 2.5},${driverY + 2.5} ${driverX},${driverY + 1} ${driverX + 2.5},${driverY + 2.5}`} fill="#FFF" />
+            </g>
+          )}
+        </svg>
+
+        <div className="absolute bottom-3 left-4 right-4 bg-white/95 backdrop-blur-sm rounded-2xl p-3 shadow-md border border-border flex flex-col gap-1.5">
+          <div className="flex justify-between items-center text-[10px] font-bold text-muted-foreground uppercase tracking-wide">
+            <span>Progress Pengiriman</span>
+            <span className="text-primary">{phase * 25}%</span>
+          </div>
+          <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-primary rounded-full transition-all duration-300"
+              style={{ width: `${(phase / 4) * 100}%` }}
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3" style={{ scrollbarWidth: "none" }}>
+        
+        {/* Gojek-style ETA Card */}
+        <div className="flex gap-3 items-center bg-primary text-white rounded-2xl p-3.5 shadow-sm relative overflow-hidden">
+          <div className="flex-1 min-w-0">
+            <p className="text-[9px] text-green-200 font-extrabold uppercase tracking-wider">Estimasi Waktu Tiba</p>
+            <h3 className="text-sm font-extrabold mt-0.5 leading-tight">
+              {phase === 4 ? "Pesanan Tiba!" : `Tiba dalam ${etaMins} - ${etaMins + 5} menit`}
+            </h3>
+            <p className="text-[9px] text-green-100/90 mt-0.5 leading-tight truncate">{currentPhase.title} · {currentPhase.desc}</p>
+          </div>
+          <div className="w-10 h-10 rounded-full bg-white/15 flex items-center justify-center text-lg font-bold shrink-0">
+            {phase === 4 ? "🎉" : "⏱️"}
+          </div>
+        </div>
+
+        {/* Address and driver note */}
+        <div className="bg-white border border-border rounded-2xl p-4 shadow-sm flex flex-col gap-2.5">
+          <div>
+            <span className="text-[9px] font-extrabold text-muted-foreground uppercase tracking-wider">Alamat Pengiriman</span>
+            <p className="text-xs font-bold text-foreground leading-snug mt-0.5">
+              {order.address || "Jl. Aster No. 7, Kamojang, Kab. Garut (Kos Putri Melati)"}
+            </p>
+          </div>
+          {order.driverNote && (
+            <div className="p-2.5 bg-muted rounded-xl border border-dashed border-border flex items-start gap-1.5">
+              <span className="text-[11px] leading-none mt-0.5">📝</span>
+              <div>
+                <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider block">Catatan Driver</span>
+                <p className="text-[11px] font-medium text-foreground leading-normal mt-0.5">"{order.driverNote}"</p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Courier Info Card */}
+        <div className="bg-white border border-border rounded-2xl p-4 shadow-sm flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-lg shrink-0">
+              🏍️
+            </div>
+            <div>
+              <p className="text-xs font-bold text-foreground">Pak Rahman (Rangers Driver)</p>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <span className="text-[10px] text-muted-foreground font-semibold">Supra H 4251 AA</span>
+                {order.tip > 0 && (
+                  <span className="bg-green-100 text-green-700 text-[8px] font-extrabold px-1.5 py-0.5 rounded-full">
+                    Tip {rp(order.tip)}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+          
+          {/* Gojek-style Chat Button & Call Button */}
+          <div className="flex gap-2 shrink-0">
+            <button 
+              onClick={() => navigate("c_driver_chat")} 
+              className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary hover:bg-primary/20 cursor-pointer relative"
+            >
+              <MessageSquare size={14} />
+              {unreadChatCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white font-extrabold text-[8px] w-5 h-5 rounded-full border-2 border-white flex items-center justify-center">
+                  {unreadChatCount}
+                </span>
+              )}
+            </button>
+            <button className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary hover:bg-primary/20 cursor-pointer">
+              <Phone size={14} />
+            </button>
+          </div>
+        </div>
+
+        {/* Payment Detail breakdown or Invoice Receipt */}
+        {phase === 4 ? (
+          /* Gojek-style Paper Invoice Receipt */
+          <div className="bg-white border border-border rounded-2xl p-4 shadow-sm flex flex-col gap-3 relative overflow-hidden">
+            <div className="flex flex-col items-center text-center gap-1 pb-3 border-b border-dashed border-border">
+              <span className="text-[9px] font-black text-green-700 bg-green-50 border border-green-200 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                LUNAS / COMPLETED
+              </span>
+              <h4 className="text-xs font-black text-foreground uppercase tracking-widest mt-1.5">Rangers App Receipt</h4>
+              <p className="text-[9px] text-muted-foreground font-semibold">Order ID: #{order.id} · {order.date || "Hari Ini"}</p>
+            </div>
+
+            {/* Purchased Items List */}
+            <div className="flex flex-col gap-2 py-0.5">
+              <span className="text-[9px] font-extrabold text-muted-foreground uppercase tracking-wider block">Rincian Item</span>
+              {order.items && order.items.length > 0 ? (
+                order.items.map((item: any) => (
+                  <div key={item.id} className="flex justify-between text-xs font-semibold">
+                    <span className="text-foreground truncate pr-3">{item.quantity}x {item.name}</span>
+                    <span className="text-foreground shrink-0">{rp(item.price * item.quantity)}</span>
+                  </div>
+                ))
+              ) : (
+                <div className="flex justify-between text-xs font-semibold">
+                  <span className="text-foreground">{order.item}</span>
+                  <span className="text-foreground">{rp(order.subtotal || (order.total - 8000))}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Financial Details */}
+            <div className="border-t border-dashed border-border pt-3 flex flex-col gap-1.5">
+              <div className="flex justify-between text-xs">
+                <span className="text-muted-foreground">Subtotal Belanja</span>
+                <span className="text-foreground font-semibold">{rp(order.subtotal || (order.total - 8000))}</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-muted-foreground">Ongkos Kirim</span>
+                <span className="text-foreground font-semibold">{rp(order.shippingFee || 8000)}</span>
+              </div>
+              {order.discount > 0 && (
+                <div className="flex justify-between text-xs text-green-600 font-semibold">
+                  <span>Diskon Promo ({order.voucherCode || "VOUCHER"})</span>
+                  <span>-{rp(order.discount)}</span>
+                </div>
+              )}
+              {order.tip > 0 && (
+                <div className="flex justify-between text-xs text-foreground font-semibold">
+                  <span>Apresiasi Tip Kurir</span>
+                  <span>+{rp(order.tip)}</span>
+                </div>
+              )}
+              <div className="border-t border-dashed border-border my-1" />
+              <div className="flex justify-between text-xs font-bold">
+                <span className="text-foreground">Metode Pembayaran</span>
+                <span className="text-primary">{order.payMethod || "Dompet Rangers"}</span>
+              </div>
+              <div className="flex justify-between text-sm mt-0.5">
+                <span className="font-extrabold text-foreground">Total Pembayaran</span>
+                <span className="font-black text-primary">{rp(order.total)}</span>
+              </div>
+            </div>
+
+            {/* Footer paper receipt jagged visual */}
+            <div className="border-t border-dashed border-border pt-2.5 text-center">
+              <p className="text-[9px] text-muted-foreground font-bold tracking-wide">
+                Terima kasih telah berbelanja! 🌿
+              </p>
+              <p className="text-[8px] text-muted-foreground/60 font-semibold mt-0.5">
+                Rangers App PGE Kamojang Community Care
+              </p>
+            </div>
+          </div>
+        ) : (
+          /* Normal Payment Detail breakdown (while in progress) */
+          <div className="bg-white border border-border rounded-2xl p-4 shadow-sm flex flex-col gap-2">
+            <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Rincian Pembayaran Akhir</h4>
+            <div className="flex justify-between text-xs">
+              <span className="text-muted-foreground">Subtotal Belanja</span>
+              <span className="text-foreground font-medium">{rp(order.subtotal || (order.total - 8000))}</span>
+            </div>
+            <div className="flex justify-between text-xs">
+              <span className="text-muted-foreground">Ongkir Kurir</span>
+              <span className="text-foreground font-medium">{rp(order.shippingFee || 8000)}</span>
+            </div>
+            {order.discount > 0 && (
+              <div className="flex justify-between text-xs text-green-600 font-medium">
+                <span>Promo Voucher</span>
+                <span>-{rp(order.discount)}</span>
+              </div>
+            )}
+            {order.tip > 0 && (
+              <div className="flex justify-between text-xs text-foreground font-medium">
+                <span>Tip Driver</span>
+                <span>+{rp(order.tip)}</span>
+              </div>
+            )}
+            <div className="h-px bg-border my-1" />
+            <div className="flex justify-between text-xs">
+              <span className="font-bold text-foreground">Metode Pembayaran</span>
+              <span className="font-semibold text-primary">{order.payMethod || "Dompet Rangers"}</span>
+            </div>
+            <div className="flex justify-between text-sm mt-0.5">
+              <span className="font-bold text-foreground">Total Dibayar</span>
+              <span className="font-extrabold text-primary">{rp(order.total)}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Action button */}
+        <div className="flex flex-col gap-2 mt-2">
+          {phase === 4 ? (
+            <button 
+              onClick={() => navigate("c_rating")}
+              className="w-full py-3.5 bg-primary text-white font-bold text-sm rounded-2xl shadow-md cursor-pointer animate-pulse text-center"
+            >
+              ⭐ Beri Review & Rating
+            </button>
+          ) : (
+            <div className="flex gap-2">
+              <button 
+                onClick={handleFastForward}
+                className="flex-1 py-3 bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold text-xs rounded-2xl cursor-pointer text-center"
+              >
+                ⏩ Percepat Pengiriman
+              </button>
+              <button 
+                onClick={() => navigate("c_pesanan")}
+                className="flex-1 py-3 border border-border text-muted-foreground font-bold text-xs rounded-2xl cursor-pointer text-center"
+              >
+                Pantau Nanti
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RatingScreen({
+  navigate,
+  activeTrackingOrderId,
+  myOrders,
+  setMyOrders,
+  showToast
+}: {
+  navigate: (s: Screen) => void;
+  activeTrackingOrderId: string | null;
+  myOrders: any[];
+  setMyOrders: React.Dispatch<React.SetStateAction<any[]>>;
+  showToast: (m: string) => void;
+}) {
+  const [rating, setRating] = useState(5);
+  const [comment, setComment] = useState("");
+  const order = myOrders.find(o => o.id === activeTrackingOrderId);
+
+  const handleSubmit = () => {
+    if (!order) return;
+    
+    setMyOrders(prevOrders => prevOrders.map(o => {
+      if (o.id === activeTrackingOrderId) {
+        return {
+          ...o,
+          status: "Selesai",
+          statusColor: "green",
+          reviewText: comment,
+          reviewRating: rating
+        };
+      }
+      return o;
+    }));
+
+    showToast("Terima kasih atas ulasan Anda!");
+    navigate("c_pesanan");
+  };
+
+  if (!order) {
+    return (
+      <div className="flex flex-col h-full items-center justify-center p-6 text-center">
+        <StatusBar />
+        <AlertCircle size={40} className="text-red-500 mb-2" />
+        <p className="font-bold text-foreground text-sm">Pesanan Tidak Ditemukan</p>
+        <button onClick={() => navigate("c_pesanan")} className="mt-4 bg-primary text-white px-4 py-2 rounded-xl text-xs cursor-pointer">
+          Kembali
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col h-full bg-[#F7FAF8]">
+      <StatusBar />
+      <div className="flex items-center px-4 h-14 shrink-0 border-b border-border bg-white justify-between">
+        <span className="text-base font-bold text-foreground">Review & Rating</span>
+        <button onClick={() => navigate("c_pesanan")} className="text-xs text-muted-foreground font-semibold px-2 py-1 cursor-pointer">
+          Lewati
+        </button>
+      </div>
+      
+      <div className="flex-1 overflow-y-auto p-5 flex flex-col justify-between" style={{ scrollbarWidth: "none" }}>
+        <div className="flex flex-col items-center text-center gap-6">
+          <div className="w-16 h-16 rounded-3xl bg-secondary flex items-center justify-center text-2xl shadow-sm">
+            ⭐
+          </div>
+          <div>
+            <h3 className="font-extrabold text-base text-foreground">Bagaimana hidangan & layanan Anda?</h3>
+            <p className="text-xs text-muted-foreground mt-1 max-w-xs">Berikan masukan Anda untuk membantu Toko dan Driver meningkatkan kualitas pelayanan mereka</p>
+          </div>
+
+          <div className="flex gap-2">
+            {[1, 2, 3, 4, 5].map(star => (
+              <button 
+                key={star} 
+                onClick={() => setRating(star)} 
+                className="w-11 h-11 flex items-center justify-center hover:scale-110 active:scale-95 transition-transform cursor-pointer"
+              >
+                <Star 
+                  size={36} 
+                  className={star <= rating ? "fill-amber-400 text-amber-400" : "text-gray-300"} 
+                />
+              </button>
+            ))}
+          </div>
+
+          <div className="w-full flex flex-col items-start gap-1.5 mt-2">
+            <label className="text-xs font-bold text-muted-foreground">Tulis Ulasan Anda</label>
+            <textarea
+              value={comment}
+              onChange={e => setComment(e.target.value)}
+              placeholder="Bagikan pengalaman Anda tentang rasa makanan, kemasan, atau keramahan kurir..."
+              className="w-full h-24 p-3 bg-white border border-border rounded-2xl text-xs outline-none focus:ring-2 focus:ring-primary/20 transition-all resize-none"
+            />
+          </div>
+        </div>
+
+        <button 
+          onClick={handleSubmit}
+          className="w-full py-4 bg-primary text-white font-bold text-sm rounded-2xl shadow-md cursor-pointer text-center mt-8"
+        >
+          Kirim Ulasan
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function DriverChatScreen({
+  navigate,
+  driverChatMessages,
+  setDriverChatMessages,
+  setUnreadChatCount
+}: {
+  navigate: (s: Screen) => void;
+  driverChatMessages: any[];
+  setDriverChatMessages: React.Dispatch<React.SetStateAction<any[]>>;
+  setUnreadChatCount: React.Dispatch<React.SetStateAction<number>>;
+}) {
+  const [inputText, setInputText] = useState("");
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setUnreadChatCount(0);
+  }, [setUnreadChatCount]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [driverChatMessages]);
+
+  const handleSend = (text: string) => {
+    if (!text.trim()) return;
+    const time = new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+    setDriverChatMessages(prev => [
+      ...prev,
+      { id: String(prev.length + 1), sender: "user", text, time }
+    ]);
+    setInputText("");
+  };
+
+  const quickReplies = [
+    "Sesuai aplikasi ya pak",
+    "Ditunggu ya pak",
+    "Saya sudah di depan pagar",
+    "Titip di pos satpam saja pak"
+  ];
+
+  return (
+    <div className="flex flex-col h-full bg-[#F7FAF8]">
+      <StatusBar />
+      <div className="flex items-center px-4 h-14 shrink-0 border-b border-border bg-white justify-between shadow-sm">
+        <div className="flex items-center gap-3">
+          <button onClick={() => navigate("c_tracking")} className="w-8 h-8 rounded-full flex items-center justify-center text-foreground hover:bg-muted cursor-pointer">
+            <ArrowLeft size={18} />
+          </button>
+          <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-lg">
+            🏍️
+          </div>
+          <div>
+            <h3 className="text-xs font-extrabold text-foreground leading-tight">Pak Rahman</h3>
+            <p className="text-[9px] text-muted-foreground font-semibold">Supra H 4251 AA · Rangers Driver</p>
+          </div>
+        </div>
+        <button className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary hover:bg-primary/20 cursor-pointer">
+          <Phone size={14} />
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3" style={{ scrollbarWidth: "none" }}>
+        <p className="text-center text-[9px] text-muted-foreground font-semibold bg-gray-200/50 py-1 px-3 rounded-full self-center mb-2">
+          Percakapan Anda dengan driver dimulai
+        </p>
+
+        {driverChatMessages.map(msg => {
+          const isUser = msg.sender === "user";
+          return (
+            <div 
+              key={msg.id}
+              className={`flex flex-col max-w-[75%] ${isUser ? "self-end items-end" : "self-start items-start"}`}
+            >
+              <div 
+                className={`p-3 rounded-2xl text-xs font-semibold leading-relaxed shadow-sm ${isUser ? "bg-primary text-white rounded-tr-none" : "bg-white text-foreground rounded-tl-none border border-border"}`}
+              >
+                {msg.text}
+              </div>
+              <span className="text-[9px] text-muted-foreground font-medium mt-1 px-1">
+                {msg.time}
+              </span>
+            </div>
+          );
+        })}
+        <div ref={messagesEndRef} />
+      </div>
+
+      <div className="px-4 py-2 flex gap-2 overflow-x-auto shrink-0" style={{ scrollbarWidth: "none" }}>
+        {quickReplies.map(reply => (
+          <button
+            key={reply}
+            onClick={() => handleSend(reply)}
+            className="shrink-0 px-3 py-1.5 bg-white border border-border hover:bg-muted text-[10px] font-bold text-muted-foreground rounded-full transition-all cursor-pointer shadow-sm"
+          >
+            {reply}
+          </button>
+        ))}
+      </div>
+
+      <div className="p-3 bg-white border-t border-border flex items-center gap-2.5">
+        <input 
+          value={inputText}
+          onChange={e => setInputText(e.target.value)}
+          onKeyDown={e => e.key === "Enter" && handleSend(inputText)}
+          placeholder="Kirim pesan ke driver..."
+          className="flex-1 px-4 py-3 bg-muted rounded-2xl text-xs outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium border border-transparent"
+        />
+        <button 
+          onClick={() => handleSend(inputText)}
+          className="w-10 h-10 rounded-2xl bg-primary text-white flex items-center justify-center hover:bg-primary/95 transition-colors cursor-pointer shrink-0 shadow-sm"
+        >
+          <Send size={16} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function SupportChatScreen({
+  navigate,
+  supportChatMessages,
+  setSupportChatMessages,
+  setUnreadSupportCount
+}: {
+  navigate: (s: Screen) => void;
+  supportChatMessages: any[];
+  setSupportChatMessages: React.Dispatch<React.SetStateAction<any[]>>;
+  setUnreadSupportCount: React.Dispatch<React.SetStateAction<number>>;
+}) {
+  const [inputText, setInputText] = useState("");
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setUnreadSupportCount(0);
+  }, [setUnreadSupportCount]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [supportChatMessages]);
+
+  const handleSend = (text: string) => {
+    if (!text.trim()) return;
+    const time = new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+    setSupportChatMessages(prev => [
+      ...prev,
+      { id: String(prev.length + 1), sender: "user", text, time }
+    ]);
+    setInputText("");
+
+    // Simulate real-time support response after 1.5s
+    setTimeout(() => {
+      const responseTime = new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+      const lower = text.toLowerCase();
+      let reply = "Baik kak Budi, keluhan Anda telah kami catat. Tim Rangers Care akan segera menindaklanjuti dan mengabari Anda kembali.";
+      if (lower.includes("pesanan") || lower.includes("kirim") || lower.includes("belum")) {
+        reply = "Mohon maaf atas keterlambatan pesanan Anda, kak Budi. Kami sedang menghubungi Rangers Driver Pak Rahman untuk mempercepat pengantaran ke Jl. Aster No. 7.";
+      } else if (lower.includes("bayar") || lower.includes("saldo") || lower.includes("dompet")) {
+        reply = "Terkait kendala saldo/pembayaran, kami bantu cek mutasi transaksi Dompet Rangers Anda. Mohon tunggu 1-2 menit ya kak.";
+      } else if (lower.includes("laundry") || lower.includes("catering")) {
+        reply = "Keluhan terkait mitra UMKM telah kami teruskan. Kami akan memastikan kualitas layanan mitra kami tetap terjaga.";
+      }
+      setSupportChatMessages(prev => [
+        ...prev,
+        { id: String(prev.length + 1), sender: "support", text: reply, time: responseTime }
+      ]);
+    }, 1500);
+  };
+
+  const quickReplies = [
+    "Pesanan saya belum sampai",
+    "Bagaimana cara bayar?",
+    "Aplikasi bermasalah",
+    "Terima kasih Rangers Care"
+  ];
+
+  return (
+    <div className="flex flex-col h-full bg-[#F7FAF8]">
+      <StatusBar />
+      <div className="flex items-center px-4 h-14 shrink-0 border-b border-border bg-white justify-between shadow-sm">
+        <div className="flex items-center gap-3">
+          <button onClick={() => navigate("c_inbox")} className="w-8 h-8 rounded-full flex items-center justify-center text-foreground hover:bg-muted cursor-pointer">
+            <ArrowLeft size={18} />
+          </button>
+          <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-lg">
+            🛡️
+          </div>
+          <div>
+            <h3 className="text-xs font-extrabold text-foreground leading-tight">Rangers Care (Bantuan)</h3>
+            <p className="text-[9px] text-muted-foreground font-semibold">Pusat Bantuan Pelanggan Kamojang</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3" style={{ scrollbarWidth: "none" }}>
+        <p className="text-center text-[9px] text-muted-foreground font-semibold bg-gray-200/50 py-1 px-3 rounded-full self-center mb-2">
+          Pusat Bantuan Rangers Care siap melayani Anda
+        </p>
+
+        {supportChatMessages.map(msg => {
+          const isUser = msg.sender === "user";
+          return (
+            <div 
+              key={msg.id}
+              className={`flex flex-col max-w-[75%] ${isUser ? "self-end items-end" : "self-start items-start"}`}
+            >
+              <div 
+                className={`p-3 rounded-2xl text-xs font-semibold leading-relaxed shadow-sm ${isUser ? "bg-primary text-white rounded-tr-none" : "bg-white text-foreground rounded-tl-none border border-border"}`}
+              >
+                {msg.text}
+              </div>
+              <span className="text-[9px] text-muted-foreground font-medium mt-1 px-1">
+                {msg.time}
+              </span>
+            </div>
+          );
+        })}
+        <div ref={messagesEndRef} />
+      </div>
+
+      <div className="px-4 py-2 flex gap-2 overflow-x-auto shrink-0" style={{ scrollbarWidth: "none" }}>
+        {quickReplies.map(reply => (
+          <button
+            key={reply}
+            onClick={() => handleSend(reply)}
+            className="shrink-0 px-3 py-1.5 bg-white border border-border hover:bg-muted text-[10px] font-bold text-muted-foreground rounded-full transition-all cursor-pointer shadow-sm"
+          >
+            {reply}
+          </button>
+        ))}
+      </div>
+
+      <div className="p-3 bg-white border-t border-border flex items-center gap-2.5">
+        <input 
+          value={inputText}
+          onChange={e => setInputText(e.target.value)}
+          onKeyDown={e => e.key === "Enter" && handleSend(inputText)}
+          placeholder="Tulis pesan bantuan..."
+          className="flex-1 px-4 py-3 bg-muted rounded-2xl text-xs outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium border border-transparent"
+        />
+        <button 
+          onClick={() => handleSend(inputText)}
+          className="w-10 h-10 rounded-2xl bg-primary text-white flex items-center justify-center hover:bg-primary/95 transition-colors cursor-pointer shrink-0 shadow-sm"
+        >
+          <Send size={16} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function CateringChatScreen({
+  navigate,
+  cateringChatMessages,
+  setCateringChatMessages,
+  setUnreadCateringCount,
+  cateringStoreName
+}: {
+  navigate: (s: Screen) => void;
+  cateringChatMessages: any[];
+  setCateringChatMessages: React.Dispatch<React.SetStateAction<any[]>>;
+  setUnreadCateringCount: React.Dispatch<React.SetStateAction<number>>;
+  cateringStoreName: string;
+}) {
+  const [inputText, setInputText] = useState("");
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setUnreadCateringCount(0);
+  }, [setUnreadCateringCount]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [cateringChatMessages]);
+
+  const handleSend = (text: string) => {
+    if (!text.trim()) return;
+    const time = new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+    setCateringChatMessages(prev => [
+      ...prev,
+      { id: String(prev.length + 1), sender: "user", text, time }
+    ]);
+    setInputText("");
+
+    // Simulate real-time catering admin response after 1.5s
+    setTimeout(() => {
+      const responseTime = new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+      const lower = text.toLowerCase();
+      let reply = `Baik kak Budi, pesan Anda telah diterima oleh Admin ${cateringStoreName || "Catering"}. Kami akan segera mengonfirmasi pesanan/pertanyaan Anda ya.`;
+      
+      if (lower.includes("pax") || lower.includes("porsi") || lower.includes("jumlah")) {
+        reply = `Untuk perubahan jumlah pax (porsi), minimal dilakukan H-2 dari tanggal acara ya kak. Kami bantu catat terlebih dahulu.`;
+      } else if (lower.includes("sendok") || lower.includes("alat makan") || lower.includes("plastik")) {
+        reply = `Tentu bisa kak Budi! Paket catering sudah dilengkapi dengan sendok, garpu, dan tisu gratis.`;
+      } else if (lower.includes("jam") || lower.includes("antar") || lower.includes("pagi") || lower.includes("siang")) {
+        reply = `Siap kak, pengantaran katering akan kami jadwalkan agar tiba 30 menit sebelum jam acara yang ditentukan.`;
+      } else if (lower.includes("menu") || lower.includes("ganti") || lower.includes("custom")) {
+        reply = `Kakak bisa mengganti menu sayur atau lauk pendamping dengan harga setara. Ada yang ingin disesuaikan dari menu paket katering Anda?`;
+      } else if (lower.includes("harga") || lower.includes("diskon") || lower.includes("potongan")) {
+        reply = `Untuk pemesanan di atas 100 pax, kami ada potongan harga khusus 5% kak Budi!`;
+      }
+      
+      setCateringChatMessages(prev => [
+        ...prev,
+        { id: String(prev.length + 1), sender: "catering", text: reply, time: responseTime }
+      ]);
+    }, 1500);
+  };
+
+  const quickReplies = [
+    "Bisa request sendok plastik?",
+    "Apakah bisa antar jam 10 pagi?",
+    "Saya ingin mengubah pesanan PO",
+    "Terima kasih Admin Catering"
+  ];
+
+  return (
+    <div className="flex flex-col h-full bg-[#F7FAF8]">
+      <StatusBar />
+      <div className="flex items-center px-4 h-14 shrink-0 border-b border-border bg-white justify-between shadow-sm">
+        <div className="flex items-center gap-3">
+          <button onClick={() => navigate("c_inbox")} className="w-8 h-8 rounded-full flex items-center justify-center text-foreground hover:bg-muted cursor-pointer">
+            <ArrowLeft size={18} />
+          </button>
+          <div className="w-9 h-9 rounded-full bg-orange-100 flex items-center justify-center text-lg">
+            🍱
+          </div>
+          <div>
+            <h3 className="text-xs font-extrabold text-foreground leading-tight">Admin {cateringStoreName || "Catering"}</h3>
+            <p className="text-[9px] text-muted-foreground font-semibold">Mitra Catering PGE Kamojang</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3" style={{ scrollbarWidth: "none" }}>
+        <p className="text-center text-[9px] text-muted-foreground font-semibold bg-gray-200/50 py-1 px-3 rounded-full self-center mb-2">
+          Diskusikan pesanan Booking/PO Catering Anda di sini
+        </p>
+
+        {cateringChatMessages.map(msg => {
+          const isUser = msg.sender === "user";
+          return (
+            <div 
+              key={msg.id}
+              className={`flex flex-col max-w-[75%] ${isUser ? "self-end items-end" : "self-start items-start"}`}
+            >
+              <div 
+                className={`p-3 rounded-2xl text-xs font-semibold leading-relaxed shadow-sm ${isUser ? "bg-primary text-white rounded-tr-none" : "bg-white text-foreground rounded-tl-none border border-border"}`}
+              >
+                {msg.text}
+              </div>
+              <span className="text-[9px] text-muted-foreground font-medium mt-1 px-1">
+                {msg.time}
+              </span>
+            </div>
+          );
+        })}
+        <div ref={messagesEndRef} />
+      </div>
+
+      <div className="px-4 py-2 flex gap-2 overflow-x-auto shrink-0" style={{ scrollbarWidth: "none" }}>
+        {quickReplies.map(reply => (
+          <button
+            key={reply}
+            onClick={() => handleSend(reply)}
+            className="shrink-0 px-3 py-1.5 bg-white border border-border hover:bg-muted text-[10px] font-bold text-muted-foreground rounded-full transition-all cursor-pointer shadow-sm"
+          >
+            {reply}
+          </button>
+        ))}
+      </div>
+
+      <div className="p-3 bg-white border-t border-border flex items-center gap-2.5">
+        <input 
+          value={inputText}
+          onChange={e => setInputText(e.target.value)}
+          onKeyDown={e => e.key === "Enter" && handleSend(inputText)}
+          placeholder="Tulis pesan ke admin..."
+          className="flex-1 px-4 py-3 bg-muted rounded-2xl text-xs outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium border border-transparent"
+        />
+        <button 
+          onClick={() => handleSend(inputText)}
+          className="w-10 h-10 rounded-2xl bg-primary text-white flex items-center justify-center hover:bg-primary/95 transition-colors cursor-pointer shrink-0 shadow-sm"
+        >
+          <Send size={16} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── DRIVER SCREENS ───────────────────────────────────────────────────────────
 
 // ─── DRIVER SCREENS ───────────────────────────────────────────────────────────
 function DriverHome({ navigate }: Nav) {
@@ -2065,6 +4451,63 @@ export default function App() {
   const [role, setRole] = useState<Role | null>(null);
   const navigate = (s: Screen) => setScreen(s);
 
+  const [marketplaceSearch, setMarketplaceSearch] = useState("");
+  const [cart, setCart] = useState<{ id: number; name: string; store: string; price: number; img: string; quantity: number }[]>([]);
+  const [dompetBalance, setDompetBalance] = useState(500000);
+  const [myOrders, setMyOrders] = useState(ORDERS);
+  const [activeTrackingOrderId, setActiveTrackingOrderId] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ show: boolean; message: string } | null>(null);
+  const [tempCheckout, setTempCheckout] = useState<{
+    address: string;
+    driverNote: string;
+    voucherCode: string | null;
+    discount: number;
+    tip: number;
+    subtotal: number;
+    shippingFee: number;
+    total: number;
+  } | null>(null);
+  const [driverChatMessages, setDriverChatMessages] = useState<{ id: string; sender: "driver" | "user"; text: string; time: string }[]>([
+    { id: "1", sender: "driver", text: "Halo kak, pesanan sudah saya terima ya. Sedang disiapkan toko.", time: "Baru saja" }
+  ]);
+  const [unreadChatCount, setUnreadChatCount] = useState(1);
+  const [supportChatMessages, setSupportChatMessages] = useState<{ id: string; sender: "support" | "user"; text: string; time: string }[]>([
+    { id: "1", sender: "support", text: "Halo kak Budi, ada yang bisa kami bantu terkait pesanan Anda hari ini?", time: "Kemarin" }
+  ]);
+  const [unreadSupportCount, setUnreadSupportCount] = useState(1);
+  const [cateringChatMessages, setCateringChatMessages] = useState<{ id: string; sender: "catering" | "user"; text: string; time: string }[]>([]);
+  const [unreadCateringCount, setUnreadCateringCount] = useState(0);
+  const [cateringStoreName, setCateringStoreName] = useState("");
+
+  const addDriverMessage = (text: string) => {
+    setDriverChatMessages(prev => [
+      ...prev,
+      {
+        id: String(prev.length + 1),
+        sender: "driver",
+        text,
+        time: new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })
+      }
+    ]);
+    setUnreadChatCount(prev => prev + 1);
+  };
+
+  const showToast = (message: string) => {
+    setToast({ show: true, message });
+    setTimeout(() => setToast(null), 2500);
+  };
+
+  const addToCart = (product: typeof PRODUCTS[0]) => {
+    setCart(prev => {
+      const existing = prev.find(item => item.id === product.id);
+      if (existing) {
+        return prev.map(item => item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item);
+      }
+      return [...prev, { ...product, quantity: 1 }];
+    });
+    showToast(`${product.name} dimasukkan ke keranjang`);
+  };
+
   useEffect(() => {
     if (screen === "splash") {
       const t = setTimeout(() => setScreen("onboarding"), 2600);
@@ -2074,7 +4517,7 @@ export default function App() {
 
   const isCustomerTab = ["c_home", "c_jelajah", "c_pesanan", "c_inbox", "c_profil"].includes(screen);
   const isDriverTab = ["d_home", "d_order", "d_riwayat", "d_pendapatan", "d_profil"].includes(screen);
-  const isCustomerSub = ["c_marketplace", "c_catering", "c_laundry", "c_kos"].includes(screen);
+  const isCustomerSub = ["c_marketplace", "c_catering", "c_laundry", "c_kos", "c_cart", "c_qris", "c_tracking", "c_rating", "c_driver_chat", "c_support_chat", "c_catering_chat"].includes(screen);
 
   const renderContent = () => {
     // Auth flow
@@ -2085,16 +4528,129 @@ export default function App() {
     if (screen === "role") return <RoleScreen navigate={navigate} setRole={setRole} />;
 
     // Customer sub-screens (no bottom nav)
-    if (screen === "c_marketplace") return <MarketplaceScreen navigate={navigate} />;
-    if (screen === "c_catering") return <CateringScreen navigate={navigate} />;
+    if (screen === "c_marketplace") return (
+      <MarketplaceScreen 
+        navigate={navigate} 
+        addToCart={addToCart} 
+        cart={cart} 
+        marketplaceSearch={marketplaceSearch}
+        setMarketplaceSearch={setMarketplaceSearch}
+      />
+    );
+    if (screen === "c_catering") return (
+      <CateringScreen 
+        navigate={navigate} 
+        setCateringChatMessages={setCateringChatMessages}
+        setUnreadCateringCount={setUnreadCateringCount}
+        setCateringStoreName={setCateringStoreName}
+        myOrders={myOrders}
+        setMyOrders={setMyOrders}
+        showToast={showToast}
+      />
+    );
     if (screen === "c_laundry") return <LaundryScreen navigate={navigate} />;
     if (screen === "c_kos") return <KosScreen navigate={navigate} />;
+    
+    if (screen === "c_cart") return (
+      <CartScreen 
+        navigate={navigate} 
+        cart={cart} 
+        setCart={setCart} 
+        dompetBalance={dompetBalance} 
+        setDompetBalance={setDompetBalance} 
+        myOrders={myOrders}
+        setMyOrders={setMyOrders}
+        setActiveTrackingOrderId={setActiveTrackingOrderId}
+        showToast={showToast}
+        setTempCheckout={setTempCheckout}
+        setDriverChatMessages={setDriverChatMessages}
+        setUnreadChatCount={setUnreadChatCount}
+      />
+    );
+    
+    if (screen === "c_qris") return (
+      <QrisScreen 
+        navigate={navigate} 
+        cart={cart} 
+        setCart={setCart} 
+        myOrders={myOrders}
+        setMyOrders={setMyOrders}
+        setActiveTrackingOrderId={setActiveTrackingOrderId}
+        showToast={showToast}
+        tempCheckout={tempCheckout}
+        setDriverChatMessages={setDriverChatMessages}
+        setUnreadChatCount={setUnreadChatCount}
+      />
+    );
+    
+    if (screen === "c_tracking") return (
+      <TrackingScreen 
+        navigate={navigate} 
+        activeTrackingOrderId={activeTrackingOrderId} 
+        myOrders={myOrders} 
+        setMyOrders={setMyOrders}
+        showToast={showToast}
+        unreadChatCount={unreadChatCount}
+        addDriverMessage={addDriverMessage}
+      />
+    );
+    
+    if (screen === "c_rating") return (
+      <RatingScreen 
+        navigate={navigate} 
+        activeTrackingOrderId={activeTrackingOrderId} 
+        myOrders={myOrders} 
+        setMyOrders={setMyOrders}
+        showToast={showToast}
+      />
+    );
+
+    if (screen === "c_driver_chat") return (
+      <DriverChatScreen
+        navigate={navigate}
+        driverChatMessages={driverChatMessages}
+        setDriverChatMessages={setDriverChatMessages}
+        setUnreadChatCount={setUnreadChatCount}
+      />
+    );
+    
+    if (screen === "c_support_chat") return (
+      <SupportChatScreen
+        navigate={navigate}
+        supportChatMessages={supportChatMessages}
+        setSupportChatMessages={setSupportChatMessages}
+        setUnreadSupportCount={setUnreadSupportCount}
+      />
+    );
+    if (screen === "c_catering_chat") return (
+      <CateringChatScreen
+        navigate={navigate}
+        cateringChatMessages={cateringChatMessages}
+        setCateringChatMessages={setCateringChatMessages}
+        setUnreadCateringCount={setUnreadCateringCount}
+        cateringStoreName={cateringStoreName}
+      />
+    );
 
     // Customer tabs
-    if (screen === "c_home") return <CustomerHome navigate={navigate} />;
+    if (screen === "c_home") return <CustomerHome navigate={navigate} dompetBalance={dompetBalance} addToCart={addToCart} setMarketplaceSearch={setMarketplaceSearch} />;
     if (screen === "c_jelajah") return <JelajahScreen navigate={navigate} />;
-    if (screen === "c_pesanan") return <PesananScreen navigate={navigate} />;
-    if (screen === "c_inbox") return <InboxScreen navigate={navigate} />;
+    if (screen === "c_pesanan") return <PesananScreen navigate={navigate} myOrders={myOrders} setActiveTrackingOrderId={setActiveTrackingOrderId} />;
+    if (screen === "c_inbox") return (
+      <InboxScreen 
+        navigate={navigate} 
+        driverChatMessages={driverChatMessages}
+        unreadChatCount={unreadChatCount}
+        setUnreadChatCount={setUnreadChatCount}
+        supportChatMessages={supportChatMessages}
+        unreadSupportCount={unreadSupportCount}
+        setUnreadSupportCount={setUnreadSupportCount}
+        cateringChatMessages={cateringChatMessages}
+        unreadCateringCount={unreadCateringCount}
+        setUnreadCateringCount={setUnreadCateringCount}
+        cateringStoreName={cateringStoreName}
+      />
+    );
     if (screen === "c_profil") return <ProfilCustomer navigate={navigate} />;
 
     // Driver tabs
@@ -2150,12 +4706,18 @@ export default function App() {
         <div className="absolute top-3 left-1/2 -translate-x-1/2 w-28 h-7 bg-gray-900 rounded-full z-20" />
         {/* Frame */}
         <div className="absolute inset-0 rounded-[44px] border-[8px] border-gray-900 shadow-[0_60px_120px_rgba(0,0,0,0.6),inset_0_0_0_1px_rgba(255,255,255,0.08)] overflow-hidden bg-white flex flex-col z-10">
-          <div className="flex-1 overflow-hidden flex flex-col">
+          <div className="flex-1 overflow-hidden flex flex-col relative">
             {renderContent()}
+            {toast?.show && (
+              <div className="absolute top-16 left-4 right-4 bg-gray-900/95 text-white text-xs font-semibold px-4 py-3 rounded-2xl shadow-xl flex items-center gap-2 z-50 animate-bounce">
+                <span className="text-sm">🔔</span>
+                <span className="flex-1 text-[11px] font-bold">{toast.message}</span>
+              </div>
+            )}
           </div>
           {/* Bottom nav */}
           {isCustomerTab && !isCustomerSub && (
-            <CustomerNav screen={screen} navigate={navigate} />
+            <CustomerNav screen={screen} navigate={navigate} unreadChatCount={unreadChatCount} unreadSupportCount={unreadSupportCount} unreadCateringCount={unreadCateringCount} />
           )}
           {isDriverTab && (
             <DriverNav screen={screen} navigate={navigate} />
