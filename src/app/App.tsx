@@ -8,11 +8,13 @@ import {
   Zap, Award, Send, Gift, HelpCircle, Shield, Phone,
   Navigation2, Edit3, Building2, Bike, Signal, QrCode,
   Banknote, AlertCircle, Camera, Info, Eye, EyeOff,
-  Store, RefreshCw, CreditCard, Coffee, Shirt, Wind
+  Store, RefreshCw, CreditCard, Coffee, Shirt, Wind,
+  Mic, SlidersHorizontal, LayoutGrid, Share
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
 } from "recharts";
+import { motion, AnimatePresence } from "motion/react";
 
 // ─── TYPES ────────────────────────────────────────────────────────────────────
 type Screen =
@@ -43,9 +45,10 @@ const RESTAURANTS = [
   { id: 3, name: "Dapur Asri Kamojang", cuisine: "Masakan Rumahan", rating: 4.8, distance: "0.8 km", minOrder: 20000, img: uImg("1512621776951-a57141f2eefd", 400, 220), tags: ["Halal", "Sehat"], open: false },
 ];
 const LAUNDRIES = [
-  { id: 1, name: "Laundry Express Pak Dedi", address: "Jl. Raya Kamojang No. 12", price: 6000, rating: 4.8, open: true, distance: "0.5 km" },
-  { id: 2, name: "Bersih Kilat Laundry", address: "Jl. Geothermal No. 5", price: 7000, rating: 4.6, open: true, distance: "1.1 km" },
-  { id: 3, name: "Laundry Ibu Rohani", address: "Gg. Mawar No. 3", price: 5500, rating: 4.9, open: true, distance: "0.2 km" },
+  { id: 1, name: "Laundry Express Pak Dedi", address: "Jl. Raya Kamojang No. 12", price: 6000, rating: 4.8, open: true, distance: "0.5 km", type: "Ekspres", img: uImg("1517677208171-0bc6725a3e60", 400, 300) },
+  { id: 2, name: "Bersih Kilat Laundry", address: "Jl. Geothermal No. 5", price: 7000, rating: 4.6, open: true, distance: "1.1 km", type: "Ekspres", img: uImg("1582734651339-b9a3db27f8a7", 400, 300) },
+  { id: 3, name: "Laundry Ibu Rohani", address: "Gg. Mawar No. 3", price: 5500, rating: 4.9, open: true, distance: "0.2 km", type: "Biasa", img: uImg("1545173168988-24b2a5976b91", 400, 300) },
+  { id: 4, name: "KlinKlin Laundry", address: "Jl. Puncak No. 9", price: 5000, rating: 4.7, open: true, distance: "1.5 km", type: "Biasa", img: uImg("1583845943265-f938c5fbf967", 400, 300) },
 ];
 const KOS_LIST = [
   { id: 1, name: "Kos Putri Melati", address: "Jl. Aster No. 7, Kamojang", price: 750000, type: "Putri", facilities: ["WiFi", "AC", "KM Dalam", "Parkir"], available: true, img: uImg("1631049307264-da0ec9d70304", 400, 220) },
@@ -851,52 +854,563 @@ function CateringScreen({ navigate }: Nav) {
 }
 
 function LaundryScreen({ navigate }: Nav) {
-  return (
-    <div className="flex flex-col h-full bg-[#F7FAF8]">
-      <div className="bg-white shrink-0">
-        <StatusBar />
-        <BackHeader title="Laundry" onBack={() => navigate("c_home")} />
-        <div className="flex gap-2 overflow-x-auto px-4 pb-3" style={{ scrollbarWidth: "none" }}>
-          {["Terdekat", "Termurah", "Rating Terbaik", "Buka Sekarang"].map(f => (
-            <button key={f} className="shrink-0 text-xs font-bold px-3.5 py-1.5 rounded-full bg-muted text-muted-foreground first:bg-primary first:text-white">
-              {f}
-            </button>
-          ))}
+  const [filter, setFilter] = useState("Semua");
+  const [selectedLaundry, setSelectedLaundry] = useState<any>(null);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [chatLaundry, setChatLaundry] = useState<any>(null);
+  const [trackingStep, setTrackingStep] = useState(0);
+
+  const [chatMessages, setChatMessages] = useState<any[]>([]);
+  const [chatInput, setChatInput] = useState("");
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [favorites, setFavorites] = useState<number[]>([]);
+
+  const toggleFavorite = (e: React.MouseEvent, id: number) => {
+    e.stopPropagation();
+    setFavorites(prev => prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id]);
+  };
+
+  const types = ["Semua", "Biasa", "Ekspres"];
+  const filtered = LAUNDRIES.filter(l => {
+    const matchType = filter === "Semua" || l.type === filter;
+    const matchSearch = l.name.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchType && matchSearch;
+  });
+
+  useEffect(() => {
+    if (trackingStep > 0 && trackingStep < 5) {
+      const t = setTimeout(() => {
+        setTrackingStep(prev => prev + 1);
+      }, 3000); // 3 seconds per step for demo purposes
+      return () => clearTimeout(t);
+    }
+  }, [trackingStep]);
+
+  useEffect(() => {
+    if (chatLaundry) {
+      setChatMessages([
+        { id: 1, sender: "laundry", text: `Halo! Ada yang bisa kami bantu seputar layanan ${chatLaundry.name}?`, time: new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }) }
+      ]);
+    }
+  }, [chatLaundry]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [chatMessages]);
+
+  const handleSendChat = () => {
+    if (!chatInput.trim()) return;
+    
+    const userMsg = { id: Date.now(), sender: "user", text: chatInput, time: new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }) };
+    setChatMessages(prev => [...prev, userMsg]);
+    setChatInput("");
+
+    setTimeout(() => {
+      const replyMsg = { id: Date.now() + 1, sender: "laundry", text: "Baik kak, pesanannya sudah kami terima dan akan segera diproses ya! Mohon ditunggu kelanjutannya di aplikasi.", time: new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }) };
+      setChatMessages(prev => [...prev, replyMsg]);
+    }, 1200);
+  };
+
+  const handlePesan = () => {
+    setIsDrawerOpen(false);
+    setTimeout(() => {
+      setTrackingStep(1);
+    }, 400); // Wait for drawer animation to finish
+  };
+
+  if (chatLaundry) {
+    return (
+      <div className="flex flex-col h-full bg-[#F7FAF8] relative overflow-hidden">
+        <div className="bg-white shrink-0 z-10 shadow-sm relative pb-2 rounded-b-3xl">
+          <StatusBar />
+          <BackHeader 
+            title={chatLaundry.name} 
+            onBack={() => setChatLaundry(null)} 
+          />
+        </div>
+        <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4" style={{ scrollbarWidth: "none" }}>
+          <div className="self-center bg-gray-200 text-gray-500 text-[10px] font-bold px-3 py-1 rounded-full mt-2">Hari Ini</div>
+          
+          <AnimatePresence initial={false}>
+            {chatMessages.map((msg) => (
+              <motion.div 
+                key={msg.id}
+                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                className={`flex gap-3 max-w-[85%] mt-1 ${msg.sender === "user" ? "self-end flex-row-reverse" : "self-start"}`}
+              >
+                {msg.sender === "laundry" && (
+                  <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
+                    <Store size={14} className="text-blue-600" />
+                  </div>
+                )}
+                <div className={`p-3 rounded-2xl shadow-sm text-sm leading-relaxed ${msg.sender === "user" ? "bg-primary text-white rounded-tr-none" : "bg-white text-gray-700 rounded-tl-none border border-gray-50"}`}>
+                  {msg.text}
+                  <div className={`text-[9px] mt-1.5 text-right ${msg.sender === "user" ? "text-green-200" : "text-gray-400"}`}>{msg.time}</div>
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+          <div ref={messagesEndRef} />
+        </div>
+        <div className="bg-white p-4 border-t border-gray-100 flex gap-3 items-center z-10 pb-6 rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
+          <input 
+            type="text" 
+            placeholder="Ketik pesan..." 
+            value={chatInput}
+            onChange={(e) => setChatInput(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSendChat()}
+            className="flex-1 bg-gray-100 border-none rounded-full px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 placeholder-gray-400" 
+          />
+          <button onClick={handleSendChat} className="w-11 h-11 rounded-full bg-primary text-white flex items-center justify-center shrink-0 active:scale-95 shadow-lg shadow-green-500/30 transition-transform">
+            <Send size={18} className="ml-0.5" />
+          </button>
         </div>
       </div>
-      <div className="flex-1 overflow-y-auto px-4 pt-3 pb-4 flex flex-col gap-3" style={{ scrollbarWidth: "none" }}>
-        {LAUNDRIES.map(l => (
-          <div key={l.id} className="bg-white rounded-2xl p-4 shadow-sm">
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-2xl bg-blue-100 flex items-center justify-center shrink-0">
-                <Wind size={24} className="text-blue-600" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-bold text-foreground text-sm truncate pr-2">{l.name}</h4>
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${l.open ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
-                    {l.open ? "Buka" : "Tutup"}
-                  </span>
-                </div>
-                <p className="text-muted-foreground text-xs mt-0.5 truncate">{l.address}</p>
-                <div className="flex items-center gap-3 mt-1.5">
-                  <Stars rating={l.rating} />
-                  <span className="text-muted-foreground text-xs">📍 {l.distance}</span>
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
-              <div>
-                <p className="text-[10px] text-muted-foreground">Mulai dari</p>
-                <p className="text-primary font-extrabold text-sm">{rp(l.price)}/kg</p>
-              </div>
-              <button className="bg-primary text-white text-xs font-bold px-4 py-2 rounded-xl">
-                Pesan Pickup
-              </button>
+    );
+  }
+
+  if (trackingStep > 0) {
+    const steps = [
+      { id: 1, title: "Menunggu Driver", desc: "Driver sedang menuju ke lokasi Anda", icon: Bike, color: "orange" },
+      { id: 2, title: "Proses Pencucian", desc: "Pakaian Anda sedang dicuci dengan sepenuh hati", icon: Wind, color: "blue" },
+      { id: 3, title: "Selesai Dicuci", desc: "Menunggu kurir untuk pengantaran", icon: Package, color: "purple" },
+      { id: 4, title: "Pengantaran", desc: "Driver sedang menuju ke lokasi Anda", icon: Truck, color: "orange" },
+      { id: 5, title: "Pesanan Selesai", desc: "Pakaian bersih siap digunakan!", icon: CheckCircle, color: "green" },
+    ];
+    return (
+      <div className="flex flex-col h-full bg-[#F7FAF8] relative overflow-hidden">
+        <div className="bg-white shrink-0 z-10 shadow-sm relative pb-2 rounded-b-3xl">
+          <StatusBar />
+          <BackHeader title="Tracking Pesanan" onBack={() => { setTrackingStep(0); setSelectedLaundry(null); }} />
+        </div>
+        <div className="flex-1 overflow-y-auto p-6 relative" style={{ scrollbarWidth: "none" }}>
+          <div className="bg-white rounded-[24px] shadow-sm p-6 mb-6">
+            <h2 className="font-extrabold text-xl mb-1 text-center text-foreground">Pesanan {selectedLaundry?.name}</h2>
+            <p className="text-muted-foreground text-sm text-center mb-6">Estimasi Selesai: Besok, 10:00</p>
+            <div className="relative mt-2">
+              <div className="absolute top-2 bottom-2 left-[15px] w-0.5 bg-gray-200 z-0" />
+              {steps.map((s, idx) => {
+                const isActive = trackingStep === s.id;
+                const isPassed = trackingStep > s.id;
+                const Icon = s.icon;
+                return (
+                  <div key={s.id} className="relative flex gap-4 mb-8 last:mb-0 z-10">
+                    <div className="relative z-10 flex flex-col items-center shrink-0">
+                      <div className="bg-white py-1">
+                        <motion.div 
+                          initial={{ scale: 0.8 }}
+                          animate={{ scale: isActive ? 1.2 : 1, backgroundColor: isPassed || isActive ? "#1B7A4E" : "#E5E7EB" }}
+                          className="w-8 h-8 rounded-full flex items-center justify-center shadow-sm relative z-10"
+                        >
+                           {isPassed ? <Check size={14} className="text-white" /> : <span className="text-white text-[11px] font-bold">{s.id}</span>}
+                        </motion.div>
+                      </div>
+                    </div>
+                    <div className={`flex-1 pt-1.5 ${isActive ? 'opacity-100' : isPassed ? 'opacity-70' : 'opacity-40'} transition-opacity duration-500`}>
+                      <h4 className={`font-bold text-sm ${isActive ? 'text-primary' : 'text-gray-800'}`}>{s.title}</h4>
+                      <p className="text-xs text-gray-500 mt-1 leading-relaxed">{s.desc}</p>
+                      <AnimatePresence>
+                        {isActive && (
+                          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="mt-3 bg-green-50 rounded-xl p-3 flex items-center gap-3 overflow-hidden border border-green-100/50">
+                            <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center shrink-0">
+                              <Icon size={20} className="text-primary" />
+                            </div>
+                            <div>
+                              <p className="text-xs font-bold text-green-900">Status Aktif</p>
+                              <p className="text-[10px] text-green-700">Pembaruan otomatis...</p>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
-        ))}
+          <AnimatePresence>
+            {trackingStep === 5 && (
+              <motion.button initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} onClick={() => { setTrackingStep(0); setSelectedLaundry(null); }} className="w-full bg-primary text-white font-extrabold py-4 rounded-2xl shadow-lg shadow-green-500/20 active:scale-95 transition-all">
+                Kembali ke Beranda
+              </motion.button>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col h-full bg-white relative overflow-hidden">
+      {/* Header */}
+      <div className="bg-white shrink-0 z-20 sticky top-0 pt-2 pb-2">
+        <StatusBar />
+        <div className="px-5 flex items-center justify-between mt-2">
+          <div className="flex items-center gap-4">
+            <button onClick={() => navigate("c_home")} className="w-10 h-10 rounded-full flex items-center justify-center border border-gray-100 hover:bg-gray-50 transition-colors shrink-0">
+              <ArrowLeft size={20} className="text-gray-800" />
+            </button>
+            <div>
+              <h1 className="text-[20px] font-black text-gray-900 tracking-tight leading-tight">Laundry</h1>
+              <p className="text-[11px] font-semibold text-gray-400">Temukan laundry terbaik di sekitarmu</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button className="w-10 h-10 rounded-full border border-gray-100 flex items-center justify-center hover:bg-gray-50 transition-colors">
+              <Search size={18} className="text-gray-700" />
+            </button>
+            <button className="w-10 h-10 rounded-full border border-gray-100 flex items-center justify-center hover:bg-gray-50 transition-colors relative">
+              <SlidersHorizontal size={18} className="text-gray-700" />
+              <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-primary rounded-full border-2 border-white" />
+            </button>
+          </div>
+        </div>
+
+        {/* Search Bar */}
+        <div className="px-5 mt-4">
+          <div className="relative flex items-center rounded-2xl bg-white border border-gray-200 overflow-hidden focus-within:border-primary transition-colors">
+            <Search size={18} className="text-gray-400 absolute left-4" />
+            <input 
+              type="text" 
+              placeholder="Cari laundry terdekat..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full py-3.5 pl-11 pr-12 bg-transparent text-[13px] font-semibold text-gray-800 focus:outline-none placeholder:text-gray-400" 
+            />
+            <button className="absolute right-4 text-primary hover:text-green-700 transition-colors">
+              <Mic size={18} />
+            </button>
+          </div>
+        </div>
+
+        {/* Filter Chips */}
+        <div className="px-5 mt-4 flex gap-2.5 overflow-x-auto pb-2" style={{ scrollbarWidth: "none" }}>
+          <button 
+            onClick={() => setFilter("Semua")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-[14px] text-[12px] font-bold transition-all shrink-0 ${filter === "Semua" ? "bg-primary text-white shadow-md shadow-green-500/20" : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"}`}
+          >
+            <LayoutGrid size={14} className={filter === "Semua" ? "text-white" : "text-gray-400"} /> Semua
+          </button>
+          <button 
+            onClick={() => setFilter("Biasa")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-[14px] text-[12px] font-bold transition-all shrink-0 ${filter === "Biasa" ? "bg-blue-50 text-blue-600 border border-blue-200" : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"}`}
+          >
+            <Shirt size={14} className={filter === "Biasa" ? "text-blue-500" : "text-blue-500"} /> Biasa
+          </button>
+          <button 
+            onClick={() => setFilter("Ekspres")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-[14px] text-[12px] font-bold transition-all shrink-0 ${filter === "Ekspres" ? "bg-orange-50 text-orange-600 border border-orange-200" : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"}`}
+          >
+            <Zap size={14} className={filter === "Ekspres" ? "text-orange-500" : "text-orange-500"} /> Ekspres
+          </button>
+        </div>
+      </div>
+      
+      <div className="flex-1 overflow-y-auto px-5 pt-2 pb-12 flex flex-col gap-4" style={{ scrollbarWidth: "none" }}>
+        {/* Promo Banner */}
+        <div className="bg-green-50 rounded-[20px] p-4 flex items-center justify-between relative overflow-hidden mb-2 border border-green-100">
+          <button className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 z-10">
+            <X size={16} />
+          </button>
+          <div className="z-10 w-2/3">
+            <h3 className="font-extrabold text-primary text-[14px] mb-1">Gratis Antar Jemput</h3>
+            <p className="text-[11px] font-semibold text-gray-600 mb-3">Untuk pesanan di atas Rp30.000</p>
+            <button className="text-[11px] font-black text-primary flex items-center gap-1 hover:underline">
+              Lihat detail <ChevronRight size={12} />
+            </button>
+          </div>
+          <div className="absolute -right-4 bottom-0 h-24 opacity-80 pointer-events-none drop-shadow-sm">
+            {/* Menggunakan emoji 🛵 sebagai pengganti sementara */}
+            <div className="text-[60px]">🛵</div>
+          </div>
+        </div>
+
+        <AnimatePresence mode="popLayout">
+          {filtered.length === 0 ? (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center py-20 opacity-60">
+              <Search size={48} className="text-gray-300 mb-4" />
+              <p className="text-gray-500 font-bold text-sm">Tidak ada laundry ditemukan</p>
+            </motion.div>
+          ) : filtered.map(l => (
+            <motion.div 
+              key={l.id}
+              layout
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => { setSelectedLaundry(l); setIsDrawerOpen(true); }}
+              className="bg-white rounded-[20px] p-3 shadow-[0_2px_12px_rgba(0,0,0,0.03)] border border-gray-100 flex gap-3 cursor-pointer group"
+            >
+              {/* Left Image */}
+              <div className="w-[110px] h-[130px] shrink-0 bg-gray-100 rounded-[14px] relative overflow-hidden">
+                <img src={l.img} alt={l.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" loading="lazy" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                
+                {/* Badge Ekspres on Image */}
+                {l.type === "Ekspres" && (
+                  <div className="absolute top-2 left-2 bg-orange-500 text-white px-2 py-0.5 rounded-full flex items-center gap-0.5 shadow-sm">
+                    <Zap size={8} className="fill-white" />
+                    <span className="text-[8px] font-black tracking-wide">EKSPRES</span>
+                  </div>
+                )}
+                {l.type === "Biasa" && (
+                  <div className="absolute top-2 left-2 bg-blue-500 text-white px-2 py-0.5 rounded-full flex items-center gap-0.5 shadow-sm">
+                    <Shirt size={8} className="fill-white" />
+                    <span className="text-[8px] font-black tracking-wide">BIASA</span>
+                  </div>
+                )}
+
+                {/* Status Bottom Image */}
+                <div className="absolute bottom-2 left-2 bg-black/50 backdrop-blur-sm text-white px-2 py-0.5 rounded-md border border-white/10">
+                  <span className="text-[8px] font-bold">{l.open ? "Buka - Tutup 21.00" : "Tutup"}</span>
+                </div>
+              </div>
+
+              {/* Right Content */}
+              <div className="flex-1 flex flex-col pt-1">
+                <div className="flex justify-between items-start mb-1.5">
+                  <h4 className="font-extrabold text-gray-900 text-[14px] leading-tight pr-2 line-clamp-1">{l.name}</h4>
+                  <button 
+                    onClick={(e) => toggleFavorite(e, l.id)} 
+                    className="shrink-0 p-1 -mt-1 -mr-1"
+                  >
+                    <Heart size={16} className={favorites.includes(l.id) ? "fill-red-500 text-red-500" : "text-gray-300 hover:text-red-400"} />
+                  </button>
+                </div>
+                
+                <div className="flex items-center gap-1.5 mb-2.5">
+                  <Star size={12} className="fill-amber-400 text-amber-400" />
+                  <span className="font-extrabold text-[11px] text-gray-700">{l.rating}</span>
+                  <span className="text-gray-400 font-semibold text-[10px]">(1.2k)</span>
+                  <div className="w-[1px] h-2 bg-gray-300 mx-0.5" />
+                  <MapPin size={10} className="text-primary" />
+                  <span className="text-[10px] font-semibold text-gray-500">{l.distance}</span>
+                </div>
+                
+                <div className="flex flex-wrap gap-1.5 mb-auto">
+                  <div className="flex items-center gap-1 text-[9px] font-bold text-green-700 bg-green-50 px-2 py-1 rounded-full border border-green-100">
+                    <Truck size={10} /> Antar Jemput
+                  </div>
+                  {l.type === "Ekspres" && (
+                    <div className="flex items-center gap-1 text-[9px] font-bold text-orange-700 bg-orange-50 px-2 py-1 rounded-full border border-orange-100">
+                      <Zap size={10} /> Ekspres 3 Jam
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-end justify-between mt-3 pt-2 border-t border-gray-50">
+                  <div>
+                    <p className="text-[9px] text-gray-400 font-bold mb-0.5">Mulai dari</p>
+                    <div className="flex items-baseline gap-0.5 text-primary">
+                      <span className="font-black text-[14px] leading-none">{rp(l.price)}</span>
+                      <span className="text-[9px] font-semibold text-gray-500">/kg</span>
+                    </div>
+                  </div>
+                  <button className="text-[10px] font-black text-primary border border-primary/30 bg-green-50/50 px-2.5 py-1.5 rounded-lg flex items-center gap-0.5 hover:bg-green-100 transition-colors">
+                    Lihat Detail <ChevronRight size={10} strokeWidth={3} />
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
+
+      <AnimatePresence>
+        {isDrawerOpen && selectedLaundry && (
+          <motion.div 
+            initial={{ y: "100%" }} 
+            animate={{ y: 0 }} 
+            exit={{ y: "100%" }} 
+            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+            className="absolute inset-0 bg-white flex flex-col z-50 overflow-hidden"
+          >
+            <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: "none" }}>
+              {/* Header on Image */}
+              <div className="relative h-72 w-full bg-gray-100">
+                <img src={selectedLaundry.img} alt={selectedLaundry.name} className="w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/30" />
+                
+                {/* Top Nav */}
+                <div className="absolute top-0 left-0 right-0 pt-10 px-5 flex items-center justify-between z-10">
+                  <button onClick={() => setIsDrawerOpen(false)} className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-md active:scale-95 transition-transform">
+                    <ArrowLeft size={20} className="text-gray-800" />
+                  </button>
+                  <div className="flex items-center gap-3">
+                    <button className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-md active:scale-95 transition-transform">
+                      <Heart size={20} className="text-gray-800" />
+                    </button>
+                    <button className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-md active:scale-95 transition-transform">
+                      <Share size={20} className="text-gray-800" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Overlays */}
+                <div className="absolute bottom-6 left-5">
+                   <div className="bg-orange-500 text-white text-[10px] font-black px-3 py-1.5 rounded-full flex items-center gap-1.5 mb-2 w-max shadow-sm">
+                     <Zap size={12} className="fill-white" /> EKSPRES 3 JAM
+                   </div>
+                   <div className="bg-black/60 backdrop-blur-md text-white px-3 py-2 rounded-xl flex items-center gap-2 border border-white/10 w-max">
+                     <Bike size={16} />
+                     <div>
+                       <p className="text-[10px] font-bold leading-none">GRATIS ANTAR JEMPUT</p>
+                       <p className="text-[8px] text-gray-300 mt-0.5">Min. order Rp30.000</p>
+                     </div>
+                   </div>
+                </div>
+
+                <div className="absolute bottom-6 right-5 bg-black/80 backdrop-blur-md border border-white/10 px-3 py-2 rounded-xl text-center">
+                  <div className="flex items-center justify-center gap-1 text-amber-400 font-black text-[14px]">
+                    <Star size={14} className="fill-amber-400" /> {selectedLaundry.rating}
+                  </div>
+                  <p className="text-[8px] text-gray-300 mt-0.5">(256 ulasan)</p>
+                </div>
+              </div>
+
+              {/* Dots */}
+              <div className="flex items-center justify-center gap-1.5 mt-4 mb-4">
+                <div className="w-4 h-1.5 bg-primary rounded-full" />
+                <div className="w-1.5 h-1.5 bg-gray-200 rounded-full" />
+                <div className="w-1.5 h-1.5 bg-gray-200 rounded-full" />
+                <div className="w-1.5 h-1.5 bg-gray-200 rounded-full" />
+              </div>
+
+              <div className="px-5 pb-6 border-b border-gray-100">
+                <h2 className="text-[24px] font-black text-gray-900 leading-tight mb-2 flex items-center gap-2">
+                  {selectedLaundry.name} <CheckCircle size={20} className="text-primary fill-primary/10" />
+                </h2>
+                <div className="flex items-center gap-1.5 text-gray-500 text-[13px] font-medium">
+                  <MapPin size={14} className="text-primary" />
+                  <span>{selectedLaundry.address} <span className="mx-1">•</span> {selectedLaundry.distance}</span>
+                </div>
+              </div>
+
+              {/* 4 Features */}
+              <div className="px-5 py-6 flex gap-3 border-b border-gray-100">
+                {[
+                  { n: "Gratis Antar Jemput", i: Bike },
+                  { n: "Express 3 Jam", i: Clock },
+                  { n: "Pakaian Aman & Wangi", i: Shield },
+                  { n: "Bersih & Rapi", i: Shirt }
+                ].map(f => {
+                  const FIcon = f.i;
+                  return (
+                    <div key={f.n} className="flex-1 flex flex-col items-center text-center gap-2">
+                      <div className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center bg-white">
+                        <FIcon size={18} className="text-primary" />
+                      </div>
+                      <p className="text-[9px] font-bold text-gray-600 leading-tight px-1">{f.n}</p>
+                    </div>
+                  )
+                })}
+              </div>
+
+              {/* Pilihan Layanan */}
+              <div className="px-5 py-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-[16px] font-extrabold text-gray-900">Pilih Layanan</h3>
+                  <button className="text-[12px] font-bold text-primary flex items-center gap-0.5">
+                    Lihat semua <ChevronRight size={14} />
+                  </button>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-3 mb-6">
+                  {[
+                    { n: "Cuci Komplit", d: "Cuci, kering, setrika, dan lipat", p: selectedLaundry.price, i: Shirt },
+                    { n: "Setrika Saja", d: "Setrika rapi siap pakai", p: selectedLaundry.price - 2000, i: Zap },
+                    { n: "Cuci Kering", d: "Cuci kering tanpa disetrika", p: selectedLaundry.price - 1000, i: Wind },
+                    { n: "Cuci Sepatu", d: "Bersih menyeluruh, cepat kering", p: 25000, i: Package },
+                  ].map(s => {
+                    const SIcon = s.i;
+                    return (
+                      <div key={s.n} className="bg-white border border-gray-200 rounded-[20px] p-4 flex flex-col relative active:border-primary transition-colors cursor-pointer group">
+                        <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center mb-3 group-hover:bg-green-50 transition-colors">
+                          <SIcon size={20} className={s.n.includes("Setrika") ? "text-orange-500" : s.n.includes("Sepatu") ? "text-purple-500" : "text-primary"} />
+                        </div>
+                        <h4 className="font-extrabold text-gray-900 text-[13px] mb-1">{s.n}</h4>
+                        <p className="text-[10px] text-gray-500 leading-tight mb-4 min-h-[24px]">{s.d}</p>
+                        
+                        <div className="mt-auto flex items-end justify-between">
+                          <p className="font-black text-[13px] text-primary">{rp(s.p)}<span className="text-[9px] font-semibold text-gray-500">/{s.n.includes("Sepatu") ? "pasang" : "kg"}</span></p>
+                          <div className="w-6 h-6 rounded-full bg-gray-50 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors text-gray-400">
+                            <ChevronRight size={14} />
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+
+                {/* Banner Garansi */}
+                <div className="bg-green-50 border border-green-100 rounded-[16px] p-4 flex items-center gap-3">
+                  <Shield size={24} className="text-primary shrink-0" />
+                  <div className="flex-1">
+                    <h4 className="font-extrabold text-gray-900 text-[13px]">Garansi Pakaian Aman</h4>
+                    <p className="text-[11px] text-gray-600 font-medium">Jika pakaian rusak atau hilang, kami ganti 100%</p>
+                  </div>
+                  <ChevronRight size={16} className="text-primary shrink-0" />
+                </div>
+              </div>
+            </div>
+
+            {/* Sticky Bottom Bar */}
+            <div className="bg-white border-t border-gray-100 shrink-0 px-5 pt-4 pb-8 shadow-[0_-10px_30px_rgba(0,0,0,0.03)] relative z-20">
+              <div className="flex gap-3 mb-5">
+                <button 
+                  onClick={() => { setIsDrawerOpen(false); setTimeout(() => setChatLaundry(selectedLaundry), 300); }} 
+                  className="w-14 shrink-0 bg-green-50 text-primary border border-green-100 rounded-[16px] flex flex-col items-center justify-center gap-1 active:scale-95 transition-transform"
+                >
+                  <MessageCircle size={20} className="fill-primary/20" />
+                  <span className="text-[9px] font-extrabold">Chat</span>
+                </button>
+                <button onClick={handlePesan} className="flex-1 bg-primary hover:bg-primary/90 text-white rounded-[16px] p-3 shadow-lg shadow-green-500/30 flex items-center gap-3 active:scale-95 transition-transform">
+                  <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center shrink-0 backdrop-blur-sm border border-white/20">
+                    <Bike size={20} className="text-white" />
+                  </div>
+                  <div className="flex-1 text-left">
+                    <p className="font-black text-[14px] leading-tight">Pesan Pickup Sekarang</p>
+                    <p className="text-[10px] text-green-100 font-medium">Gratis antar jemput ke lokasi Anda</p>
+                  </div>
+                  <ChevronRight size={20} />
+                </button>
+              </div>
+
+              {/* Trust Badges */}
+              <div className="flex justify-between border-t border-gray-100 pt-4 px-1">
+                <div className="flex items-center gap-2">
+                  <Clock size={16} className="text-gray-400" />
+                  <div>
+                    <p className="text-[9px] font-bold text-gray-700">Buka Setiap Hari</p>
+                    <p className="text-[8px] text-gray-400">07.00 - 21.00</p>
+                  </div>
+                </div>
+                <div className="w-[1px] h-6 bg-gray-200" />
+                <div className="flex items-center gap-2">
+                  <CheckCircle size={16} className="text-gray-400" />
+                  <div>
+                    <p className="text-[9px] font-bold text-gray-700">+1000</p>
+                    <p className="text-[8px] text-gray-400">Pelanggan Puas</p>
+                  </div>
+                </div>
+                <div className="w-[1px] h-6 bg-gray-200" />
+                <div className="flex items-center gap-2">
+                  <Shield size={16} className="text-gray-400" />
+                  <div>
+                    <p className="text-[9px] font-bold text-gray-700">Aman & Terpercaya</p>
+                    <p className="text-[8px] text-gray-400">Berpengalaman</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
