@@ -9,7 +9,7 @@ import {
   Navigation2, Edit3, Building2, Bike, Signal, QrCode,
   Banknote, AlertCircle, Camera, Info, Eye, EyeOff,
   Store, RefreshCw, CreditCard, Coffee, Shirt, Wind,
-  Mic, SlidersHorizontal, LayoutGrid, Share, Users, Percent, Bath, Utensils, Headphones
+  Mic, SlidersHorizontal, LayoutGrid, Share, Users, Percent, Bath, Utensils, Headphones, Download
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
@@ -22,7 +22,8 @@ type Screen =
   | "c_home" | "c_jelajah" | "c_pesanan" | "c_inbox" | "c_profil"
   | "c_marketplace" | "c_catering" | "c_laundry" | "c_kos"
   | "d_home" | "d_order" | "d_riwayat" | "d_pendapatan" | "d_profil"
-  | "c_cart" | "c_qris" | "c_tracking" | "c_rating" | "c_driver_chat" | "c_support_chat" | "c_catering_chat";
+  | "c_cart" | "c_qris" | "c_tracking" | "c_rating" | "c_driver_chat" | "c_support_chat" | "c_catering_chat"
+  | "mitra_reg";
 type Role = "customer" | "driver";
 type Nav = { navigate: (s: Screen) => void };
 
@@ -577,14 +578,14 @@ function RoleScreen({ navigate, setRole }: Nav & { setRole: (r: Role) => void })
               <p className="text-muted-foreground text-sm mt-0.5 leading-relaxed">Belanja produk UMKM, pesan catering, laundry, & kos</p>
             </div>
           </button>
-          <button onClick={() => { setRole("driver"); navigate("d_home"); }}
+          <button onClick={() => { setRole("driver"); navigate("mitra_reg"); }}
             className="p-6 rounded-3xl border-2 border-border flex items-center gap-5 text-left hover:border-accent hover:bg-orange-50 transition-all">
             <div className="w-16 h-16 rounded-2xl bg-accent flex items-center justify-center shrink-0">
               <Bike size={28} className="text-white" />
             </div>
             <div>
-              <p className="font-extrabold text-lg text-foreground">Menjadi Driver</p>
-              <p className="text-muted-foreground text-sm mt-0.5 leading-relaxed">Antar pesanan & raih penghasilan dari komunitas Kamojang</p>
+              <p className="font-extrabold text-lg text-foreground">Menjadi Mitra & Driver</p>
+              <p className="text-muted-foreground text-sm mt-0.5 leading-relaxed">Antar pesanan & kelola usaha (Kos/Laundry) dari komunitas Kamojang</p>
             </div>
           </button>
         </div>
@@ -2314,18 +2315,24 @@ function KosScreen({ navigate }: Nav) {
   const [bookingPhone, setBookingPhone] = useState("081356789012");
   const [bookingDate, setBookingDate] = useState("");
   const [bookingDuration, setBookingDuration] = useState(1);
-  const [paymentStatus, setPaymentStatus] = useState<"idle"|"processing"|"success">("idle");
+  const [paymentStatus, setPaymentStatus] = useState<"idle"|"payment_method"|"processing"|"success">("idle");
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState("GoPay");
 
   const handleBookingSubmit = () => {
+    setPaymentStatus("payment_method");
+  };
+
+  const handlePaymentConfirm = () => {
     setPaymentStatus("processing");
     setTimeout(() => {
       setPaymentStatus("success");
-      setTimeout(() => {
-        setPaymentStatus("idle");
-        setIsBookingFormOpen(false);
-        setSelectedKos(null);
-      }, 2500);
     }, 2000);
+  };
+
+  const handleCloseSuccess = () => {
+    setPaymentStatus("idle");
+    setIsBookingFormOpen(false);
+    setSelectedKos(null);
   };
 
   const types = [
@@ -2680,7 +2687,7 @@ function KosScreen({ navigate }: Nav) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 z-40 bg-black/40 backdrop-blur-sm flex flex-col justify-end"
+            className="absolute inset-0 z-[60] bg-black/40 backdrop-blur-sm flex flex-col justify-end"
           >
             <div className="flex-1" onClick={() => setIsChatOpen(false)} />
             <motion.div
@@ -2838,26 +2845,134 @@ function KosScreen({ navigate }: Nav) {
 
               {/* Payment Processing/Success */}
               {paymentStatus !== "idle" && (
-                <div className="p-8 flex flex-col items-center justify-center min-h-[350px]">
-                  {paymentStatus === "processing" ? (
-                    <div className="flex flex-col items-center">
+                <div className="p-5 flex flex-col min-h-[350px]">
+                  {paymentStatus === "payment_method" ? (
+                    <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="flex flex-col h-full">
+                      <div className="flex items-center gap-3 mb-6">
+                        <button onClick={() => setPaymentStatus("idle")} className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-full">
+                          <ArrowLeft size={16} className="text-gray-600" />
+                        </button>
+                        <h3 className="font-extrabold text-[16px] text-gray-900">Pilih Pembayaran</h3>
+                      </div>
+                      
+                      <div className="space-y-3 flex-1 overflow-y-auto" style={{ scrollbarWidth: "none" }}>
+                        {[
+                          { id: "GoPay", desc: "Bayar instan dengan GoPay", color: "text-blue-500", bg: "bg-blue-50" },
+                          { id: "BCA Virtual Account", desc: "Transfer otomatis", color: "text-blue-600", bg: "bg-blue-50" },
+                          { id: "OVO", desc: "Cashback hingga 10k", color: "text-purple-500", bg: "bg-purple-50" },
+                          { id: "ShopeePay", desc: "Gratis biaya admin", color: "text-orange-500", bg: "bg-orange-50" },
+                        ].map(m => (
+                          <div 
+                            key={m.id}
+                            onClick={() => setSelectedPaymentMethod(m.id)}
+                            className={`flex items-center gap-3 p-3 rounded-2xl border-2 cursor-pointer transition-all ${selectedPaymentMethod === m.id ? "border-primary bg-green-50/50" : "border-gray-100 bg-white"}`}
+                          >
+                            <div className={`w-10 h-10 rounded-xl ${m.bg} flex items-center justify-center`}>
+                              <Wallet size={18} className={m.color} />
+                            </div>
+                            <div className="flex-1">
+                              <h4 className="font-extrabold text-[13px] text-gray-900">{m.id}</h4>
+                              <p className="text-[10px] text-gray-500">{m.desc}</p>
+                            </div>
+                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${selectedPaymentMethod === m.id ? "border-primary bg-primary" : "border-gray-200"}`}>
+                              {selectedPaymentMethod === m.id && <Check size={12} className="text-white" />}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="mt-4 pt-4 border-t border-gray-100">
+                        <button 
+                          onClick={handlePaymentConfirm}
+                          className="w-full py-4 rounded-[16px] font-black text-[14px] bg-primary hover:bg-primary/90 text-white shadow-lg shadow-green-500/30 flex items-center justify-center gap-2"
+                        >
+                          Lanjutkan Pembayaran <ChevronRight size={16} />
+                        </button>
+                      </div>
+                    </motion.div>
+                  ) : paymentStatus === "processing" ? (
+                    <div className="flex flex-col items-center justify-center flex-1 h-full py-10">
                       <div className="w-16 h-16 border-4 border-gray-100 border-t-primary rounded-full animate-spin mb-4" />
                       <p className="font-extrabold text-[15px] text-gray-900">Memproses Pembayaran...</p>
-                      <p className="text-[11px] text-gray-500 mt-1">Mengamankan kamar kos Anda</p>
+                      <p className="text-[11px] text-gray-500 mt-1">Menghubungkan ke {selectedPaymentMethod}</p>
                     </div>
                   ) : (
                     <motion.div 
-                      initial={{ scale: 0.5, opacity: 0 }}
+                      initial={{ scale: 0.9, opacity: 0 }}
                       animate={{ scale: 1, opacity: 1 }}
-                      className="flex flex-col items-center text-center"
+                      className="flex flex-col h-full"
                     >
-                      <div className="w-20 h-20 bg-green-100 text-green-500 rounded-full flex items-center justify-center mb-5">
-                        <Check size={40} className="stroke-[4px]" />
+                      <div className="bg-[#E8F5EE] rounded-[24px] p-6 flex flex-col items-center text-center relative overflow-hidden mb-5">
+                        <div className="absolute -right-4 -top-4 w-24 h-24 bg-primary/10 rounded-full blur-xl" />
+                        <div className="w-16 h-16 bg-white text-green-500 rounded-full flex items-center justify-center mb-4 shadow-sm relative z-10">
+                          <Check size={32} className="stroke-[4px]" />
+                        </div>
+                        <h3 className="font-black text-[20px] text-gray-900 mb-1 relative z-10">Booking Berhasil!</h3>
+                        <p className="text-[12px] text-gray-600 relative z-10">Kamar Anda telah diamankan.</p>
                       </div>
-                      <h3 className="font-black text-[20px] text-gray-900 mb-2">Booking Berhasil!</h3>
-                      <p className="text-[12px] text-gray-500 leading-relaxed max-w-[250px]">
-                        DP sebesar <strong className="text-gray-900">{rp(selectedKos.price * bookingDuration * 0.2)}</strong> telah dibayarkan. Silakan cek menu Pesanan.
-                      </p>
+
+                      {/* E-Bill Card */}
+                      <div className="bg-white border border-gray-100 rounded-[20px] p-5 shadow-sm mb-5 relative">
+                        <div className="absolute top-0 left-5 right-5 h-[1px] border-t-2 border-dashed border-gray-200 -mt-[1px]" />
+                        <div className="absolute -left-3 -top-3 w-6 h-6 bg-[#F7FAF8] rounded-full border-r border-b border-transparent" />
+                        <div className="absolute -right-3 -top-3 w-6 h-6 bg-[#F7FAF8] rounded-full border-l border-b border-transparent" />
+
+                        <div className="text-center mb-5">
+                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">E-Receipt</p>
+                          <p className="font-extrabold text-[14px] text-gray-900">INV/KOS/{Math.floor(Math.random()*10000)}</p>
+                        </div>
+                        
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-center">
+                            <span className="text-[11px] text-gray-500">Kos</span>
+                            <span className="text-[11px] font-bold text-gray-900 text-right max-w-[120px] truncate">{selectedKos.name}</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-[11px] text-gray-500">Tanggal Masuk</span>
+                            <span className="text-[11px] font-bold text-gray-900">{bookingDate}</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-[11px] text-gray-500">Metode</span>
+                            <span className="text-[11px] font-bold text-gray-900">{selectedPaymentMethod}</span>
+                          </div>
+                          <div className="flex justify-between items-center border-t border-dashed border-gray-200 pt-3 mt-3">
+                            <span className="text-[12px] font-bold text-gray-900">Total DP (20%)</span>
+                            <span className="text-[16px] font-black text-primary">{rp(selectedKos.price * bookingDuration * 0.2)}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="mt-auto flex flex-col gap-3">
+                        <button 
+                          onClick={() => {
+                            const btn = document.getElementById("download-btn");
+                            if (btn) {
+                              btn.innerHTML = "<span class='flex items-center gap-2 justify-center'><svg class='animate-spin h-4 w-4 text-primary' xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24'><circle class='opacity-25' cx='12' cy='12' r='10' stroke='currentColor' stroke-width='4'></circle><path class='opacity-75' fill='currentColor' d='M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'></path></svg> Mengunduh...</span>";
+                              setTimeout(() => {
+                                btn.innerHTML = "<span class='flex items-center gap-2 justify-center text-primary'><svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' class='lucide lucide-check'><path d='M20 6 9 17l-5-5'/></svg> Tersimpan!</span>";
+                              }, 1500);
+                            }
+                          }}
+                          id="download-btn"
+                          className="w-full py-3.5 rounded-[16px] font-black text-[13px] bg-green-50 text-primary border border-green-100 flex items-center justify-center gap-2 transition-all active:scale-95"
+                        >
+                          <Download size={16} /> Unduh Invoice
+                        </button>
+                        <div className="flex gap-2">
+                          <button 
+                            onClick={() => setIsChatOpen(true)}
+                            className="flex-1 py-3.5 rounded-[16px] font-black text-[13px] bg-white border-2 border-gray-100 text-gray-700 flex items-center justify-center gap-2 hover:bg-gray-50 transition-all active:scale-95"
+                          >
+                            <MessageCircle size={16} className="text-primary" /> Chat Pemilik
+                          </button>
+                          <button 
+                            onClick={handleCloseSuccess}
+                            className="flex-1 py-3.5 rounded-[16px] font-black text-[13px] bg-gray-900 text-white hover:bg-gray-800 transition-all active:scale-95"
+                          >
+                            Selesai & Kembali
+                          </button>
+                        </div>
+                      </div>
                     </motion.div>
                   )}
                 </div>
@@ -4737,13 +4852,196 @@ function CateringChatScreen({
   );
 }
 
+// ─── MITRA REGISTRATION SCREEN ────────────────────────────────────────────────
+function MitraRegistrationScreen({ navigate, setActiveMitraRoles }: Nav & { setActiveMitraRoles: React.Dispatch<React.SetStateAction<string[]>> }) {
+  const [step, setStep] = useState(1);
+  const [roles, setRoles] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const roleOptions = [
+    { id: "driver", title: "Kurir / Driver", icon: Bike, color: "text-orange-500", bg: "bg-orange-100" },
+    { id: "kos", title: "Pemilik Kos", icon: Building2, color: "text-purple-500", bg: "bg-purple-100" },
+    { id: "laundry", title: "Pemilik Laundry", icon: Wind, color: "text-blue-500", bg: "bg-blue-100" },
+    { id: "catering", title: "Pemilik Catering", icon: Coffee, color: "text-yellow-600", bg: "bg-yellow-100" }
+  ];
+
+  const handleNext = () => {
+    if (step === 1 && roles.length === 0) return;
+    setStep(s => s + 1);
+  };
+
+  const handleKirim = () => {
+    setLoading(true);
+    setTimeout(() => {
+      setLoading(false);
+      setStep(4);
+    }, 1500);
+  };
+
+  const finish = () => {
+    setActiveMitraRoles(roles);
+    navigate("d_home");
+  };
+
+  return (
+    <div className="flex flex-col h-full bg-white relative">
+      <div className="bg-white shrink-0 shadow-sm z-10">
+        <StatusBar />
+        <div className="flex items-center px-4 pb-3 pt-1">
+          {step < 4 && (
+            <button onClick={() => step === 1 ? navigate("role") : setStep(s => s - 1)} className="p-2 -ml-2 text-foreground">
+              <ArrowLeft size={24} />
+            </button>
+          )}
+          <h2 className="font-extrabold text-lg text-foreground ml-2">Daftar Mitra</h2>
+        </div>
+        {/* Progress Bar */}
+        {step < 4 && (
+          <div className="w-full bg-gray-100 h-1.5 flex">
+            <div className={`h-full bg-primary transition-all duration-300 ${step === 1 ? 'w-1/3' : step === 2 ? 'w-2/3' : 'w-full'}`} />
+          </div>
+        )}
+      </div>
+
+      <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: "none" }}>
+        {step === 1 && (
+          <div className="p-6">
+            <h3 className="text-xl font-black text-gray-900 mb-2">Pilih Peran Anda</h3>
+            <p className="text-sm text-gray-500 mb-6">Anda bisa memilih lebih dari satu peran. Dashboard akan menyesuaikan dengan pilihan Anda.</p>
+            
+            <div className="flex flex-col gap-3">
+              {roleOptions.map(r => {
+                const isSelected = roles.includes(r.id);
+                return (
+                  <button key={r.id}
+                    onClick={() => setRoles(prev => isSelected ? prev.filter(x => x !== r.id) : [...prev, r.id])}
+                    className={`flex items-center p-4 rounded-2xl border-2 transition-all ${isSelected ? "border-primary bg-primary/5" : "border-gray-100 bg-white"}`}>
+                    <div className={`w-12 h-12 rounded-full ${r.bg} ${r.color} flex items-center justify-center shrink-0`}>
+                      <r.icon size={24} />
+                    </div>
+                    <div className="flex-1 text-left ml-4">
+                      <p className="font-bold text-gray-900">{r.title}</p>
+                    </div>
+                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${isSelected ? "bg-primary border-primary" : "border-gray-300"}`}>
+                      {isSelected && <Check size={14} className="text-white" />}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+            <button 
+              onClick={handleNext}
+              disabled={roles.length === 0}
+              className={`w-full mt-8 py-4 rounded-2xl font-bold text-white transition-all ${roles.length > 0 ? "bg-primary shadow-lg shadow-primary/30" : "bg-gray-300"}`}
+            >
+              Lanjutkan
+            </button>
+          </div>
+        )}
+
+        {step === 2 && (
+          <div className="p-6">
+            <h3 className="text-xl font-black text-gray-900 mb-2">Data Diri & NIK</h3>
+            <p className="text-sm text-gray-500 mb-6">Pastikan data sesuai dengan kartu identitas Anda yang berlaku.</p>
+            
+            <div className="flex flex-col gap-4">
+              <div>
+                <label className="text-xs font-bold text-gray-700 mb-1 block">Nama Lengkap Sesuai KTP</label>
+                <input type="text" className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary" placeholder="Budi Santoso" />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-gray-700 mb-1 block">Nomor Induk Kependudukan (NIK)</label>
+                <input type="number" className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary" placeholder="320xxxxxxxxxxxxx" />
+              </div>
+              
+              <div className="mt-2">
+                <label className="text-xs font-bold text-gray-700 mb-2 block">Upload Foto KTP</label>
+                <div className="w-full h-32 border-2 border-dashed border-gray-300 rounded-2xl flex flex-col items-center justify-center bg-gray-50 text-gray-400">
+                  <Camera size={32} className="mb-2" />
+                  <span className="text-xs font-medium">Ambil Foto KTP</span>
+                </div>
+              </div>
+            </div>
+
+            <button onClick={handleNext} className="w-full mt-8 py-4 rounded-2xl font-bold text-white bg-primary shadow-lg shadow-primary/30">
+              Lanjutkan
+            </button>
+          </div>
+        )}
+
+        {step === 3 && (
+          <div className="p-6">
+            <h3 className="text-xl font-black text-gray-900 mb-2">Detail Usaha / Kendaraan</h3>
+            <p className="text-sm text-gray-500 mb-6">Lengkapi informasi spesifik untuk peran yang Anda pilih.</p>
+            
+            <div className="flex flex-col gap-6">
+              {roles.includes("driver") && (
+                <div className="p-4 border border-gray-100 rounded-2xl bg-gray-50">
+                  <h4 className="font-bold text-sm text-primary flex items-center gap-2 mb-3"><Bike size={16} /> Data Kendaraan (Driver)</h4>
+                  <div className="flex flex-col gap-3">
+                    <input type="text" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm" placeholder="Plat Nomor Kendaraan (Cth: D 1234 ABC)" />
+                    <input type="text" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm" placeholder="Tipe Kendaraan (Cth: Honda Beat)" />
+                    <div className="w-full h-24 border border-dashed border-gray-300 rounded-xl flex items-center justify-center bg-white text-gray-400">
+                      <span className="text-xs font-medium">+ Upload Foto SIM C</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {(roles.includes("kos") || roles.includes("laundry") || roles.includes("catering")) && (
+                <div className="p-4 border border-gray-100 rounded-2xl bg-gray-50">
+                  <h4 className="font-bold text-sm text-primary flex items-center gap-2 mb-3"><Store size={16} /> Data Usaha</h4>
+                  <div className="flex flex-col gap-3">
+                    <input type="text" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm" placeholder="Nama Usaha (Cth: Kos Putri Melati)" />
+                    <textarea className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm h-24 resize-none" placeholder="Alamat Lengkap Usaha..." />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <button onClick={handleKirim} className="w-full mt-8 py-4 rounded-2xl font-bold text-white bg-primary shadow-lg shadow-primary/30 relative overflow-hidden flex items-center justify-center">
+              {loading ? (
+                <RefreshCw className="animate-spin text-white" />
+              ) : (
+                "Kirim Pendaftaran"
+              )}
+            </button>
+          </div>
+        )}
+
+        {step === 4 && (
+          <div className="flex flex-col items-center justify-center py-20 px-8 text-center h-full">
+            <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", bounce: 0.5 }}
+              className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mb-6">
+              <CheckCircle size={48} className="text-green-500" />
+            </motion.div>
+            <h3 className="text-2xl font-black text-gray-900 mb-2">Pendaftaran Disetujui!</h3>
+            <p className="text-sm text-gray-500 mb-8 leading-relaxed">
+              Selamat! Akun Mitra Anda sudah aktif. Anda sekarang memiliki akses ke 
+              <span className="font-bold text-gray-900"> {roles.length} jenis layanan</span> di Rangers App.
+            </p>
+            <button onClick={finish} className="w-full py-4 rounded-2xl font-bold text-white bg-primary shadow-lg shadow-primary/30">
+              Masuk Dashboard
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── DRIVER SCREENS ───────────────────────────────────────────────────────────
 
 // ─── DRIVER SCREENS ───────────────────────────────────────────────────────────
-function DriverHome({ navigate }: Nav) {
+function DriverHome({ navigate, activeMitraRoles }: Nav & { activeMitraRoles: string[] }) {
   const [online, setOnline] = useState(false);
+  const [dashboardMode, setDashboardMode] = useState<"driver"|"mitra">(activeMitraRoles.includes("driver") ? "driver" : "mitra");
+  
+  const hasDriver = activeMitraRoles.includes("driver");
+  const hasBusiness = activeMitraRoles.some(r => ["kos", "laundry", "catering"].includes(r));
+
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full bg-[#F7FAF8]">
       <div className={`shrink-0 transition-colors duration-500 ${online ? "bg-gradient-to-b from-[#0D5C36] to-[#1B7A4E]" : "bg-gradient-to-b from-gray-700 to-gray-600"}`}>
         <StatusBar light />
         <div className="px-5 pb-5">
@@ -4754,25 +5052,49 @@ function DriverHome({ navigate }: Nav) {
             </div>
             <button className="relative w-10 h-10 rounded-full bg-white/15 flex items-center justify-center">
               <Bell size={20} className="text-white" />
+              <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border border-white" />
             </button>
           </div>
-          {/* online toggle */}
-          <div className="mt-4 flex items-center justify-between bg-white/15 rounded-2xl p-3">
-            <div>
-              <p className="text-white font-bold text-sm">{online ? "🟢 Anda Sedang Online" : "⚫ Anda Sedang Offline"}</p>
-              <p className="text-white/70 text-xs mt-0.5">{online ? "Menunggu pesanan masuk..." : "Aktifkan untuk menerima pesanan"}</p>
+          
+          {/* Tabs - Only show if they have both driver and business roles */}
+          {hasDriver && hasBusiness && (
+            <div className="flex mt-6 bg-white/15 p-1 rounded-[20px]">
+              <button 
+                onClick={() => setDashboardMode("driver")}
+                className={`flex-1 py-2.5 rounded-[16px] text-sm font-bold transition-colors ${dashboardMode === "driver" ? "bg-white text-gray-900 shadow-sm" : "text-white/70 hover:text-white"}`}
+              >
+                🛵 Tugas Driver
+              </button>
+              <button 
+                onClick={() => setDashboardMode("mitra")}
+                className={`flex-1 py-2.5 rounded-[16px] text-sm font-bold transition-colors ${dashboardMode === "mitra" ? "bg-white text-gray-900 shadow-sm" : "text-white/70 hover:text-white"}`}
+              >
+                🏪 Kelola Usaha
+              </button>
             </div>
-            <button onClick={() => setOnline(!online)}
-              className={`relative w-14 h-7 rounded-full transition-colors duration-300 ${online ? "bg-green-400" : "bg-gray-400"}`}>
-              <div className={`absolute top-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform duration-300 ${online ? "translate-x-7" : "translate-x-0.5"}`} />
-            </button>
-          </div>
+          )}
+
+          {/* online toggle - only show for driver */}
+          {dashboardMode === "driver" && hasDriver && (
+            <div className="mt-4 flex items-center justify-between bg-white/15 rounded-2xl p-3">
+              <div>
+                <p className="text-white font-bold text-sm">{online ? "🟢 Anda Sedang Online" : "⚫ Anda Sedang Offline"}</p>
+                <p className="text-white/70 text-xs mt-0.5">{online ? "Menunggu pesanan masuk..." : "Aktifkan untuk menerima pesanan"}</p>
+              </div>
+              <button onClick={() => setOnline(!online)}
+                className={`relative w-14 h-7 rounded-full transition-colors duration-300 ${online ? "bg-green-400" : "bg-gray-400"}`}>
+                <div className={`absolute top-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform duration-300 ${online ? "translate-x-7" : "translate-x-0.5"}`} />
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto bg-[#F7FAF8]" style={{ scrollbarWidth: "none" }}>
-        {/* stats */}
-        <div className="grid grid-cols-3 gap-3 px-4 pt-4">
+      <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: "none" }}>
+        {dashboardMode === "driver" ? (
+          <>
+            {/* stats */}
+            <div className="grid grid-cols-3 gap-3 px-4 pt-4">
           {[
             { label: "Pendapatan Hari Ini", value: rp(85000), icon: Banknote, color: "#1B7A4E", bg: "#E8F5EE" },
             { label: "Order Selesai", value: "5", icon: CheckCircle, color: "#2196F3", bg: "#E3F2FD" },
@@ -4855,6 +5177,126 @@ function DriverHome({ navigate }: Nav) {
             </div>
           </div>
         </div>
+        </>
+        ) : (
+          <div className="flex flex-col gap-4 p-4">
+            {/* mitra stats */}
+            <div className="grid grid-cols-2 gap-3">
+              {activeMitraRoles.includes("kos") && (
+                <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex flex-col justify-between">
+                  <div className="w-10 h-10 rounded-xl bg-orange-50 text-orange-500 flex items-center justify-center mb-3">
+                    <Store size={20} />
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-gray-500 font-medium mb-1">Pendapatan Kos</p>
+                    <p className="font-black text-lg text-gray-900">{rp(4500000)}</p>
+                  </div>
+                </div>
+              )}
+              {activeMitraRoles.includes("laundry") && (
+                <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex flex-col justify-between">
+                  <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-500 flex items-center justify-center mb-3">
+                    <Shirt size={20} />
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-gray-500 font-medium mb-1">Pendapatan Laundry</p>
+                    <p className="font-black text-lg text-gray-900">{rp(350000)}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Pending Kos Booking */}
+            {activeMitraRoles.includes("kos") && (
+              <div>
+              <div className="flex items-center justify-between mb-3 mt-2">
+                <h3 className="font-bold text-sm text-gray-900">Booking Kos Baru</h3>
+                <Pill color="orange">1 perlu diproses</Pill>
+              </div>
+              <div className="bg-white rounded-[20px] p-4 border border-orange-100 shadow-sm relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-1.5 h-full bg-orange-400" />
+                <div className="flex items-start gap-3">
+                  <div className="w-12 h-12 rounded-full bg-gray-100 overflow-hidden shrink-0">
+                    <img src="https://i.pravatar.cc/150?img=11" alt="User" className="w-full h-full object-cover" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-extrabold text-[14px] text-gray-900">Budi Santoso</h4>
+                    <p className="text-[11px] text-gray-500 mb-2">Mengajukan booking Kos Putra Garuda</p>
+                    <div className="bg-gray-50 rounded-lg p-2.5 mb-3 border border-gray-100">
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-[10px] text-gray-500">Durasi</span>
+                        <span className="text-[11px] font-bold text-gray-900">6 Bulan</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-[10px] text-gray-500">Total DP (20%)</span>
+                        <span className="text-[12px] font-black text-primary">{rp(720000)}</span>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button className="flex-1 py-2 text-xs font-bold rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors">Tolak</button>
+                      <button className="flex-[2] py-2 text-xs font-bold rounded-xl bg-orange-500 text-white shadow-lg shadow-orange-500/30 hover:bg-orange-600 transition-colors">Terima & Chat</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            )}
+
+            {/* Laundry Orders */}
+            {activeMitraRoles.includes("laundry") && (
+              <div className="mb-6">
+              <div className="flex items-center justify-between mb-3 mt-2">
+                <h3 className="font-bold text-sm text-gray-900">Pesanan Laundry Aktif</h3>
+                <Pill color="blue">2 pesanan</Pill>
+              </div>
+              
+              <div className="bg-white rounded-[20px] p-4 border border-gray-100 shadow-sm mb-3">
+                <div className="flex justify-between items-center mb-3 border-b border-dashed border-gray-100 pb-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center">
+                      <Shirt size={14} />
+                    </div>
+                    <div>
+                      <p className="font-extrabold text-[13px] text-gray-900">Order #LND-924</p>
+                      <p className="text-[10px] text-gray-500">Siti Aminah • Ekstra Cepat</p>
+                    </div>
+                  </div>
+                  <span className="bg-blue-100 text-blue-600 text-[10px] font-bold px-2 py-1 rounded-md">Diproses</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <p className="text-[10px] text-gray-400">Total Harga</p>
+                    <p className="font-black text-[14px] text-gray-900">{rp(45000)}</p>
+                  </div>
+                  <button className="px-4 py-2.5 rounded-xl bg-primary/10 text-primary text-xs font-bold hover:bg-primary/20 transition-colors">Selesai Dicuci</button>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-[20px] p-4 border border-gray-100 shadow-sm">
+                <div className="flex justify-between items-center mb-3 border-b border-dashed border-gray-100 pb-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center">
+                      <Shirt size={14} />
+                    </div>
+                    <div>
+                      <p className="font-extrabold text-[13px] text-gray-900">Order #LND-925</p>
+                      <p className="text-[10px] text-gray-500">Ahmad Faisal • Biasa</p>
+                    </div>
+                  </div>
+                  <span className="bg-orange-100 text-orange-600 text-[10px] font-bold px-2 py-1 rounded-md">Mng. Pickup</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <p className="text-[10px] text-gray-400">Total Harga</p>
+                    <p className="font-black text-[14px] text-gray-900">{rp(15000)}</p>
+                  </div>
+                  <button className="px-4 py-2.5 rounded-xl bg-gray-100 text-gray-400 text-xs font-bold cursor-not-allowed border border-gray-200">Driver OTW</button>
+                </div>
+              </div>
+            </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -5104,6 +5546,7 @@ export default function App() {
   const [cateringChatMessages, setCateringChatMessages] = useState<{ id: string; sender: "catering" | "user"; text: string; time: string }[]>([]);
   const [unreadCateringCount, setUnreadCateringCount] = useState(0);
   const [cateringStoreName, setCateringStoreName] = useState("");
+  const [activeMitraRoles, setActiveMitraRoles] = useState<string[]>([]);
 
   const addDriverMessage = (text: string) => {
     setDriverChatMessages(prev => [
@@ -5280,7 +5723,8 @@ export default function App() {
     if (screen === "c_profil") return <ProfilCustomer navigate={navigate} />;
 
     // Driver tabs
-    if (screen === "d_home") return <DriverHome navigate={navigate} />;
+    if (screen === "mitra_reg") return <MitraRegistrationScreen navigate={navigate} setActiveMitraRoles={setActiveMitraRoles} />;
+    if (screen === "d_home") return <DriverHome navigate={navigate} activeMitraRoles={activeMitraRoles} />;
     if (screen === "d_order") return <DriverOrder navigate={navigate} />;
     if (screen === "d_riwayat") return <DriverRiwayat navigate={navigate} />;
     if (screen === "d_pendapatan") return <DriverPendapatan navigate={navigate} />;
