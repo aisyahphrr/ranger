@@ -9,7 +9,7 @@ import {
   Navigation2, Edit3, Building2, Bike, Signal, QrCode,
   Banknote, AlertCircle, Camera, Info, Eye, EyeOff,
   Store, RefreshCw, CreditCard, Coffee, Shirt, Wind,
-  Mic, SlidersHorizontal, LayoutGrid, Share
+  Mic, SlidersHorizontal, LayoutGrid, Share, Users, Percent, Bath, Utensils, Headphones
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
@@ -1632,6 +1632,10 @@ function LaundryScreen({ navigate }: Nav) {
   const [searchQuery, setSearchQuery] = useState("");
   const [favorites, setFavorites] = useState<number[]>([]);
 
+  const [isOrderFormOpen, setIsOrderFormOpen] = useState(false);
+  const [selectedServicesOrder, setSelectedServicesOrder] = useState<any[]>([]);
+  const [pickupAddress, setPickupAddress] = useState("");
+
   const toggleFavorite = (e: React.MouseEvent, id: number) => {
     e.stopPropagation();
     setFavorites(prev => prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id]);
@@ -1678,11 +1682,39 @@ function LaundryScreen({ navigate }: Nav) {
     }, 1200);
   };
 
+  const availableServices = selectedLaundry ? [
+    { n: "Cuci Komplit", d: "Cuci, kering, setrika, dan lipat", p: selectedLaundry.price, i: Shirt },
+    { n: "Setrika Saja", d: "Setrika rapi siap pakai", p: selectedLaundry.price - 2000, i: Zap },
+    { n: "Cuci Kering", d: "Cuci kering tanpa disetrika", p: selectedLaundry.price - 1000, i: Wind },
+    { n: "Cuci Sepatu", d: "Bersih menyeluruh, cepat kering", p: 25000, i: Package },
+  ] : [];
+
   const handlePesan = () => {
+    setIsOrderFormOpen(true);
+    if (selectedServicesOrder.length === 0) {
+      setSelectedServicesOrder([availableServices[0]]);
+    }
+  };
+
+  const handleServiceClick = (s: any) => {
+    setSelectedServicesOrder([s]);
+    setIsOrderFormOpen(true);
+  };
+
+  const handleKonfirmasiPesanan = () => {
+    if (selectedServicesOrder.length === 0) {
+      alert("Mohon pilih setidaknya satu layanan.");
+      return;
+    }
+    if (!pickupAddress.trim()) {
+      alert("Mohon isi alamat penjemputan terlebih dahulu!");
+      return;
+    }
+    setIsOrderFormOpen(false);
     setIsDrawerOpen(false);
     setTimeout(() => {
       setTrackingStep(1);
-    }, 400); // Wait for drawer animation to finish
+    }, 400);
   };
 
   if (chatLaundry) {
@@ -2086,15 +2118,10 @@ function LaundryScreen({ navigate }: Nav) {
                 </div>
                 
                 <div className="grid grid-cols-2 gap-3 mb-6">
-                  {[
-                    { n: "Cuci Komplit", d: "Cuci, kering, setrika, dan lipat", p: selectedLaundry.price, i: Shirt },
-                    { n: "Setrika Saja", d: "Setrika rapi siap pakai", p: selectedLaundry.price - 2000, i: Zap },
-                    { n: "Cuci Kering", d: "Cuci kering tanpa disetrika", p: selectedLaundry.price - 1000, i: Wind },
-                    { n: "Cuci Sepatu", d: "Bersih menyeluruh, cepat kering", p: 25000, i: Package },
-                  ].map(s => {
+                  {availableServices.map(s => {
                     const SIcon = s.i;
                     return (
-                      <div key={s.n} className="bg-white border border-gray-200 rounded-[20px] p-4 flex flex-col relative active:border-primary transition-colors cursor-pointer group">
+                      <div key={s.n} onClick={() => handleServiceClick(s)} className="bg-white border border-gray-200 rounded-[20px] p-4 flex flex-col relative active:border-primary transition-colors cursor-pointer group">
                         <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center mb-3 group-hover:bg-green-50 transition-colors">
                           <SIcon size={20} className={s.n.includes("Setrika") ? "text-orange-500" : s.n.includes("Sepatu") ? "text-purple-500" : "text-primary"} />
                         </div>
@@ -2176,70 +2203,669 @@ function LaundryScreen({ navigate }: Nav) {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Order Form Bottom Sheet */}
+      <AnimatePresence>
+        {isOrderFormOpen && (
+          <>
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }} 
+              onClick={() => setIsOrderFormOpen(false)}
+              className="absolute inset-0 bg-black/40 z-[60] backdrop-blur-sm" 
+            />
+            <motion.div 
+              initial={{ y: "100%" }} 
+              animate={{ y: 0 }} 
+              exit={{ y: "100%" }} 
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="absolute bottom-0 left-0 right-0 bg-white rounded-t-[36px] flex flex-col z-[70] shadow-2xl max-h-[85%]"
+            >
+              <div className="mx-auto w-12 h-1.5 flex-shrink-0 rounded-full bg-gray-300 mt-4 mb-2" />
+              <div className="p-5 overflow-y-auto" style={{ scrollbarWidth: "none" }}>
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-[20px] font-black text-gray-900">Detail Pesanan</h3>
+                  <button onClick={() => setIsOrderFormOpen(false)} className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                    <span className="font-bold text-gray-500">✕</span>
+                  </button>
+                </div>
+
+                <div className="mb-6">
+                  <h4 className="font-extrabold text-[13px] text-gray-900 mb-3">Pilih Layanan</h4>
+                  <div className="flex flex-col gap-2">
+                    {availableServices.map((s) => {
+                      const isSelected = selectedServicesOrder.some(selected => selected.n === s.n);
+                      const SIcon = s.i;
+                      return (
+                        <div 
+                          key={s.n} 
+                          onClick={() => {
+                            if (isSelected) {
+                              setSelectedServicesOrder(prev => prev.filter(selected => selected.n !== s.n));
+                            } else {
+                              setSelectedServicesOrder(prev => [...prev, s]);
+                            }
+                          }}
+                          className={`border rounded-[16px] p-3 flex items-center gap-3 cursor-pointer transition-colors ${isSelected ? 'bg-green-50/50 border-primary' : 'bg-white border-gray-200'}`}
+                        >
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-colors ${isSelected ? 'bg-primary text-white' : 'bg-gray-100 text-gray-400'}`}>
+                            {isSelected ? <Check size={20} /> : <SIcon size={20} />}
+                          </div>
+                          <div className="flex-1">
+                            <h5 className={`font-bold text-[13px] ${isSelected ? 'text-primary' : 'text-gray-900'}`}>{s.n}</h5>
+                            <p className="text-[11px] text-gray-500 line-clamp-1">{s.d}</p>
+                          </div>
+                          <p className="font-black text-[13px] text-gray-900">{rp(s.p)}</p>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                <div className="mb-6">
+                  <h4 className="font-extrabold text-[13px] text-gray-900 mb-3">Alamat Penjemputan</h4>
+                  <textarea 
+                    value={pickupAddress}
+                    onChange={(e) => setPickupAddress(e.target.value)}
+                    placeholder="Contoh: Jl. Mawar No. 12, RT 01/02 (Rumah cat hijau)"
+                    className="w-full bg-gray-50 border border-gray-200 rounded-[16px] p-4 text-[13px] text-gray-800 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary min-h-[100px] resize-none"
+                  />
+                </div>
+
+                <div className="border-t border-gray-100 pt-5 pb-2">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-[13px] font-bold text-gray-500">Estimasi Biaya</span>
+                    <span className="font-black text-[16px] text-gray-900">{rp(selectedServicesOrder.reduce((acc, curr) => acc + (curr.p * 2), 0))}</span>
+                  </div>
+                  <p className="text-[10px] text-gray-400 text-right mb-5">*Berdasarkan asumsi berat 2kg per layanan</p>
+                  
+                  <button 
+                    onClick={handleKonfirmasiPesanan}
+                    disabled={selectedServicesOrder.length === 0}
+                    className={`w-full font-black py-4 rounded-[16px] shadow-lg flex items-center justify-center gap-2 active:scale-95 transition-all ${selectedServicesOrder.length === 0 ? 'bg-gray-200 text-gray-400 shadow-none cursor-not-allowed' : 'bg-primary hover:bg-primary/90 text-white shadow-green-500/30'}`}
+                  >
+                    Konfirmasi & Pesan <CheckCircle size={18} />
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
 
 function KosScreen({ navigate }: Nav) {
   const [filter, setFilter] = useState("Semua");
-  const types = ["Semua", "Putra", "Putri", "Campur"];
-  const filtered = filter === "Semua" ? KOS_LIST : KOS_LIST.filter(k => k.type === filter);
-  const typeColor: Record<string, string> = { Putra: "blue", Putri: "purple", Campur: "orange" };
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const [selectedKos, setSelectedKos] = useState<typeof KOS_LIST[0] | null>(null);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [chatMessage, setChatMessage] = useState("");
+  const [chatHistory, setChatHistory] = useState([
+    { text: "Halo, apakah kamar masih tersedia?", sender: "me", time: "10:00" },
+    { text: "Halo, iya masih ada sisa kamar. Silakan booking via aplikasi ya.", sender: "owner", time: "10:02" }
+  ]);
+  
+  const [isBookingFormOpen, setIsBookingFormOpen] = useState(false);
+  const [bookingName, setBookingName] = useState("Rahman Hakim");
+  const [bookingPhone, setBookingPhone] = useState("081356789012");
+  const [bookingDate, setBookingDate] = useState("");
+  const [bookingDuration, setBookingDuration] = useState(1);
+  const [paymentStatus, setPaymentStatus] = useState<"idle"|"processing"|"success">("idle");
+
+  const handleBookingSubmit = () => {
+    setPaymentStatus("processing");
+    setTimeout(() => {
+      setPaymentStatus("success");
+      setTimeout(() => {
+        setPaymentStatus("idle");
+        setIsBookingFormOpen(false);
+        setSelectedKos(null);
+      }, 2500);
+    }, 2000);
+  };
+
+  const types = [
+    { id: "Semua", icon: LayoutGrid },
+    { id: "Putra", icon: User },
+    { id: "Putri", icon: User },
+    { id: "Campur", icon: Users }
+  ];
+  
+  const filtered = KOS_LIST.filter(k => {
+    const matchType = filter === "Semua" || k.type === filter;
+    const matchSearch = k.name.toLowerCase().includes(searchQuery.toLowerCase()) || k.address.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchType && matchSearch;
+  });
+
   return (
-    <div className="flex flex-col h-full bg-[#F7FAF8]">
-      <div className="bg-white shrink-0">
+    <div className="flex flex-col h-full bg-[#F7FAF8] relative overflow-hidden">
+      {/* Header */}
+      <div className="bg-white shrink-0 z-20 sticky top-0 pt-2 pb-2">
         <StatusBar />
-        <BackHeader title="Kos-kosan" onBack={() => navigate("c_home")}
-          right={<Filter size={18} className="text-muted-foreground" />} />
-        <div className="flex gap-2 overflow-x-auto px-4 pb-3" style={{ scrollbarWidth: "none" }}>
-          {types.map(t => (
-            <button key={t} onClick={() => setFilter(t)}
-              className={`shrink-0 text-xs font-bold px-3.5 py-1.5 rounded-full transition-all ${filter === t ? "bg-primary text-white" : "bg-muted text-muted-foreground"}`}>
-              {t}
+        <div className="px-5 flex items-center justify-between mt-2">
+          <div className="flex items-center gap-4">
+            <button onClick={() => navigate("c_home")} className="w-10 h-10 rounded-full flex items-center justify-center border border-gray-100 hover:bg-gray-50 transition-colors shrink-0">
+              <ArrowLeft size={20} className="text-gray-800" />
             </button>
-          ))}
-        </div>
-      </div>
-      <div className="flex-1 overflow-y-auto px-4 pt-3 pb-4 flex flex-col gap-3" style={{ scrollbarWidth: "none" }}>
-        {filtered.map(k => (
-          <div key={k.id} className="bg-white rounded-2xl overflow-hidden shadow-sm">
-            <div className="relative h-36">
-              <img src={k.img} alt={k.name} className="w-full h-full object-cover bg-muted" />
-              <Pill color={typeColor[k.type] as "blue" | "purple" | "orange"}>
-                {k.type === "Putra" ? "👨 Putra" : k.type === "Putri" ? "👩 Putri" : "👥 Campur"}
-              </Pill>
-            </div>
-            <div className="p-4">
-              <div className="flex items-start justify-between">
-                <h4 className="font-bold text-foreground">{k.name}</h4>
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ml-2 ${k.available ? "bg-green-100 text-green-700" : "bg-red-100 text-red-600"}`}>
-                  {k.available ? "Tersedia" : "Penuh"}
-                </span>
-              </div>
-              <p className="text-muted-foreground text-xs mt-0.5 flex items-center gap-1">
-                <MapPin size={10} /> {k.address}
-              </p>
-              <div className="flex flex-wrap gap-1.5 mt-2">
-                {k.facilities.map(f => (
-                  <span key={f} className="text-[10px] font-semibold px-2 py-0.5 bg-muted text-muted-foreground rounded-full flex items-center gap-0.5">
-                    {f === "WiFi" && <Wifi size={9} />}
-                    {f}
-                  </span>
-                ))}
-              </div>
-              <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
-                <div>
-                  <p className="text-[10px] text-muted-foreground">Per bulan</p>
-                  <p className="text-primary font-extrabold">{rp(k.price)}</p>
-                </div>
-                <button className={`text-xs font-bold px-4 py-2 rounded-xl ${k.available ? "bg-primary text-white" : "bg-muted text-muted-foreground cursor-not-allowed"}`}>
-                  {k.available ? "Hubungi Pemilik" : "Bergabung Antrean"}
-                </button>
-              </div>
+            <div>
+              <h1 className="text-[20px] font-black text-gray-900 tracking-tight leading-tight">Kos-kosan</h1>
+              <p className="text-[11px] font-semibold text-gray-400">Temukan kos terbaik sesuai kebutuhanmu</p>
             </div>
           </div>
-        ))}
+          <div className="flex items-center gap-2">
+            <button className="w-10 h-10 rounded-full border border-gray-100 flex items-center justify-center hover:bg-gray-50 transition-colors">
+              <Map size={18} className="text-gray-700" />
+            </button>
+            <button className="w-10 h-10 rounded-full border border-gray-100 flex items-center justify-center hover:bg-gray-50 transition-colors relative">
+              <SlidersHorizontal size={18} className="text-gray-700" />
+              <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-primary rounded-full border-2 border-white" />
+            </button>
+          </div>
+        </div>
+
+        {/* Search Bar */}
+        <div className="px-5 mt-4">
+          <div className="relative flex items-center rounded-2xl bg-white border border-gray-200 overflow-hidden focus-within:border-primary transition-colors">
+            <Search size={18} className="text-gray-400 absolute left-4" />
+            <input 
+              type="text" 
+              placeholder="Cari lokasi, nama kos, atau fasilitas..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full py-3.5 pl-11 pr-28 bg-transparent text-[13px] font-semibold text-gray-800 focus:outline-none placeholder:text-gray-400" 
+            />
+            <div className="absolute right-2 bg-green-50 text-primary px-2.5 py-1.5 rounded-xl flex items-center gap-1.5 cursor-pointer">
+              <MapPin size={12} className="fill-primary/20" />
+              <span className="text-[10px] font-bold">Dekat saya</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Filter Chips */}
+        <div className="px-5 mt-4 flex gap-2.5 overflow-x-auto pb-2" style={{ scrollbarWidth: "none" }}>
+          {types.map(t => {
+            const TIcon = t.icon;
+            const isAll = t.id === "Semua";
+            const isPutra = t.id === "Putra";
+            const isPutri = t.id === "Putri";
+            const isCampur = t.id === "Campur";
+            
+            const activeColor = isAll ? "bg-primary text-white shadow-md shadow-green-500/20" : 
+                               isPutra ? "bg-blue-50 text-blue-600 border border-blue-200" :
+                               isPutri ? "bg-pink-50 text-pink-600 border border-pink-200" :
+                               "bg-orange-50 text-orange-600 border border-orange-200";
+            const inactiveColor = "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50";
+            const isActive = filter === t.id;
+
+            return (
+              <button 
+                key={t.id}
+                onClick={() => setFilter(t.id)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-[14px] text-[12px] font-bold transition-all shrink-0 ${isActive ? activeColor : inactiveColor}`}
+              >
+                <TIcon size={14} className={isActive ? (isAll ? "text-white" : "") : "text-gray-400"} /> {t.id}
+              </button>
+            )
+          })}
+        </div>
       </div>
+
+      <div className="flex-1 overflow-y-auto px-5 pt-4 pb-6 flex flex-col gap-5" style={{ scrollbarWidth: "none" }}>
+        
+        {/* Banner Promo */}
+        <div className="bg-[#E8F5EE] rounded-[20px] p-4 flex items-center gap-4 relative overflow-hidden shrink-0">
+          <div className="absolute -right-4 -top-4 w-24 h-24 bg-primary/5 rounded-full blur-xl" />
+          <div className="w-14 h-14 rounded-2xl bg-white flex items-center justify-center shrink-0 shadow-sm relative z-10 rotate-[-10deg]">
+            <Percent size={28} className="text-primary" />
+          </div>
+          <div className="flex-1 relative z-10">
+            <div className="flex items-start justify-between">
+              <h3 className="font-extrabold text-gray-900 text-[14px] mb-1">Diskon Spesial!</h3>
+              <button className="text-gray-400 hover:text-gray-600"><X size={14} /></button>
+            </div>
+            <p className="text-[11px] font-medium text-gray-600 mb-2.5 leading-tight">Dapatkan potongan harga hingga 15% untuk pemesanan bulan ini</p>
+            <button className="bg-primary text-white text-[10px] font-black px-3 py-1.5 rounded-lg flex items-center gap-1 w-max">
+              Lihat Promo <ChevronRight size={12} />
+            </button>
+          </div>
+        </div>
+
+        {/* Kos Cards */}
+        {filtered.map(k => {
+          const typeColorInfo = k.type === "Putra" ? { bg: "bg-blue-50", text: "text-blue-600", i: User } :
+                                k.type === "Putri" ? { bg: "bg-pink-50", text: "text-pink-600", i: User } :
+                                { bg: "bg-orange-50", text: "text-orange-600", i: Users };
+          const TypeIcon = typeColorInfo.i;
+
+          return (
+            <div key={k.id} onClick={() => setSelectedKos(k)} className="bg-white rounded-[24px] overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.03)] border border-gray-100 flex flex-col active:scale-[0.98] transition-transform cursor-pointer shrink-0">
+              
+              <div className="flex gap-3 p-3">
+                {/* Left Image */}
+                <div className="w-[140px] h-[180px] shrink-0 bg-gray-100 rounded-[18px] relative overflow-hidden group">
+                  <img src={k.img} alt={k.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" loading="lazy" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                  
+                  {/* Heart Icon */}
+                  <button className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/20 backdrop-blur-md flex items-center justify-center border border-white/20 text-white hover:bg-black/40">
+                    <Heart size={16} />
+                  </button>
+                  
+                  {/* Camera Label */}
+                  <div className="absolute bottom-2 left-2 bg-black/40 backdrop-blur-md text-white px-2 py-1 rounded-lg flex items-center gap-1 border border-white/10">
+                    <Camera size={10} />
+                    <span className="text-[9px] font-bold">8 Foto</span>
+                  </div>
+
+                  {/* Dots */}
+                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1">
+                    <div className="w-3 h-1.5 bg-white rounded-full" />
+                    <div className="w-1.5 h-1.5 bg-white/50 rounded-full" />
+                    <div className="w-1.5 h-1.5 bg-white/50 rounded-full" />
+                    <div className="w-1.5 h-1.5 bg-white/50 rounded-full" />
+                  </div>
+                </div>
+
+                {/* Right Content */}
+                <div className="flex-1 flex flex-col pt-1">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full ${typeColorInfo.bg} ${typeColorInfo.text}`}>
+                      <TypeIcon size={10} />
+                      <span className="text-[9px] font-bold tracking-wide">{k.type}</span>
+                    </div>
+                    <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded-full ${k.available ? "bg-green-50 text-green-600" : "bg-red-50 text-red-600"}`}>
+                      {k.available ? "Tersedia" : "Penuh"}
+                    </span>
+                  </div>
+
+                  <h4 className="font-extrabold text-gray-900 text-[15px] leading-tight mb-1 line-clamp-1">{k.name}</h4>
+                  
+                  <div className="flex items-center gap-1 text-gray-500 mb-1.5">
+                    <MapPin size={12} className="text-gray-400 shrink-0" />
+                    <span className="text-[11px] font-medium line-clamp-1">{k.address}</span>
+                  </div>
+
+                  <div className="flex items-center gap-1 text-[11px] mb-3">
+                    <Star size={12} className="fill-amber-400 text-amber-400" />
+                    <span className="font-bold text-gray-900">4.8</span>
+                    <span className="text-gray-400">(120 ulasan)</span>
+                  </div>
+
+                  {/* Facilities Icons */}
+                  <div className="flex flex-wrap gap-1.5 mb-auto">
+                    {k.facilities.map((f, i) => {
+                      let FIcon = Wifi;
+                      if (f.includes("AC")) FIcon = Wind;
+                      if (f.includes("KM")) FIcon = Bath;
+                      if (f.includes("Dapur")) FIcon = Utensils;
+                      if (f.includes("Parkir")) FIcon = Bike;
+                      if (f.includes("Laundry")) FIcon = Shirt;
+                      
+                      return (
+                        <div key={i} className="flex items-center gap-1 border border-gray-200 rounded-lg px-1.5 py-1 text-primary bg-white">
+                          <FIcon size={10} className={k.type === "Putra" ? "text-blue-500" : k.type === "Putri" ? "text-pink-500" : "text-orange-500"} />
+                          <span className="text-[8px] font-bold text-gray-600 whitespace-nowrap">{f}</span>
+                        </div>
+                      )
+                    })}
+                  </div>
+
+                  {/* Price */}
+                  <div className="mt-2 pt-2 border-t border-gray-100 flex items-end justify-between">
+                    <div>
+                      <p className="text-[9px] font-medium text-gray-400 mb-0.5">Mulai dari</p>
+                      <p className="font-black text-primary text-[15px] leading-none">{rp(k.price)} <span className="text-[10px] font-medium text-gray-400">/ bulan</span></p>
+                    </div>
+                    <div className="w-6 h-6 rounded-full bg-green-50 flex items-center justify-center text-primary shrink-0">
+                      <ChevronRight size={14} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )
+        })}
+
+        {/* Trust Badges Footer */}
+        <div className="flex justify-between border-t border-gray-100 pt-5 pb-2 px-1 shrink-0 mt-2">
+          <div className="flex items-center gap-2">
+            <Shield size={16} className="text-primary" />
+            <div>
+              <p className="text-[9px] font-bold text-gray-700">Aman & Terverifikasi</p>
+              <p className="text-[8px] text-gray-400">Semua kos telah diverifikasi</p>
+            </div>
+          </div>
+          <div className="w-[1px] h-6 bg-gray-200" />
+          <div className="flex items-center gap-2">
+            <Users size={16} className="text-blue-500" />
+            <div>
+              <p className="text-[9px] font-bold text-gray-700">+2.000 Kos</p>
+              <p className="text-[8px] text-gray-400">Pilihan terbaik untukmu</p>
+            </div>
+          </div>
+          <div className="w-[1px] h-6 bg-gray-200" />
+          <div className="flex items-center gap-2">
+            <Headphones size={16} className="text-orange-500" />
+            <div>
+              <p className="text-[9px] font-bold text-gray-700">Layanan 24/7</p>
+              <p className="text-[8px] text-gray-400">Kami siap membantu</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <AnimatePresence>
+        {/* FULLSCREEN KOS DETAIL */}
+        {selectedKos && (
+          <motion.div
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "100%" }}
+            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+            className="absolute inset-0 z-30 bg-white flex flex-col"
+          >
+            {/* Header Image */}
+            <div className="h-[280px] shrink-0 relative bg-gray-100">
+              <img src={selectedKos.img} alt={selectedKos.name} className="w-full h-full object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30" />
+              
+              <button 
+                onClick={() => setSelectedKos(null)} 
+                className="absolute top-5 left-5 w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white border border-white/20"
+              >
+                <ArrowLeft size={20} />
+              </button>
+
+              <div className="absolute top-5 right-5 flex gap-2">
+                <button className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white border border-white/20">
+                  <Share size={18} />
+                </button>
+                <button className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white border border-white/20">
+                  <Heart size={18} />
+                </button>
+              </div>
+
+              <div className="absolute bottom-5 left-5 right-5 flex items-end justify-between">
+                <div>
+                  <div className="flex gap-2 mb-2">
+                    <span className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full ${selectedKos.type === "Putra" ? "bg-blue-500 text-white" : selectedKos.type === "Putri" ? "bg-pink-500 text-white" : "bg-orange-500 text-white"}`}>
+                      {selectedKos.type}
+                    </span>
+                    <span className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full ${selectedKos.available ? "bg-green-500 text-white" : "bg-red-500 text-white"}`}>
+                      {selectedKos.available ? "Sisa 2 Kamar" : "Penuh"}
+                    </span>
+                  </div>
+                  <h2 className="text-[24px] font-black text-white leading-tight">{selectedKos.name}</h2>
+                </div>
+              </div>
+            </div>
+
+            {/* Scrollable Detail Content */}
+            <div className="flex-1 overflow-y-auto px-5 pt-5 pb-24 bg-white" style={{ scrollbarWidth: "none" }}>
+              <div className="flex items-start justify-between mb-5">
+                <div>
+                  <p className="text-[13px] text-gray-500 font-medium flex items-center gap-1 mb-1">
+                    <MapPin size={14} className="text-gray-400 shrink-0" />
+                    {selectedKos.address}
+                  </p>
+                  <div className="flex items-center gap-1.5 text-[12px]">
+                    <Star size={14} className="fill-amber-400 text-amber-400" />
+                    <span className="font-bold text-gray-900">4.8</span>
+                    <span className="text-gray-400">(120 ulasan)</span>
+                    <span className="text-gray-300 mx-1">•</span>
+                    <span className="text-blue-500 font-bold">Pemilik Responsif</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mb-6">
+                <h3 className="font-extrabold text-[15px] text-gray-900 mb-3">Fasilitas Kos</h3>
+                <div className="grid grid-cols-4 gap-3">
+                  {selectedKos.facilities.map((f, i) => {
+                    let FIcon = Wifi;
+                    if (f.includes("AC")) FIcon = Wind;
+                    if (f.includes("KM")) FIcon = Bath;
+                    if (f.includes("Dapur")) FIcon = Utensils;
+                    if (f.includes("Parkir")) FIcon = Bike;
+                    if (f.includes("Laundry")) FIcon = Shirt;
+                    return (
+                      <div key={i} className="flex flex-col items-center justify-center gap-2 bg-gray-50 rounded-2xl p-3 border border-gray-100">
+                        <FIcon size={20} className="text-primary" />
+                        <span className="text-[9px] font-bold text-gray-600 text-center">{f}</span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+
+              <div className="mb-6">
+                <h3 className="font-extrabold text-[15px] text-gray-900 mb-2">Deskripsi</h3>
+                <p className="text-[12px] text-gray-500 leading-relaxed">
+                  Kos {selectedKos.type} eksklusif dengan fasilitas lengkap, bersih, dan aman. Lokasi strategis dekat dengan area perkantoran PGE dan pusat makanan. Harga sudah termasuk air, sampah, dan WiFi.
+                </p>
+              </div>
+            </div>
+
+            {/* Bottom Action Bar */}
+            <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-4 pb-6 flex items-center gap-3 shadow-[0_-10px_20px_rgba(0,0,0,0.03)] z-10">
+              <div className="flex-1">
+                <p className="text-[10px] text-gray-500 font-medium mb-0.5">Harga sewa</p>
+                <p className="text-[18px] font-black text-primary leading-none">{rp(selectedKos.price)} <span className="text-[11px] font-medium text-gray-400">/ bln</span></p>
+              </div>
+              <button 
+                onClick={() => setIsChatOpen(true)}
+                className="w-12 h-12 rounded-2xl border-2 border-primary text-primary flex items-center justify-center shrink-0 hover:bg-green-50 transition-colors"
+              >
+                <MessageCircle size={20} />
+              </button>
+              <button 
+                onClick={() => setIsBookingFormOpen(true)}
+                disabled={!selectedKos.available}
+                className={`flex-[1.5] h-12 rounded-2xl font-black text-[14px] flex items-center justify-center transition-transform active:scale-95 ${selectedKos.available ? "bg-primary text-white shadow-lg shadow-green-500/30" : "bg-gray-200 text-gray-400 cursor-not-allowed"}`}
+              >
+                {selectedKos.available ? "Booking & DP" : "Kamar Penuh"}
+              </button>
+            </div>
+          </motion.div>
+        )}
+
+        {/* CHAT DRAWER */}
+        {isChatOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-40 bg-black/40 backdrop-blur-sm flex flex-col justify-end"
+          >
+            <div className="flex-1" onClick={() => setIsChatOpen(false)} />
+            <motion.div
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              className="bg-white rounded-t-[32px] h-[75%] flex flex-col overflow-hidden"
+            >
+              <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-white z-10 shadow-sm">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-primary font-bold">
+                    P
+                  </div>
+                  <div>
+                    <h3 className="font-extrabold text-[15px] text-gray-900">Pemilik {selectedKos?.name}</h3>
+                    <p className="text-[11px] text-green-500 font-bold flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 bg-green-500 rounded-full" /> Sedang Online
+                    </p>
+                  </div>
+                </div>
+                <button onClick={() => setIsChatOpen(false)} className="w-8 h-8 flex items-center justify-center bg-gray-100 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded-full transition-colors">
+                  <X size={16} />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3 bg-[#F7FAF8]">
+                {chatHistory.map((chat, idx) => (
+                  <div key={idx} className={`max-w-[80%] rounded-2xl p-3 ${chat.sender === "me" ? "bg-primary text-white self-end rounded-br-sm shadow-md shadow-green-500/10" : "bg-white text-gray-800 border border-gray-100 self-start rounded-bl-sm shadow-sm"}`}>
+                    <p className="text-[13px] font-medium leading-relaxed">{chat.text}</p>
+                    <p className={`text-[9px] mt-1 text-right ${chat.sender === "me" ? "text-green-100" : "text-gray-400"}`}>{chat.time}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="p-4 bg-white border-t border-gray-100">
+                <div className="flex items-center gap-2 bg-gray-50 p-2 rounded-full border border-gray-200">
+                  <button className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-primary transition-colors">
+                    <Plus size={18} />
+                  </button>
+                  <input
+                    type="text"
+                    value={chatMessage}
+                    onChange={(e) => setChatMessage(e.target.value)}
+                    placeholder="Ketik pesan..."
+                    className="flex-1 bg-transparent text-[13px] font-medium focus:outline-none placeholder:text-gray-400"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && chatMessage.trim()) {
+                        setChatHistory([...chatHistory, { text: chatMessage, sender: "me", time: "10:05" }]);
+                        setChatMessage("");
+                      }
+                    }}
+                  />
+                  <button 
+                    onClick={() => {
+                      if (chatMessage.trim()) {
+                        setChatHistory([...chatHistory, { text: chatMessage, sender: "me", time: "10:05" }]);
+                        setChatMessage("");
+                      }
+                    }}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${chatMessage.trim() ? "bg-primary text-white" : "bg-gray-200 text-gray-400"}`}
+                  >
+                    <Send size={14} className={chatMessage.trim() ? "ml-0.5" : ""} />
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+
+        {/* BOOKING FORM DRAWER */}
+        {isBookingFormOpen && selectedKos && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-50 bg-black/60 backdrop-blur-sm flex flex-col justify-end"
+          >
+            <div className="flex-1" onClick={() => paymentStatus === "idle" && setIsBookingFormOpen(false)} />
+            <motion.div
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              className="bg-white rounded-t-[32px] overflow-hidden"
+            >
+              {paymentStatus === "idle" && (
+                <>
+                  <div className="p-5 pb-3 border-b border-gray-100 flex justify-between items-center">
+                    <div>
+                      <h3 className="font-extrabold text-[18px] text-gray-900">Form Booking Kos</h3>
+                      <p className="text-[11px] font-medium text-gray-500">Amankan kamar dengan DP 20%</p>
+                    </div>
+                    <button onClick={() => setIsBookingFormOpen(false)} className="w-8 h-8 flex items-center justify-center bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700 transition-colors rounded-full">
+                      <X size={16} />
+                    </button>
+                  </div>
+
+                  <div className="p-5 max-h-[60vh] overflow-y-auto" style={{ scrollbarWidth: "none" }}>
+                    <div className="flex items-center gap-3 p-3 bg-[#E8F5EE] rounded-2xl mb-5">
+                      <img src={selectedKos.img} alt="" className="w-12 h-12 rounded-xl object-cover" />
+                      <div>
+                        <p className="font-extrabold text-[13px] text-gray-900">{selectedKos.name}</p>
+                        <p className="text-[11px] text-primary font-bold">{rp(selectedKos.price)} / bln</p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div>
+                        <label className="text-[11px] font-bold text-gray-500 mb-1.5 block">Nama Penyewa</label>
+                        <input type="text" value={bookingName} onChange={e => setBookingName(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-[13px] font-bold text-gray-800 focus:outline-none focus:border-primary transition-colors" />
+                      </div>
+                      <div>
+                        <label className="text-[11px] font-bold text-gray-500 mb-1.5 block">No WhatsApp Aktif</label>
+                        <input type="tel" value={bookingPhone} onChange={e => setBookingPhone(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-[13px] font-bold text-gray-800 focus:outline-none focus:border-primary transition-colors" />
+                      </div>
+                      <div className="flex gap-3">
+                        <div className="flex-1">
+                          <label className="text-[11px] font-bold text-gray-500 mb-1.5 block">Tgl. Masuk Kos</label>
+                          <input type="date" value={bookingDate} onChange={e => setBookingDate(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-[13px] font-bold text-gray-800 focus:outline-none focus:border-primary transition-colors" />
+                        </div>
+                        <div className="flex-[0.5]">
+                          <label className="text-[11px] font-bold text-gray-500 mb-1.5 block">Durasi (Bln)</label>
+                          <div className="relative">
+                            <input type="number" min="1" max="12" value={bookingDuration} onChange={e => setBookingDuration(parseInt(e.target.value) || 1)} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 pr-8 text-[13px] font-bold text-gray-800 focus:outline-none focus:border-primary transition-colors" />
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-bold text-gray-400 pointer-events-none">bln</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-6 pt-5 border-t border-gray-100 border-dashed">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-[12px] text-gray-500 font-medium">Total Harga Sewa</span>
+                        <span className="text-[12px] text-gray-900 font-bold">{rp(selectedKos.price * bookingDuration)}</span>
+                      </div>
+                      <div className="flex justify-between items-center bg-green-50 p-3 rounded-xl border border-green-100 mt-3">
+                        <span className="text-[13px] font-extrabold text-gray-900 flex items-center gap-1.5">
+                          <Wallet size={16} className="text-primary" /> DP (20%)
+                        </span>
+                        <span className="text-[16px] font-black text-primary">{rp(selectedKos.price * bookingDuration * 0.2)}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-5 pt-2 border-t border-gray-100 bg-white">
+                    <button 
+                      onClick={handleBookingSubmit}
+                      disabled={!bookingDate}
+                      className={`w-full py-4 rounded-[16px] font-black text-[14px] flex items-center justify-center gap-2 transition-all active:scale-95 ${bookingDate ? 'bg-primary hover:bg-primary/90 text-white shadow-lg shadow-green-500/30' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
+                    >
+                      Bayar DP {rp(selectedKos.price * bookingDuration * 0.2)} <ChevronRight size={16} />
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {/* Payment Processing/Success */}
+              {paymentStatus !== "idle" && (
+                <div className="p-8 flex flex-col items-center justify-center min-h-[350px]">
+                  {paymentStatus === "processing" ? (
+                    <div className="flex flex-col items-center">
+                      <div className="w-16 h-16 border-4 border-gray-100 border-t-primary rounded-full animate-spin mb-4" />
+                      <p className="font-extrabold text-[15px] text-gray-900">Memproses Pembayaran...</p>
+                      <p className="text-[11px] text-gray-500 mt-1">Mengamankan kamar kos Anda</p>
+                    </div>
+                  ) : (
+                    <motion.div 
+                      initial={{ scale: 0.5, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      className="flex flex-col items-center text-center"
+                    >
+                      <div className="w-20 h-20 bg-green-100 text-green-500 rounded-full flex items-center justify-center mb-5">
+                        <Check size={40} className="stroke-[4px]" />
+                      </div>
+                      <h3 className="font-black text-[20px] text-gray-900 mb-2">Booking Berhasil!</h3>
+                      <p className="text-[12px] text-gray-500 leading-relaxed max-w-[250px]">
+                        DP sebesar <strong className="text-gray-900">{rp(selectedKos.price * bookingDuration * 0.2)}</strong> telah dibayarkan. Silakan cek menu Pesanan.
+                      </p>
+                    </motion.div>
+                  )}
+                </div>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
