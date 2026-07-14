@@ -4796,7 +4796,9 @@ function TrackingScreen({
   setMyOrders,
   showToast,
   unreadChatCount,
-  addDriverMessage
+  addDriverMessage,
+  dompetBalance,
+  setDompetBalance
 }: {
   navigate: (s: Screen) => void;
   activeTrackingOrderId: string | null;
@@ -4805,10 +4807,50 @@ function TrackingScreen({
   showToast: (m: string) => void;
   unreadChatCount: number;
   addDriverMessage: (text: string) => void;
+  dompetBalance: number;
+  setDompetBalance: React.Dispatch<React.SetStateAction<number>>;
 }) {
   const order = myOrders.find(o => o.id === activeTrackingOrderId);
   const [phase, setPhase] = useState(0); 
   const [tick, setTick] = useState(0);
+
+  const [activeLunasiOrder, setActiveLunasiOrder] = useState<any | null>(null);
+  const [lunasiMethod, setLunasiMethod] = useState<"dompet" | "qris">("dompet");
+  const [showLunasiQris, setShowLunasiQris] = useState(false);
+
+  const handleLunasi = (targetOrder: any, methodOverride?: "dompet" | "qris") => {
+    const sisa = targetOrder.sisaAmount;
+    const method = methodOverride || lunasiMethod;
+
+    if (method === "dompet") {
+      if (dompetBalance < sisa) {
+        showToast("Saldo Dompet Rangers tidak mencukupi untuk pelunasan!");
+        return;
+      }
+      setDompetBalance(prev => prev - sisa);
+    }
+
+    setMyOrders(prev => prev.map(o => {
+      if (o.id === targetOrder.id) {
+        return {
+          ...o,
+          status: "Diproses",
+          statusColor: "orange",
+          sisaAmount: 0,
+          paymentType: "Full",
+          paymentHistory: [
+            ...(o.paymentHistory || []),
+            { label: "Pelunasan PO", amount: sisa, date: "Hari Ini", method: method === "dompet" ? "Dompet Rangers" : "QRIS" }
+          ]
+        };
+      }
+      return o;
+    }));
+
+    showToast(`Pelunasan PO sebesar ${rp(sisa)} via ${method === "dompet" ? "Dompet" : "QRIS"} berhasil!`);
+    setActiveLunasiOrder(null);
+    setShowLunasiQris(false);
+  };
 
   const triggerDriverMessage = (nextPhase: number) => {
     let msg = "";
@@ -5097,6 +5139,45 @@ function TrackingScreen({
           </div>
         </div>
 
+        {/* Catering PO Payment History and Installment timeline inside Tracking Screen */}
+        {order.type === "Catering" && order.paymentHistory && order.paymentHistory.length > 0 && (
+          <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 shadow-sm flex flex-col gap-2">
+            <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Riwayat Pembayaran PO</h4>
+            {order.paymentHistory.map((h: any, idx: number) => (
+              <div key={idx} className="flex justify-between items-center text-xs font-semibold text-foreground">
+                <span className="text-muted-foreground">✓ {h.label} ({h.method})</span>
+                <span className="text-primary font-bold">{rp(h.amount)}</span>
+              </div>
+            ))}
+            {order.sisaAmount > 0 && (
+              <div 
+                onClick={() => setActiveLunasiOrder(order)}
+                className="flex justify-between items-center text-[11px] text-amber-700 font-bold border-t border-dashed border-border pt-2 mt-1.5 cursor-pointer hover:underline"
+                title="Klik untuk melunasi sisa pembayaran"
+              >
+                <span>○ Sisa Pembayaran PO (Klik untuk lunasi)</span>
+                <span className="bg-amber-100 px-2 py-0.5 rounded text-amber-900">{rp(order.sisaAmount)}</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Down Payment (DP) warning banner & payment trigger in Tracking Screen */}
+        {order.type === "Catering" && order.status === "Menunggu Pelunasan" && (
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 shadow-sm flex flex-col gap-2">
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-amber-800 font-bold">⚠️ Menunggu Pelunasan PO</span>
+              <span className="text-amber-900 font-extrabold">{rp(order.sisaAmount)}</span>
+            </div>
+            <button 
+              onClick={() => setActiveLunasiOrder(order)}
+              className="w-full py-2 bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-xs rounded-xl shadow-md cursor-pointer text-center active:scale-95 transition-all"
+            >
+              Lunasi Sekarang
+            </button>
+          </div>
+        )}
+
         {/* Payment Detail breakdown or Invoice Receipt */}
         {phase === 4 ? (
           /* Gojek-style Paper Invoice Receipt */
@@ -5233,6 +5314,172 @@ function TrackingScreen({
           )}
         </div>
       </div>
+
+      {/* Pelunasan Payment Option Dialog in Tracking (Popup Modal) */}
+      {activeLunasiOrder && !showLunasiQris && (() => {
+        const sisa = activeLunasiOrder.sisaAmount;
+        return (
+          <div className="absolute inset-0 bg-black/70 z-50 flex items-center justify-center p-5 text-foreground">
+            <div className="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl border border-border relative flex flex-col max-h-[85%]">
+              
+              <div className="p-4 border-b border-border flex items-center justify-between shrink-0 bg-slate-50">
+                <span className="text-xs font-black text-foreground">Metode Pelunasan PO</span>
+                <button 
+                  onClick={() => setActiveLunasiOrder(null)}
+                  className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-muted-foreground cursor-pointer"
+                >
+                  <X size={12} />
+                </button>
+              </div>
+
+              <div className="p-5 overflow-y-auto flex-1 flex flex-col gap-4" style={{ scrollbarWidth: "none" }}>
+                
+                {/* Order Summary box */}
+                <div className="bg-slate-50 border border-slate-100 p-3.5 rounded-2xl flex flex-col gap-1">
+                  <div className="text-[10px] text-muted-foreground font-bold">Katering PO</div>
+                  <div className="text-xs text-foreground font-extrabold truncate">{activeLunasiOrder.item}</div>
+                  <div className="text-[10px] text-muted-foreground font-semibold mt-1">{activeLunasiOrder.detail}</div>
+                  <div className="flex justify-between items-center text-xs text-foreground font-bold border-t border-dashed border-border pt-2 mt-2">
+                    <span>Sisa Pelunasan</span>
+                    <span className="text-primary font-black text-sm">{rp(sisa)}</span>
+                  </div>
+                </div>
+
+                {/* Choices Selector */}
+                <div className="flex flex-col gap-2.5">
+                  <p className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wide">Pilih Metode Pelunasan</p>
+                  
+                  {/* Option 1: Dompet Rangers */}
+                  <div 
+                    onClick={() => setLunasiMethod("dompet")}
+                    className={`p-3.5 rounded-2xl border-2 transition-all cursor-pointer flex items-center gap-3 bg-white ${lunasiMethod === "dompet" ? "border-primary bg-primary/[0.02]" : "border-border hover:bg-slate-50"}`}
+                  >
+                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${lunasiMethod === "dompet" ? "border-primary" : "border-gray-300"}`}>
+                      {lunasiMethod === "dompet" && <div className="w-2 h-2 rounded-full bg-primary" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-extrabold text-foreground">Dompet Rangers</p>
+                      <p className="text-[9px] text-muted-foreground mt-0.5">Potong langsung dari saldo Anda.</p>
+                      <p className="text-primary font-bold text-xs mt-1">Saldo: {rp(dompetBalance)}</p>
+                    </div>
+                  </div>
+
+                  {/* Option 2: QRIS */}
+                  <div 
+                    onClick={() => setLunasiMethod("qris")}
+                    className={`p-3.5 rounded-2xl border-2 transition-all cursor-pointer flex items-center gap-3 bg-white ${lunasiMethod === "qris" ? "border-primary bg-primary/[0.02]" : "border-border hover:bg-slate-50"}`}
+                  >
+                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${lunasiMethod === "qris" ? "border-primary" : "border-gray-300"}`}>
+                      {lunasiMethod === "qris" && <div className="w-2 h-2 rounded-full bg-primary" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-extrabold text-foreground">QRIS Barcode Scan</p>
+                      <p className="text-[9px] text-muted-foreground mt-0.5">Scan & bayar instan dari aplikasi e-wallet Anda.</p>
+                    </div>
+                  </div>
+
+                </div>
+
+              </div>
+
+              {/* Action Buttons */}
+              <div className="p-4 border-t border-border bg-white flex gap-2.5 shrink-0 shadow-[0_-4px_16px_rgba(0,0,0,0.02)]">
+                <button 
+                  onClick={() => setActiveLunasiOrder(null)}
+                  className="flex-1 py-3 border border-border text-muted-foreground font-bold text-xs rounded-xl cursor-pointer hover:bg-slate-50 text-center"
+                >
+                  Batal
+                </button>
+                <button 
+                  onClick={() => {
+                    if (lunasiMethod === "qris") {
+                      setShowLunasiQris(true);
+                    } else {
+                      handleLunasi(activeLunasiOrder);
+                    }
+                  }}
+                  className="flex-[2] py-3 bg-primary hover:bg-primary/95 text-white font-extrabold text-xs rounded-xl shadow-md cursor-pointer text-center"
+                >
+                  Bayar Pelunasan
+                </button>
+              </div>
+
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Pelunasan QRIS Simulation Dialog in Tracking */}
+      {showLunasiQris && activeLunasiOrder && (() => {
+        const sisa = activeLunasiOrder.sisaAmount;
+        return (
+          <div className="absolute inset-0 bg-[#1B7A4E] z-50 flex flex-col items-center justify-center p-6 text-white text-center">
+            <h2 className="text-xl font-extrabold mb-1">Pelunasan QRIS</h2>
+            <p className="text-green-200 text-xs mb-6">PGE Kamojang Community Payment Gate</p>
+
+            <div className="bg-white rounded-3xl p-6 shadow-xl w-full max-w-xs text-foreground flex flex-col items-center">
+              <div className="flex items-center justify-between w-full mb-3 border-b border-border pb-2">
+                <span className="text-[10px] font-bold text-gray-400 tracking-wider">QRIS STANDAR NASIONAL</span>
+                <span className="text-[10px] font-bold text-primary">RANGERS APP</span>
+              </div>
+              
+              <div className="text-xs text-muted-foreground mb-1">Jumlah Pelunasan PO</div>
+              <div className="text-xl font-extrabold text-foreground mb-4">{rp(sisa)}</div>
+              
+              <div className="w-48 h-48 border-4 border-gray-100 p-2 rounded-2xl flex items-center justify-center relative mb-4">
+                <svg viewBox="0 0 100 100" className="w-full h-full text-foreground fill-current">
+                  <rect x="0" y="0" width="25" height="25" fill="#000" />
+                  <rect x="5" y="5" width="15" height="15" fill="#fff" />
+                  <rect x="9" y="9" width="7" height="7" fill="#000" />
+                  
+                  <rect x="75" y="0" width="25" height="25" fill="#000" />
+                  <rect x="75" y="5" width="15" height="15" fill="#fff" />
+                  <rect x="79" y="9" width="7" height="7" fill="#000" />
+
+                  <rect x="0" y="75" width="25" height="25" fill="#000" />
+                  <rect x="5" y="75" width="15" height="15" fill="#fff" />
+                  <rect x="9" y="79" width="7" height="7" fill="#000" />
+
+                  <rect x="35" y="10" width="10" height="20" />
+                  <rect x="55" y="5" width="15" height="10" />
+                  <rect x="40" y="40" width="20" height="20" />
+                  <rect x="10" y="45" width="15" height="15" />
+                  <rect x="70" y="40" width="15" height="15" />
+                  <rect x="30" y="70" width="20" height="15" />
+                  <rect x="65" y="70" width="15" height="20" />
+                  <rect x="45" y="85" width="15" height="10" />
+                  
+                  <circle cx="50" cy="50" r="12" fill="#fff" />
+                  <circle cx="50" cy="50" r="9" fill="#1B7A4E" />
+                  <path d="M47 52 L50 47 L53 52" fill="#fff" />
+                </svg>
+                <div className="absolute inset-0 bg-black/5 rounded-2xl flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                  <span className="bg-white px-2 py-1 rounded text-[9px] font-bold shadow">Simulasi QRIS Pelunasan</span>
+                </div>
+              </div>
+
+              <p className="text-[10px] text-muted-foreground text-center">
+                Pindai QR di atas menggunakan aplikasi perbankan atau e-wallet Anda untuk menyelesaikan pelunasan
+              </p>
+            </div>
+
+            <button 
+              onClick={() => handleLunasi(activeLunasiOrder, "qris")}
+              className="w-full max-w-xs mt-8 py-3.5 bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-extrabold rounded-2xl text-sm transition-all shadow-md cursor-pointer"
+            >
+              ✅ Simulasikan Bayar Pelunasan Sukses
+            </button>
+
+            <button 
+              onClick={() => setShowLunasiQris(false)}
+              className="text-xs text-green-200 mt-4 hover:underline cursor-pointer"
+            >
+              Kembali
+            </button>
+          </div>
+        );
+      })()}
+
     </div>
   );
 }
@@ -6544,6 +6791,8 @@ export default function App() {
         showToast={showToast}
         unreadChatCount={unreadChatCount}
         addDriverMessage={addDriverMessage}
+        dompetBalance={dompetBalance}
+        setDompetBalance={setDompetBalance}
       />
     );
     
