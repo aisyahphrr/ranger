@@ -6175,7 +6175,7 @@ function DriverHome({ navigate, activeMitraRoles, showToast }: Nav & { activeMit
 
   return (
     <div className="flex flex-col h-full bg-[#F7FAF8]">
-      <div className={`shrink-0 transition-colors duration-500 ${online ? "bg-gradient-to-b from-[#0D5C36] to-[#1B7A4E]" : "bg-gradient-to-b from-gray-700 to-gray-600"}`}>
+      <div className={`shrink-0 transition-colors duration-500 ${(online || dashboardMode === "mitra") ? "bg-gradient-to-b from-[#0D5C36] to-[#1B7A4E]" : "bg-gradient-to-b from-gray-700 to-gray-600"}`}>
         <StatusBar light />
         <div className="px-5 pb-5">
           <div className="flex items-center justify-between">
