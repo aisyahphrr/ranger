@@ -1514,7 +1514,7 @@ function CateringScreen({
     showToast(`Booking PO Berhasil! ${sisaAmount > 0 ? "DP Berhasil dibayar." : "Pembayaran Lunas."}`);
     setShowPaymentDialog(false);
     setSelectedMerchant(null);
-    navigate("c_inbox");
+    navigate("c_pesanan");
   };
 
   // Fuzzy Search & Kategori Filtering
