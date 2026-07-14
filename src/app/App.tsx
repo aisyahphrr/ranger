@@ -9,7 +9,8 @@ import {
   Navigation2, Edit3, Building2, Bike, Signal, QrCode,
   Banknote, AlertCircle, Camera, Info, Eye, EyeOff,
   Store, RefreshCw, CreditCard, Coffee, Shirt, Wind,
-  Mic, SlidersHorizontal, LayoutGrid, Share, Users, Percent, Bath, Utensils, Headphones, Download
+  Mic, SlidersHorizontal, LayoutGrid, Share, Users, Percent, Bath, Utensils, Headphones, Download, Scale, FileText, Loader, CheckSquare, MoreVertical, Monitor, MoreHorizontal, Calendar, Copy, Trash2, Image as ImageIcon,
+  ArrowUp, ArrowDown, ClipboardList, AlertTriangle, BellRing
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
@@ -5033,24 +5034,134 @@ function MitraRegistrationScreen({ navigate, setActiveMitraRoles }: Nav & { setA
 // ─── DRIVER SCREENS ───────────────────────────────────────────────────────────
 
 // ─── DRIVER SCREENS ───────────────────────────────────────────────────────────
+const MOCK_LAUNDRY_ORDERS = [
+  { id: "#LND-924", name: "Siti Aminah", phone: "0812 1987 6543", address: "Jl. Aster No. 7, Kamojang", service: "Express 3 Jam", notes: "Baju kantor, kemeja putih", status: "baru", pricePerKg: 15000, weight: 0, total: 0, date: "14 Jul 2026, 13:00", userAvatar: "https://i.pravatar.cc/150?img=5" },
+  { id: "#LND-923", name: "Ahmad Faisal", phone: "0812 3456 7890", address: "Jl. Anggrek No. 12", service: "Biasa", notes: "Pakaian harian", status: "diproses", pricePerKg: 8000, weight: 5.0, total: 40000, date: "14 Jul 2026, 15:00", userAvatar: "https://i.pravatar.cc/150?img=11" },
+  { id: "#LND-922", name: "Dewi Lestari", phone: "0812 5678 9012", address: "Jl. Raya Kamojang No. 20", service: "Cuci Komplit", notes: "Baju kerja & pakaian harian", status: "menunggu_harga", pricePerKg: 6000, weight: 4.5, total: 0, date: "16 Jul 2026, 15:00", userAvatar: "https://i.pravatar.cc/150?img=9" }
+];
+
 function DriverHome({ navigate, activeMitraRoles }: Nav & { activeMitraRoles: string[] }) {
   const [online, setOnline] = useState(false);
   const [dashboardMode, setDashboardMode] = useState<"driver"|"mitra">(activeMitraRoles.includes("driver") ? "driver" : "mitra");
   
   const hasDriver = activeMitraRoles.includes("driver");
-  const hasBusiness = activeMitraRoles.some(r => ["kos", "laundry", "catering"].includes(r));
+  const businessRoles = activeMitraRoles.filter(r => ["kos", "laundry", "catering"].includes(r));
+  const hasBusiness = businessRoles.length > 0;
+  const [activeBusinessTab, setActiveBusinessTab] = useState<string>(businessRoles[0] || "");
+
+  // Laundry Order States
+  const [laundryOrders, setLaundryOrders] = useState(MOCK_LAUNDRY_ORDERS);
+  const [selectedLaundryOrderId, setSelectedLaundryOrderId] = useState<string | null>(null);
+  const [laundryWeight, setLaundryWeight] = useState<number>(0);
+  const [laundryFlowStep, setLaundryFlowStep] = useState<"input_weight" | "waiting_payment" | "detail">("input_weight");
+  
+  const [activeLaundryScreen, setActiveLaundryScreen] = useState<"dashboard" | "manajemen_order" | "manajemen_user" | "manajemen_keuangan" | "manajemen_lainnya" | "kos_manajemen_kamar" | "kos_manajemen_penghuni" | "kos_laporan_keuangan" | "kos_verifikasi_dp" | "kos_kirim_pengingat" | "kos_notifikasi">("dashboard");
+  const [kosFinanceFilter, setKosFinanceFilter] = useState("Semua");
+  const [orderFilter, setOrderFilter] = useState("Semua");
+  const [showKosTolakDPPopup, setShowKosTolakDPPopup] = useState(false);
+  const [showKosTerimaDPPopup, setShowKosTerimaDPPopup] = useState(false);
+  const [showKosKirimPengingatPopup, setShowKosKirimPengingatPopup] = useState(false);
+  const [kosPengingatMethod, setKosPengingatMethod] = useState<"whatsapp" | "sms">("whatsapp");
+  const [kosNotifikasiTab, setKosNotifikasiTab] = useState("Semua");
+  const [orderSearchQuery, setOrderSearchQuery] = useState("");
+  const [kosKamarFilter, setKosKamarFilter] = useState("Semua (12)");
+  const [kosPenghuniFilter, setKosPenghuniFilter] = useState("Semua (10)");
+  const [showKosRoomMenu, setShowKosRoomMenu] = useState(false);
+  const [kosRoomWizardStep, setKosRoomWizardStep] = useState(0); // 0 means closed, 1,2,3 are steps
+  const [kosRoomWizardMode, setKosRoomWizardMode] = useState<"add" | "edit">("add");
+  const [kosRoomAmenities, setKosRoomAmenities] = useState<string[]>(["AC", "WiFi", "KM Dalam", "Kasur", "Lemari", "Meja"]);
+  const [userSearchQuery, setUserSearchQuery] = useState("");
+  const [financePeriod, setFinancePeriod] = useState<"Minggu" | "Bulan">("Minggu");
+
+  const MOCK_CUSTOMERS = [
+    { id: 1, name: "Siti Aminah", phone: "0812 1987 6543", avatar: "https://i.pravatar.cc/150?img=5", totalOrder: 12, status: "VIP" },
+    { id: 2, name: "Ahmad Faisal", phone: "0812 3456 7890", avatar: "https://i.pravatar.cc/150?img=11", totalOrder: 8, status: "Reguler" },
+    { id: 3, name: "Dewi Lestari", phone: "0812 5678 9012", avatar: "https://i.pravatar.cc/150?img=9", totalOrder: 5, status: "Reguler" },
+    { id: 4, name: "Budi Santoso", phone: "0812 1111 2222", avatar: "https://i.pravatar.cc/150?img=12", totalOrder: 3, status: "Reguler" },
+  ];
+
+  const selectedOrder = laundryOrders.find(o => o.id === selectedLaundryOrderId);
+
+  useEffect(() => {
+    if (businessRoles.length > 0 && !businessRoles.includes(activeBusinessTab)) {
+      setActiveBusinessTab(businessRoles[0]);
+    }
+  }, [businessRoles, activeBusinessTab]);
+
+  const MOCK_KOS_OCCUPANTS = [
+    {
+      id: "OCC1", name: "Budi Santoso", avatar: "https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=100&h=100&fit=crop", 
+      status: "Aktif", room: "Kamar 1A", type: "Tipe AC", phone: "0812 3456 7890", 
+      entryDate: "15 Jan 2026", remainingDays: 20, price: 1200000
+    },
+    {
+      id: "OCC2", name: "Dewi Lestari", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop", 
+      status: "Aktif", room: "Kamar 2C", type: "Tipe AC", phone: "0813 2468 1357", 
+      entryDate: "10 Feb 2026", remainingDays: 16, price: 1300000
+    },
+    {
+      id: "OCC3", name: "Ahmad Faisal", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop", 
+      status: "Aktif", room: "Kamar 3B", type: "Tipe Standar", phone: "0821 9876 5432", 
+      entryDate: "01 Mar 2026", remainingDays: 7, price: 950000
+    },
+    {
+      id: "OCC4", name: "Siti Aminah", avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop", 
+      status: "Aktif", room: "Kamar 1B", type: "Tipe AC", phone: "0812 7654 3210", 
+      entryDate: "20 Feb 2026", remainingDays: 12, price: 1200000
+    },
+    {
+      id: "OCC5", name: "Andi Wijaya", avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop", 
+      status: "Aktif", room: "Kamar 2A", type: "Tipe Standar", phone: "0857 1234 5678", 
+      entryDate: "05 Mar 2026", remainingDays: 30, price: 850000
+    }
+  ];
+
+  const MOCK_KOS_FINANCE_TRANSACTIONS = [
+    { id: "TRX1", title: "Pembayaran Kamar A-03", subtitle: "Budi Santoso • 2 Juli 2026", amount: 1500000, type: "in" },
+    { id: "TRX2", title: "Bayar Listrik", subtitle: "PLN • 5 Juli 2026", amount: 650000, type: "out" },
+    { id: "TRX3", title: "Laundry Bulanan", subtitle: "Ayu • 6 Juli 2026", amount: 250000, type: "in" },
+  ];
+
+  const MOCK_KOS_ROOMS_MANAGEMENT = [
+    {
+      id: "1A", type: "Tipe AC", category: "Kos Putra", status: "Terisi", occupant: "Budi Santoso", 
+      avatar: "https://i.pravatar.cc/150?img=11", price: 1200000, 
+      amenities: ["AC", "WiFi", "KM Dalam"], extraAmenities: "Kasur, Lemari, Meja",
+      image: "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=500&h=300&fit=crop"
+    },
+    {
+      id: "2B", type: "Tipe Standar", category: "Kos Putra", status: "Kosong", occupant: null, 
+      avatar: null, price: 950000, 
+      amenities: ["Kipas", "WiFi", "KM Luar"], extraAmenities: "Kasur, Lemari",
+      image: "https://images.unsplash.com/photo-1505691938895-1758d7feb511?w=500&h=300&fit=crop"
+    },
+    {
+      id: "2C", type: "Tipe AC", category: "Kos Putri", status: "Terisi", occupant: "Dewi Lestari", 
+      avatar: "https://i.pravatar.cc/150?img=5", price: 1300000, 
+      amenities: ["AC", "WiFi", "KM Dalam"], extraAmenities: "Kasur, Lemari, Meja",
+      image: "https://images.unsplash.com/photo-1505693314120-0d443867891c?w=500&h=300&fit=crop"
+    },
+    {
+      id: "3A", type: "Tipe AC", category: "Kos Putra", status: "Kosong", occupant: null, 
+      avatar: null, price: 1200000, 
+      amenities: ["AC", "WiFi", "KM Dalam"], extraAmenities: "Kasur, Lemari, Meja",
+      image: "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=500&h=300&fit=crop"
+    }
+  ];
 
   return (
     <div className="flex flex-col h-full bg-[#F7FAF8]">
-      <div className={`shrink-0 transition-colors duration-500 ${online ? "bg-gradient-to-b from-[#0D5C36] to-[#1B7A4E]" : "bg-gradient-to-b from-gray-700 to-gray-600"}`}>
-        <StatusBar light />
+      {activeLaundryScreen === "dashboard" ? (
+        <>
+          <div className={`shrink-0 transition-colors duration-500 ${online ? "bg-gradient-to-b from-[#0D5C36] to-[#1B7A4E]" : "bg-gradient-to-b from-gray-700 to-gray-600"}`}>
+            <StatusBar light />
         <div className="px-5 pb-5">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-white/70 text-sm">Halo, selamat pagi 🌿</p>
               <h2 className="text-white font-extrabold text-xl">Pak Rahman</h2>
             </div>
-            <button className="relative w-10 h-10 rounded-full bg-white/15 flex items-center justify-center">
+            <button onClick={() => setActiveLaundryScreen("kos_notifikasi")} className="relative w-10 h-10 rounded-full bg-white/15 flex items-center justify-center">
               <Bell size={20} className="text-white" />
               <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border border-white" />
             </button>
@@ -5180,124 +5291,2197 @@ function DriverHome({ navigate, activeMitraRoles }: Nav & { activeMitraRoles: st
         </>
         ) : (
           <div className="flex flex-col gap-4 p-4">
-            {/* mitra stats */}
-            <div className="grid grid-cols-2 gap-3">
-              {activeMitraRoles.includes("kos") && (
-                <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex flex-col justify-between">
-                  <div className="w-10 h-10 rounded-xl bg-orange-50 text-orange-500 flex items-center justify-center mb-3">
-                    <Store size={20} />
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-gray-500 font-medium mb-1">Pendapatan Kos</p>
-                    <p className="font-black text-lg text-gray-900">{rp(4500000)}</p>
-                  </div>
-                </div>
-              )}
-              {activeMitraRoles.includes("laundry") && (
-                <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex flex-col justify-between">
-                  <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-500 flex items-center justify-center mb-3">
-                    <Shirt size={20} />
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-gray-500 font-medium mb-1">Pendapatan Laundry</p>
-                    <p className="font-black text-lg text-gray-900">{rp(350000)}</p>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Pending Kos Booking */}
-            {activeMitraRoles.includes("kos") && (
-              <div>
-              <div className="flex items-center justify-between mb-3 mt-2">
-                <h3 className="font-bold text-sm text-gray-900">Booking Kos Baru</h3>
-                <Pill color="orange">1 perlu diproses</Pill>
+            {/* Sub-Tab Navigation (Always show to confirm roles) */}
+            {businessRoles.length > 0 && (
+              <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
+                {businessRoles.includes("kos") && (
+                  <button 
+                    onClick={() => setActiveBusinessTab("kos")}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-colors border ${activeBusinessTab === "kos" ? "bg-orange-500 border-orange-500 text-white shadow-md shadow-orange-500/20" : "bg-white text-gray-500 border-gray-200"}`}
+                  >
+                    <Store size={14} /> Pemilik Kos
+                  </button>
+                )}
+                {businessRoles.includes("laundry") && (
+                  <button 
+                    onClick={() => setActiveBusinessTab("laundry")}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-colors border ${activeBusinessTab === "laundry" ? "bg-blue-500 border-blue-500 text-white shadow-md shadow-blue-500/20" : "bg-white text-gray-500 border-gray-200"}`}
+                  >
+                    <Shirt size={14} /> Pemilik Laundry
+                  </button>
+                )}
+                {businessRoles.includes("catering") && (
+                  <button 
+                    onClick={() => setActiveBusinessTab("catering")}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-colors border ${activeBusinessTab === "catering" ? "bg-yellow-600 border-yellow-600 text-white shadow-md shadow-yellow-600/20" : "bg-white text-gray-500 border-gray-200"}`}
+                  >
+                    <Coffee size={14} /> Pemilik Catering
+                  </button>
+                )}
               </div>
-              <div className="bg-white rounded-[20px] p-4 border border-orange-100 shadow-sm relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-1.5 h-full bg-orange-400" />
-                <div className="flex items-start gap-3">
-                  <div className="w-12 h-12 rounded-full bg-gray-100 overflow-hidden shrink-0">
-                    <img src="https://i.pravatar.cc/150?img=11" alt="User" className="w-full h-full object-cover" />
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="font-extrabold text-[14px] text-gray-900">Budi Santoso</h4>
-                    <p className="text-[11px] text-gray-500 mb-2">Mengajukan booking Kos Putra Garuda</p>
-                    <div className="bg-gray-50 rounded-lg p-2.5 mb-3 border border-gray-100">
-                      <div className="flex justify-between items-center mb-1">
-                        <span className="text-[10px] text-gray-500">Durasi</span>
-                        <span className="text-[11px] font-bold text-gray-900">6 Bulan</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-[10px] text-gray-500">Total DP (20%)</span>
-                        <span className="text-[12px] font-black text-primary">{rp(720000)}</span>
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <button className="flex-1 py-2 text-xs font-bold rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors">Tolak</button>
-                      <button className="flex-[2] py-2 text-xs font-bold rounded-xl bg-orange-500 text-white shadow-lg shadow-orange-500/30 hover:bg-orange-600 transition-colors">Terima & Chat</button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
             )}
 
-            {/* Laundry Orders */}
-            {activeMitraRoles.includes("laundry") && (
-              <div className="mb-6">
-              <div className="flex items-center justify-between mb-3 mt-2">
-                <h3 className="font-bold text-sm text-gray-900">Pesanan Laundry Aktif</h3>
-                <Pill color="blue">2 pesanan</Pill>
-              </div>
-              
-              <div className="bg-white rounded-[20px] p-4 border border-gray-100 shadow-sm mb-3">
-                <div className="flex justify-between items-center mb-3 border-b border-dashed border-gray-100 pb-3">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center">
-                      <Shirt size={14} />
-                    </div>
-                    <div>
-                      <p className="font-extrabold text-[13px] text-gray-900">Order #LND-924</p>
-                      <p className="text-[10px] text-gray-500">Siti Aminah • Ekstra Cepat</p>
-                    </div>
-                  </div>
-                  <span className="bg-blue-100 text-blue-600 text-[10px] font-bold px-2 py-1 rounded-md">Diproses</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <div>
-                    <p className="text-[10px] text-gray-400">Total Harga</p>
-                    <p className="font-black text-[14px] text-gray-900">{rp(45000)}</p>
-                  </div>
-                  <button className="px-4 py-2.5 rounded-xl bg-primary/10 text-primary text-xs font-bold hover:bg-primary/20 transition-colors">Selesai Dicuci</button>
-                </div>
-              </div>
+            {/* --- KOS DASHBOARD --- */}
+            {activeBusinessTab === "kos" && (
+              <div className="flex flex-col relative" style={{ marginLeft: "-16px", marginRight: "-16px", marginTop: "-16px" }}>
+                {/* Background extension */}
+                <div className="absolute top-0 left-0 w-full h-[220px] bg-gradient-to-b from-[#0D5C36] to-[#0D5C36] rounded-b-[40px] -z-10" />
 
-              <div className="bg-white rounded-[20px] p-4 border border-gray-100 shadow-sm">
-                <div className="flex justify-between items-center mb-3 border-b border-dashed border-gray-100 pb-3">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center">
-                      <Shirt size={14} />
-                    </div>
-                    <div>
-                      <p className="font-extrabold text-[13px] text-gray-900">Order #LND-925</p>
-                      <p className="text-[10px] text-gray-500">Ahmad Faisal • Biasa</p>
-                    </div>
-                  </div>
-                  <span className="bg-orange-100 text-orange-600 text-[10px] font-bold px-2 py-1 rounded-md">Mng. Pickup</span>
+                {/* Ringkasan Hari Ini */}
+                <div className="bg-white rounded-t-[32px] pt-6 px-4 pb-2">
+                   <div className="flex justify-between items-center mb-4 px-1">
+                      <h3 className="font-extrabold text-[15px] text-gray-900">Ringkasan Bisnis Bulan Ini</h3>
+                      <button className="text-[11px] font-bold text-gray-600 border border-gray-200 px-3 py-1.5 rounded-xl flex items-center gap-1 shadow-sm">Juli 2026 <ChevronDown size={14}/></button>
+                   </div>
+                   
+                   <div className="bg-[#0B4A2B] rounded-[24px] p-5 relative overflow-hidden mb-6 shadow-sm">
+                      <div className="relative z-10">
+                         <p className="text-white/80 text-[12px] font-medium mb-1">Estimasi Pendapatan</p>
+                         <p className="text-white font-black text-[26px] tracking-tight mb-3">Rp 12.500.000</p>
+                         <div className="flex items-center gap-2">
+                            <span className="bg-[#A7F3D0] text-[#064E3B] text-[11px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                               <TrendingUp size={12} strokeWidth={3} /> +5.2%
+                            </span>
+                            <span className="text-[11px] text-white/80">vs bulan lalu</span>
+                         </div>
+                      </div>
+                      <div className="absolute -right-4 -bottom-6 opacity-10">
+                         <Wallet size={120} className="text-white" strokeWidth={1} />
+                      </div>
+                   </div>
+
+                   <h3 className="font-extrabold text-[15px] text-gray-900 mb-4 px-1">Tingkat Keterisian</h3>
+                   
+                   <div className="flex items-center justify-between px-2 mb-6">
+                      <div className="relative w-[110px] h-[110px] flex items-center justify-center shrink-0">
+                         <svg viewBox="0 0 36 36" className="w-full h-full transform -rotate-90">
+                           <path className="text-gray-100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="4" />
+                           <path className="text-[#0D5C36]" strokeDasharray="83, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
+                         </svg>
+                         <div className="absolute flex flex-col items-center justify-center">
+                            <span className="font-black text-[22px] text-gray-900 leading-none">83%</span>
+                            <span className="text-[11px] font-bold text-gray-500 mt-0.5">Terisi</span>
+                         </div>
+                      </div>
+
+                      <div className="flex-1 ml-6 flex flex-col gap-3">
+                         <div className="flex items-center justify-between bg-gray-50/50 p-2 rounded-xl">
+                            <div className="flex items-center gap-2">
+                               <div className="w-7 h-7 rounded-full bg-[#E7F6ED] text-[#0D5C36] flex items-center justify-center">
+                                  <Building2 size={14} />
+                               </div>
+                               <span className="text-[12px] font-medium text-gray-600">Total Kamar</span>
+                            </div>
+                            <span className="font-black text-[14px] text-gray-900">12</span>
+                         </div>
+                         <div className="flex items-center justify-between bg-gray-50/50 p-2 rounded-xl">
+                            <div className="flex items-center gap-2">
+                               <div className="w-7 h-7 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center">
+                                  <Users size={14} />
+                               </div>
+                               <span className="text-[12px] font-medium text-gray-600">Kamar Terisi</span>
+                            </div>
+                            <span className="font-black text-[14px] text-gray-900">10</span>
+                         </div>
+                         <div className="flex items-center justify-between bg-orange-50/30 p-2 rounded-xl border border-orange-50">
+                            <div className="flex items-center gap-2">
+                               <div className="w-7 h-7 rounded-full bg-orange-100 text-orange-500 flex items-center justify-center">
+                                  <Store size={14} />
+                               </div>
+                               <span className="text-[12px] font-medium text-gray-600">Kamar Kosong</span>
+                            </div>
+                            <span className="font-black text-[14px] text-orange-500">2</span>
+                         </div>
+                      </div>
+                   </div>
+
+                   {/* Quick Action */}
+                   <div className="flex justify-between items-start px-2 mb-8">
+                     {[
+                       { icon: Building2, label: "Manajemen\nKamar", action: () => setActiveLaundryScreen("kos_manajemen_kamar") },
+                       { icon: Users, label: "Penghuni", action: () => setActiveLaundryScreen("kos_manajemen_penghuni") },
+                       { icon: FileText, label: "Laporan\nKeuangan", action: () => setActiveLaundryScreen("kos_laporan_keuangan") },
+                       { icon: LayoutGrid, label: "Lainnya", action: () => {} }
+                     ].map((btn, idx) => (
+                       <div key={idx} onClick={btn.action} className="flex flex-col items-center gap-2 cursor-pointer w-[70px]">
+                         <button className="w-[66px] h-[66px] rounded-[20px] bg-white border border-gray-100 text-[#0D5C36] flex items-center justify-center shadow-[0_2px_10px_rgba(0,0,0,0.03)] active:scale-95 transition-transform relative overflow-hidden">
+                           <btn.icon size={26} strokeWidth={1.5} />
+                         </button>
+                         <span className="text-[11px] font-bold text-gray-700 text-center leading-[1.2]">{btn.label.split('\n').map((line, i) => <React.Fragment key={i}>{line}<br/></React.Fragment>)}</span>
+                       </div>
+                     ))}
+                   </div>
                 </div>
-                <div className="flex justify-between items-center">
-                  <div>
-                    <p className="text-[10px] text-gray-400">Total Harga</p>
-                    <p className="font-black text-[14px] text-gray-900">{rp(15000)}</p>
+
+                {/* Notifikasi Booking & Tagihan */}
+                <div className="px-4">
+                  <div className="flex justify-between items-center mb-3 px-1">
+                     <h3 className="font-extrabold text-[15px] text-gray-900">Perlu Tindakan</h3>
+                     <button className="text-[11px] font-bold text-[#0D5C36] hover:text-[#1B7A4E] flex items-center gap-0.5">Lihat Semua <ChevronRight size={14}/></button>
                   </div>
-                  <button className="px-4 py-2.5 rounded-xl bg-gray-100 text-gray-400 text-xs font-bold cursor-not-allowed border border-gray-200">Driver OTW</button>
+                  
+                  <div className="bg-white rounded-[24px] shadow-sm overflow-hidden flex flex-col mb-6 border border-gray-100/50">
+                     {/* Booking Baru */}
+                     <div className="p-4 border-b border-gray-50 flex gap-3 items-start relative hover:bg-gray-50 transition-colors cursor-pointer">
+                        <div className="absolute top-0 left-0 w-[3px] h-full bg-orange-400" />
+                        <div className="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center text-orange-500 shrink-0">
+                           <Bell size={18} />
+                        </div>
+                        <div className="flex-1">
+                           <div className="flex justify-between items-start mb-1">
+                              <h4 className="font-bold text-[13px] text-gray-900">Booking Kamar Baru</h4>
+                              <span className="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full">Baru saja</span>
+                           </div>
+                           <p className="text-[12px] text-gray-500 mb-3 leading-relaxed">Budi Santoso telah membayar DP untuk tipe <span className="font-bold text-gray-700">Kos Putra</span>.</p>
+                           <button onClick={() => setActiveLaundryScreen("kos_verifikasi_dp")} className="bg-orange-500 text-white text-[11px] font-bold px-4 py-2 rounded-xl shadow-sm shadow-orange-500/20 hover:bg-orange-600 transition-colors">Verifikasi DP</button>
+                        </div>
+                     </div>
+
+                     {/* Tagihan Jatuh Tempo */}
+                     <div className="p-4 flex gap-3 items-start relative hover:bg-gray-50 transition-colors cursor-pointer">
+                        <div className="absolute top-0 left-0 w-[3px] h-full bg-red-400" />
+                        <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center text-red-500 shrink-0">
+                           <AlertCircle size={18} />
+                        </div>
+                        <div className="flex-1">
+                           <div className="flex justify-between items-start mb-1">
+                              <h4 className="font-bold text-[13px] text-gray-900">Tagihan Jatuh Tempo</h4>
+                              <span className="text-[10px] font-bold text-red-500 bg-red-50 px-2 py-0.5 rounded-full">Hari ini</span>
+                           </div>
+                           <p className="text-[12px] text-gray-500 mb-3 leading-relaxed">Kamar 04 (Ahmad) jatuh tempo hari ini sebesar <span className="font-bold text-gray-700">Rp 1.500.000</span>.</p>
+                           <button onClick={() => setActiveLaundryScreen("kos_kirim_pengingat")} className="bg-red-50 text-red-500 border border-red-100 text-[11px] font-bold px-4 py-2 rounded-xl hover:bg-red-100 transition-colors">Kirim Pengingat</button>
+                        </div>
+                     </div>
+                  </div>
+                </div>
+
+                {/* Status Kamar */}
+                <div className="px-4 pb-10">
+                  <div className="flex justify-between items-center mb-3 px-1">
+                     <h3 className="font-extrabold text-[15px] text-gray-900">Status Kamar Kosong</h3>
+                     <button className="text-[11px] font-bold text-[#0D5C36] hover:text-[#1B7A4E] flex items-center gap-0.5">Kelola Kamar <ChevronRight size={14}/></button>
+                  </div>
+
+                  <div className="flex gap-4 overflow-x-auto pb-4" style={{ scrollbarWidth: "none" }}>
+                     {[1, 2].map((kamar, idx) => (
+                        <div key={idx} className="bg-white rounded-[24px] p-5 border border-gray-100 shadow-[0_2px_10px_rgba(0,0,0,0.03)] min-w-[240px] shrink-0">
+                           <div className="flex justify-between items-center mb-2">
+                              <span className="font-black text-[15px] text-gray-900">Kamar {idx + 1}A</span>
+                              <span className="bg-[#E7F6ED] text-[#0D5C36] text-[10px] font-bold px-2.5 py-1 rounded-full">Kos Putra</span>
+                           </div>
+                           <p className="font-bold text-[13px] text-gray-700 mb-3">Tipe Campur AC</p>
+                           
+                           <div className="flex items-center gap-3 text-[10px] text-gray-500 mb-5 font-medium">
+                              <div className="flex items-center gap-1"><Monitor size={12} /> AC</div>
+                              <div className="flex items-center gap-1"><Wifi size={12} /> WiFi</div>
+                              <div className="flex items-center gap-1"><Bath size={12} /> KM Dalam</div>
+                           </div>
+                           
+                           <div>
+                              <p className="font-black text-[16px] text-[#0D5C36]">Rp 1.200.000 <span className="text-[11px] text-gray-400 font-medium line-through decoration-transparent">/bulan</span></p>
+                           </div>
+                        </div>
+                     ))}
+                  </div>
+                </div>
+
+              </div>
+            )}
+
+            {/* --- LAUNDRY DASHBOARD --- */}
+            {activeBusinessTab === "laundry" && (
+              <div className="flex flex-col relative" style={{ marginLeft: "-16px", marginRight: "-16px", marginTop: "-16px" }}>
+                {/* Background extension */}
+                <div className="absolute top-0 left-0 w-full h-[220px] bg-gradient-to-b from-[#0D5C36] to-[#0D5C36] rounded-b-[40px] -z-10" />
+                
+                {/* Ringkasan Hari Ini */}
+                <div className="bg-white rounded-[24px] shadow-sm border border-gray-100 mx-4 mt-6">
+                  <div className="flex justify-between items-center p-5 pb-4 border-b border-gray-50">
+                    <div>
+                      <h3 className="font-extrabold text-[15px] text-gray-900">Ringkasan Hari Ini</h3>
+                      <p className="text-[11px] text-gray-500 mt-0.5">Selasa, 14 Juli 2026</p>
+                    </div>
+                    <button className="text-[11px] font-bold text-[#0D5C36] hover:text-[#1B7A4E] flex items-center gap-0.5">Lihat Detail <ChevronRight size={14}/></button>
+                  </div>
+                  
+                  <div className="grid grid-cols-2">
+                    <div className="flex items-center gap-3 p-4 border-r border-b border-gray-50">
+                      <div className="w-10 h-10 rounded-[12px] flex items-center justify-center shrink-0 border border-teal-100 bg-white">
+                        <ShoppingBag size={18} className="text-teal-600" />
+                      </div>
+                      <div>
+                        <p className="font-black text-gray-900 text-[15px] leading-none">12</p>
+                        <p className="text-[10px] text-gray-500 mt-1">Pesanan Baru</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 p-4 border-b border-gray-50">
+                      <div className="w-10 h-10 rounded-[12px] flex items-center justify-center shrink-0 border border-teal-100 bg-white">
+                        <Wallet size={18} className="text-teal-600" />
+                      </div>
+                      <div>
+                        <p className="font-black text-gray-900 text-[15px] leading-none">18</p>
+                        <p className="text-[10px] text-gray-500 mt-1">Sedang Dikerjakan</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 p-4 border-r border-gray-50">
+                      <div className="w-10 h-10 rounded-[12px] flex items-center justify-center shrink-0 border border-green-100 bg-white">
+                        <CheckSquare size={18} className="text-[#0D5C36]" />
+                      </div>
+                      <div>
+                        <p className="font-black text-gray-900 text-[15px] leading-none">8</p>
+                        <p className="text-[10px] text-gray-500 mt-1">Selesai Hari Ini</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 p-4">
+                      <div className="w-10 h-10 rounded-[12px] flex items-center justify-center shrink-0 border border-green-100 bg-white">
+                        <TrendingUp size={18} className="text-[#0D5C36]" />
+                      </div>
+                      <div>
+                        <p className="font-black text-gray-900 text-[15px] leading-none">{rp(1245000)}</p>
+                        <p className="text-[10px] text-gray-500 mt-1">Pendapatan</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Pesanan Terbaru */}
+                <div className="mt-6 px-4">
+                  <div className="flex items-center justify-between mb-3 px-1">
+                    <h3 className="font-extrabold text-[15px] text-gray-900">Pesanan Terbaru</h3>
+                    <button onClick={() => setActiveLaundryScreen("manajemen_order")} className="text-[11px] font-bold text-[#0D5C36] hover:text-[#1B7A4E] flex items-center gap-0.5">Lihat Semua <ChevronRight size={14}/></button>
+                  </div>
+                  
+                  <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm overflow-hidden flex flex-col">
+                    {laundryOrders.map((order, idx) => {
+                      const isBaru = order.status === "baru" || order.status === "menunggu_harga";
+                      const isDiproses = order.status === "diproses";
+                      const isSelesai = order.status === "selesai";
+                      
+                      let bgIcon = isBaru ? "bg-green-50 text-green-600" : isDiproses ? "bg-blue-50 text-blue-500" : "bg-indigo-50 text-indigo-500";
+                      let bgPill = isBaru ? "bg-[#E7F6ED] text-[#0D5C36]" : isDiproses ? "bg-blue-50 text-blue-500" : isSelesai ? "bg-purple-50 text-purple-600" : "bg-orange-50 text-orange-500";
+                      let labelPill = order.status === "baru" ? "Baru" : order.status === "menunggu_harga" ? "Menunggu Harga" : order.status === "diproses" ? "Diproses" : order.status === "diantar" ? "Diantar" : "Selesai";
+                      if (order.status === "menunggu_harga" || order.status === "baru") {
+                        bgPill = order.status === "baru" ? "bg-[#E7F6ED] text-[#0D5C36]" : "bg-orange-50 text-orange-500";
+                      }
+                      
+                      return (
+                        <div 
+                          key={order.id}
+                          onClick={() => {
+                            setSelectedLaundryOrderId(order.id);
+                            setLaundryWeight(order.weight || 3.0);
+                            setLaundryFlowStep(order.status === "baru" || order.status === "menunggu_harga" ? "input_weight" : "detail");
+                          }}
+                          className={`p-4 flex justify-between items-center cursor-pointer hover:bg-gray-50 transition-colors ${idx !== laundryOrders.length - 1 ? 'border-b border-gray-50' : ''}`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${bgIcon}`}>
+                              <Shirt size={18} />
+                            </div>
+                            <div>
+                              <p className="font-extrabold text-[13px] text-gray-900">{order.id}</p>
+                              <p className="text-[11px] text-gray-500 mt-0.5">{order.name} • {order.service}</p>
+                            </div>
+                          </div>
+                          <div className="flex flex-col items-end gap-1">
+                            <span className={`${bgPill} text-[9px] font-extrabold px-3 py-1 rounded-full`}>{labelPill}</span>
+                            <p className="font-black text-[13px] text-gray-900">{order.total > 0 ? rp(order.total) : "-"}</p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Quick Action */}
+                <div className="mt-6 px-4 pb-10">
+                  <h3 className="font-extrabold text-[13px] text-gray-900 mb-4 ml-1">Quick Action</h3>
+                  <div className="flex justify-between items-start px-2">
+                    {[
+                      { icon: Package, label: "Manajemen Order", action: () => setActiveLaundryScreen("manajemen_order") },
+                      { icon: Users, label: "Manajemen User", action: () => setActiveLaundryScreen("manajemen_user") },
+                      { icon: BarChart2, label: "Laporan Keuangan", action: () => setActiveLaundryScreen("manajemen_keuangan") },
+                      { icon: LayoutGrid, label: "Lainnya", action: () => setActiveLaundryScreen("manajemen_lainnya") }
+                    ].map((btn, idx) => (
+                      <div key={idx} className="flex flex-col items-center gap-2">
+                        <button onClick={btn.action} className="w-[60px] h-[60px] rounded-[22px] bg-[#0B4A2B] text-white flex items-center justify-center shadow-md active:scale-95 transition-transform relative overflow-hidden">
+                          <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent" />
+                          <btn.icon size={24} className="relative z-10" />
+                        </button>
+                        <span className="text-[11px] font-bold text-gray-800 text-center leading-tight max-w-[60px]">{btn.label}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
+
+            {/* --- CATERING DASHBOARD --- */}
+            {activeBusinessTab === "catering" && (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <div className="w-16 h-16 bg-yellow-50 text-yellow-600 rounded-full flex items-center justify-center mb-4">
+                  <Coffee size={32} />
+                </div>
+                <h3 className="font-bold text-gray-900 mb-1">Dasbor Catering</h3>
+                <p className="text-sm text-gray-500">Fitur manajemen catering akan segera hadir.</p>
+              </div>
             )}
           </div>
         )}
       </div>
+    </>
+      ) : activeLaundryScreen === "manajemen_order" ? (
+        <>
+          <div className="bg-white px-5 pt-10 pb-4 shrink-0 shadow-sm z-10 flex flex-col rounded-b-[32px]">
+             <div className="flex justify-between items-center mb-5">
+               <div className="flex items-center gap-3">
+                  <button onClick={() => setActiveLaundryScreen("dashboard")} className="w-10 h-10 flex items-center -ml-2 text-gray-900 active:scale-95 transition-transform">
+                    <ArrowLeft size={20} />
+                  </button>
+                  <h2 className="font-extrabold text-[17px] text-gray-900">Manajemen Order</h2>
+               </div>
+               <button className="w-8 h-8 rounded-full bg-[#0D5C36] text-white flex items-center justify-center shadow-sm active:scale-95 transition-transform">
+                  <Plus size={18} />
+               </button>
+             </div>
+             
+             <div className="flex gap-2 mb-5">
+                <div className="flex-1 bg-white border border-gray-200 shadow-sm rounded-[14px] flex items-center px-3 gap-2">
+                  <Search size={16} className="text-gray-400" />
+                  <input type="text" placeholder="Cari order / nama / no hp" value={orderSearchQuery} onChange={e => setOrderSearchQuery(e.target.value)} className="bg-transparent text-[13px] outline-none w-full py-3" />
+                </div>
+                <button className="w-12 rounded-[14px] bg-white border border-gray-200 shadow-sm flex items-center justify-center text-gray-500 active:bg-gray-50">
+                  <Filter size={18} />
+                </button>
+             </div>
+
+             <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
+               {["Semua", "Baru", "Diproses", "Selesai", "Dibatalkan"].map(f => (
+                 <button key={f} onClick={() => setOrderFilter(f)} className={`shrink-0 px-4 py-2 rounded-full text-[12px] font-bold transition-colors ${orderFilter === f ? "bg-[#0D5C36] text-white" : "bg-gray-100 text-gray-600"}`}>
+                   {f}
+                 </button>
+               ))}
+             </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3 pb-32">
+             {laundryOrders.filter(o => {
+               if (orderFilter !== "Semua") {
+                 if (orderFilter === "Baru" && o.status !== "baru" && o.status !== "menunggu_harga") return false;
+                 if (orderFilter === "Diproses" && o.status !== "diproses") return false;
+                 if (orderFilter === "Selesai" && o.status !== "selesai") return false;
+                 if (orderFilter === "Dibatalkan" && o.status !== "dibatalkan") return false;
+               }
+               if (orderSearchQuery) {
+                 const q = orderSearchQuery.toLowerCase();
+                 if (!o.name.toLowerCase().includes(q) && !o.id.toLowerCase().includes(q)) return false;
+               }
+               return true;
+             }).map(order => {
+                const isBaru = order.status === "baru" || order.status === "menunggu_harga";
+                const isDiproses = order.status === "diproses";
+                const isSelesai = order.status === "selesai";
+                
+                let bgPill = isBaru ? "bg-[#E7F6ED] text-[#0D5C36]" : isDiproses ? "bg-blue-50 text-blue-500" : isSelesai ? "bg-purple-50 text-purple-600" : "bg-orange-50 text-orange-500";
+                let labelPill = order.status === "baru" ? "Baru" : order.status === "menunggu_harga" ? "Menunggu Harga" : order.status === "diproses" ? "Diproses" : order.status === "diantar" ? "Diantar" : "Selesai";
+                if (order.status === "menunggu_harga" || order.status === "baru") {
+                  bgPill = order.status === "baru" ? "bg-[#E7F6ED] text-[#0D5C36]" : "bg-orange-50 text-orange-500";
+                }
+                
+                return (
+                  <div key={order.id} onClick={() => {
+                      setSelectedLaundryOrderId(order.id);
+                      setLaundryWeight(order.weight || 3.0);
+                      setLaundryFlowStep(order.status === "baru" || order.status === "menunggu_harga" ? "input_weight" : "detail");
+                  }} className="bg-white rounded-[20px] p-4 border border-gray-100 shadow-sm flex flex-col cursor-pointer active:scale-[0.98] transition-transform">
+                     <div className="flex justify-between items-start mb-3">
+                        <div className="flex items-center gap-3">
+                           <div className="relative">
+                              <img src={order.userAvatar} className="w-10 h-10 rounded-full object-cover bg-gray-100" />
+                              <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-white flex items-center justify-center">
+                                 <div className="w-3 h-3 rounded-full bg-[#0D5C36] flex items-center justify-center">
+                                    <CheckCircle size={8} className="text-white" />
+                                 </div>
+                              </div>
+                           </div>
+                           <div>
+                              <p className="font-extrabold text-[13px] text-gray-900">{order.id}</p>
+                              <p className="text-[11px] text-gray-500 mt-0.5">{order.name}</p>
+                           </div>
+                        </div>
+                        <span className={`${bgPill} text-[9px] font-extrabold px-3 py-1 rounded-full`}>{labelPill}</span>
+                     </div>
+                     <div className="flex justify-between items-end">
+                        <div>
+                           <p className="text-[11px] text-gray-500">{order.weight || 3.0} kg • {order.service}</p>
+                        </div>
+                        <div className="text-right flex flex-col items-end">
+                           <p className="font-black text-[13px] text-gray-900 mb-0.5">{order.total > 0 ? rp(order.total) : "-"}</p>
+                           <div className="flex items-center gap-1 text-[10px] text-gray-400">
+                              {order.date} <ChevronRight size={12} className="text-gray-300 ml-1"/>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+                );
+             })}
+          </div>
+        </>
+      ) : activeLaundryScreen === "manajemen_user" ? (
+        <>
+          <div className="bg-white px-5 pt-10 pb-4 shrink-0 shadow-sm z-10 flex flex-col rounded-b-[32px]">
+             <div className="flex justify-between items-center mb-5">
+               <div className="flex items-center gap-3">
+                  <button onClick={() => setActiveLaundryScreen("dashboard")} className="w-10 h-10 flex items-center -ml-2 text-gray-900 active:scale-95 transition-transform">
+                    <ArrowLeft size={20} />
+                  </button>
+                  <h2 className="font-extrabold text-[17px] text-gray-900">Pelanggan</h2>
+               </div>
+               <button className="w-8 h-8 rounded-full bg-[#0D5C36] text-white flex items-center justify-center shadow-sm active:scale-95 transition-transform">
+                  <Plus size={18} />
+               </button>
+             </div>
+             
+             <div className="flex gap-2">
+                <div className="flex-1 bg-white border border-gray-200 shadow-sm rounded-[14px] flex items-center px-3 gap-2">
+                  <Search size={16} className="text-gray-400" />
+                  <input type="text" placeholder="Cari nama / no hp" value={userSearchQuery} onChange={e => setUserSearchQuery(e.target.value)} className="bg-transparent text-[13px] outline-none w-full py-3" />
+                </div>
+             </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto bg-white flex flex-col">
+             {MOCK_CUSTOMERS.filter(c => {
+               if (userSearchQuery) {
+                 const q = userSearchQuery.toLowerCase();
+                 return c.name.toLowerCase().includes(q) || c.phone.includes(q);
+               }
+               return true;
+             }).map((customer, idx) => (
+                <div key={customer.id} className={`flex items-center justify-between p-5 ${idx !== MOCK_CUSTOMERS.length - 1 ? 'border-b border-gray-50' : ''} cursor-pointer hover:bg-gray-50 transition-colors`}>
+                   <div className="flex items-center gap-4">
+                      <img src={customer.avatar} className="w-12 h-12 rounded-full object-cover bg-gray-100" />
+                      <div>
+                         <p className="font-extrabold text-[14px] text-gray-900">{customer.name}</p>
+                         <p className="text-[12px] text-gray-500 mt-0.5">{customer.phone}</p>
+                      </div>
+                   </div>
+                   <div className="flex flex-col items-end gap-1.5">
+                      <p className="text-[11px] text-gray-500">Total Order: {customer.totalOrder}</p>
+                      <span className={`text-[10px] font-extrabold px-3 py-0.5 rounded-full ${customer.status === 'VIP' ? 'bg-orange-50 text-orange-500' : 'bg-[#E7F6ED] text-[#0D5C36]'}`}>
+                        {customer.status}
+                      </span>
+                   </div>
+                </div>
+             ))}
+          </div>
+        </>
+      ) : activeLaundryScreen === "manajemen_keuangan" ? (
+        <>
+          <div className="bg-white px-5 pt-10 pb-4 shrink-0 shadow-sm z-10 flex flex-col rounded-b-[32px]">
+             <div className="flex items-center gap-3 mb-6">
+                <button onClick={() => setActiveLaundryScreen("dashboard")} className="w-10 h-10 flex items-center -ml-2 text-gray-900 active:scale-95 transition-transform">
+                  <ArrowLeft size={20} />
+                </button>
+                <h2 className="font-extrabold text-[17px] text-gray-900">Keuangan</h2>
+             </div>
+             
+             <div className="flex justify-between items-center mb-4">
+                <div className="flex items-center gap-1.5 text-[#0D5C36] bg-[#E7F6ED] px-3 py-1.5 rounded-full cursor-pointer">
+                   <span className="font-bold text-[12px]">Ringkasan Bulan Ini</span>
+                   <ChevronRight size={14} />
+                </div>
+                <div className="flex items-center gap-1 text-gray-600 font-bold text-[12px] cursor-pointer">
+                   Juli 2026 <ChevronDown size={14} />
+                </div>
+             </div>
+
+             <div className="bg-[#0B4A2B] rounded-[20px] p-5 relative overflow-hidden mb-4">
+                <div className="relative z-10">
+                   <p className="text-white/80 text-[12px] font-semibold mb-1">Total Pendapatan</p>
+                   <p className="text-white font-black text-[24px] tracking-tight mb-2">Rp 18.750.000</p>
+                   <p className="text-[#A7F3D0] text-[11px] font-bold">↑ 12.5% dari bulan lalu</p>
+                </div>
+                <div className="absolute -right-4 -bottom-4 opacity-10">
+                   <BarChart2 size={120} className="text-white" />
+                </div>
+             </div>
+
+             <div className="grid grid-cols-3 gap-2 mb-2">
+                <div className="bg-white border border-gray-100 shadow-sm rounded-[16px] p-3 text-center flex flex-col justify-center items-center">
+                   <p className="text-[10px] text-gray-500 font-semibold mb-1">Pendapatan</p>
+                   <p className="text-[11px] font-black text-[#0D5C36]">Rp 18.750.000</p>
+                </div>
+                <div className="bg-white border border-gray-100 shadow-sm rounded-[16px] p-3 text-center flex flex-col justify-center items-center">
+                   <p className="text-[10px] text-gray-500 font-semibold mb-1">Pengeluaran</p>
+                   <p className="text-[11px] font-black text-red-500">Rp 4.250.000</p>
+                </div>
+                <div className="bg-white border border-gray-100 shadow-sm rounded-[16px] p-3 text-center flex flex-col justify-center items-center">
+                   <p className="text-[10px] text-gray-500 font-semibold mb-1">Laba Bersih</p>
+                   <p className="text-[11px] font-black text-[#0D5C36]">Rp 14.500.000</p>
+                </div>
+             </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto bg-[#F7FAF8] p-5">
+             <div className="bg-white rounded-[24px] p-5 border border-gray-100 shadow-sm">
+                <div className="flex justify-between items-center mb-6">
+                   <h3 className="font-extrabold text-[14px] text-gray-900">Grafik Pendapatan</h3>
+                   <div className="bg-gray-50 p-1 rounded-full flex gap-1 border border-gray-100">
+                      <button onClick={() => setFinancePeriod("Minggu")} className={`px-4 py-1.5 rounded-full text-[10px] font-extrabold transition-colors ${financePeriod === "Minggu" ? "bg-white shadow-sm text-gray-900" : "text-gray-500"}`}>Minggu</button>
+                      <button onClick={() => setFinancePeriod("Bulan")} className={`px-4 py-1.5 rounded-full text-[10px] font-extrabold transition-colors ${financePeriod === "Bulan" ? "bg-white shadow-sm text-gray-900" : "text-gray-500"}`}>Bulan</button>
+                   </div>
+                </div>
+
+                <div className="h-48 flex items-end justify-between gap-2 px-2 relative pb-6 border-b border-gray-100">
+                   {/* Y Axis Labels */}
+                   <div className="absolute left-0 top-0 bottom-6 flex flex-col justify-between text-[10px] text-gray-400 font-semibold">
+                      <span>50</span>
+                      <span>30</span>
+                      <span>10</span>
+                   </div>
+                   
+                   {/* Chart Bars */}
+                   <div className="flex-1 h-full flex items-end justify-between gap-2 pl-6 pb-6">
+                      {(financePeriod === "Minggu" ? [20, 40, 60, 30, 50, 80, 40] : [15, 25, 60, 45, 65, 30, 50, 20, 40, 70, 55]).map((val, idx) => (
+                         <div key={idx} className="w-full h-full bg-transparent rounded-t-md relative group flex items-end">
+                            <div className="w-full bg-[#0D5C36] rounded-t-md transition-all duration-500 group-hover:bg-[#1B7A4E]" style={{ height: `${val}%` }} />
+                         </div>
+                      ))}
+                   </div>
+                   
+                   {/* X Axis mock labels - purely aesthetic */}
+                   <div className="absolute bottom-1 left-8 right-2 flex justify-between text-[9px] text-gray-400 font-semibold">
+                      <span>1</span>
+                      <span>5</span>
+                      <span>10</span>
+                      <span>15</span>
+                      <span>20</span>
+                      <span>25</span>
+                      <span>30</span>
+                   </div>
+                </div>
+             </div>
+          </div>
+        </>
+      ) : activeLaundryScreen === "manajemen_lainnya" ? (
+        <>
+          <div className="bg-[#F7FAF8] flex-1 overflow-y-auto flex flex-col">
+             <div className="px-5 pt-10 pb-6 flex justify-between items-center bg-white">
+                <div className="flex items-center gap-2">
+                   <button onClick={() => setActiveLaundryScreen("dashboard")} className="w-10 h-10 flex items-center -ml-2 text-gray-900 active:scale-95 transition-transform">
+                     <ArrowLeft size={22} />
+                   </button>
+                   <h2 className="font-extrabold text-[22px] text-gray-900 tracking-tight">Lainnya</h2>
+                </div>
+                <button className="w-10 h-10 flex items-center justify-center text-gray-900 -mr-2 active:bg-gray-100 rounded-full">
+                  <MoreVertical size={20} />
+                </button>
+             </div>
+
+             <div className="px-5 pb-8 flex-1">
+                <div className="bg-white rounded-[20px] p-4 border border-gray-100 shadow-sm flex items-center gap-4 mb-6">
+                   <div className="w-14 h-14 rounded-full bg-[#0D5C36] flex items-center justify-center text-white shrink-0 shadow-sm">
+                      <Shirt size={26} />
+                   </div>
+                   <div className="flex-1">
+                      <h3 className="font-extrabold text-[15px] text-gray-900 mb-0.5">Laundry Bersih Kilat</h3>
+                      <div className="flex items-center gap-1 text-[13px] text-gray-500">
+                         Pemilik Laundry <CheckCircle size={14} className="text-[#0D5C36] fill-green-100" />
+                      </div>
+                   </div>
+                </div>
+
+                <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm overflow-hidden flex flex-col">
+                   {[
+                      { icon: Store, label: "Profil Laundry" },
+                      { icon: Tag, label: "Layanan & Harga" },
+                      { icon: Users, label: "Karyawan" },
+                      { icon: Settings, label: "Pengaturan Toko" },
+                      { icon: CreditCard, label: "Metode Pembayaran" },
+                      { icon: HelpCircle, label: "Pusat Bantuan" },
+                   ].map((item, idx) => (
+                      <div key={idx} className={`flex items-center justify-between p-5 cursor-pointer active:bg-gray-50 transition-colors ${idx !== 5 ? 'border-b border-gray-50' : ''}`}>
+                         <div className="flex items-center gap-4">
+                            <item.icon size={20} className="text-[#334155]" strokeWidth={1.5} />
+                            <span className="font-extrabold text-[14px] text-[#0F172A]">{item.label}</span>
+                         </div>
+                         <ChevronRight size={18} className="text-gray-300" />
+                      </div>
+                   ))}
+                </div>
+             </div>
+
+             {/* Bottom Nav Placeholder to avoid overlapping with absolute bottom nav if rendered outside */}
+             <div className="h-24"></div>
+          </div>
+        </>
+      ) : activeLaundryScreen === "kos_manajemen_kamar" ? (
+        <>
+          <div className="bg-white flex-1 overflow-y-auto flex flex-col rounded-b-[32px] shadow-sm relative">
+             {/* Header */}
+             <div className="px-5 pt-10 pb-4 flex justify-between items-center bg-white sticky top-0 z-20">
+                <div className="flex items-center gap-3">
+                   <button onClick={() => setActiveLaundryScreen("dashboard")} className="w-10 h-10 flex items-center -ml-2 text-gray-900 active:scale-95 transition-transform">
+                     <ArrowLeft size={22} />
+                   </button>
+                   <div>
+                     <h2 className="font-extrabold text-lg text-gray-900 leading-tight">Manajemen Kamar</h2>
+                     <p className="text-[11px] text-gray-500 font-medium">Kelola semua kamar kos Anda</p>
+                   </div>
+                </div>
+                <div className="flex gap-2">
+                   <button className="w-9 h-9 rounded-full border border-gray-200 text-gray-600 flex items-center justify-center bg-white shadow-sm hover:bg-gray-50 transition-colors">
+                     <Search size={16} />
+                   </button>
+                   <button onClick={() => setShowKosRoomMenu(true)} className="w-9 h-9 rounded-full text-white bg-[#0D5C36] flex items-center justify-center shadow-md shadow-[#0D5C36]/30 hover:bg-[#0A4A2A] transition-colors">
+                     <Plus size={18} />
+                   </button>
+                </div>
+             </div>
+
+             {/* Stats Horizontal Scroll */}
+             <div className="px-5 pb-5 mt-2">
+                <div className="flex gap-3 overflow-x-auto pb-2" style={{ scrollbarWidth: "none" }}>
+                   <div className="bg-white rounded-[20px] p-3 border border-gray-100 shadow-[0_2px_10px_rgba(0,0,0,0.03)] min-w-[100px] shrink-0 flex flex-col items-center justify-center">
+                      <p className="text-[10px] text-gray-500 font-bold mb-1">Total Kamar</p>
+                      <p className="font-black text-[22px] text-gray-900 leading-tight">12</p>
+                      <p className="text-[9px] text-gray-400 mt-1">Semua kamar</p>
+                   </div>
+                   <div className="bg-white rounded-[20px] p-3 border border-gray-100 shadow-[0_2px_10px_rgba(0,0,0,0.03)] min-w-[100px] shrink-0 flex flex-col items-center justify-center">
+                      <p className="text-[10px] text-gray-500 font-bold mb-1 flex items-center gap-1">Terisi <div className="w-1.5 h-1.5 bg-green-500 rounded-full" /></p>
+                      <p className="font-black text-[22px] text-gray-900 leading-tight">10</p>
+                      <p className="text-[9px] text-gray-400 mt-1">83%</p>
+                   </div>
+                   <div className="bg-white rounded-[20px] p-3 border border-gray-100 shadow-[0_2px_10px_rgba(0,0,0,0.03)] min-w-[100px] shrink-0 flex flex-col items-center justify-center">
+                      <p className="text-[10px] text-orange-500 font-bold mb-1">Kosong</p>
+                      <p className="font-black text-[22px] text-orange-500 leading-tight">2</p>
+                      <p className="text-[9px] text-orange-500 mt-1">17%</p>
+                   </div>
+                   <div className="bg-white rounded-[20px] p-3 border border-gray-100 shadow-[0_2px_10px_rgba(0,0,0,0.03)] min-w-[100px] shrink-0 flex flex-col items-center justify-center">
+                      <p className="text-[10px] text-blue-500 font-bold mb-1">Dalam Proses</p>
+                      <p className="font-black text-[22px] text-blue-500 leading-tight">0</p>
+                      <p className="text-[9px] text-blue-500 mt-1">0%</p>
+                   </div>
+                </div>
+             </div>
+
+             {/* Filter Tabs */}
+             <div className="px-5 mb-5 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
+                <div className="flex items-center gap-4 border-b border-gray-100 pb-2">
+                   {["Semua (12)", "Terisi (10)", "Kosong (2)", "Dalam Proses (0)"].map(tab => (
+                     <button 
+                       key={tab}
+                       onClick={() => setKosKamarFilter(tab)}
+                       className={`whitespace-nowrap text-[12px] font-bold px-4 py-1.5 rounded-full transition-colors ${kosKamarFilter === tab ? "bg-[#0D5C36] text-white" : "text-gray-500 hover:text-gray-900"}`}
+                     >
+                       {tab}
+                     </button>
+                   ))}
+                </div>
+             </div>
+
+             {/* Room List */}
+             <div className="px-5 pb-32 flex flex-col gap-4">
+                {MOCK_KOS_ROOMS_MANAGEMENT.map((room, idx) => (
+                   <div key={idx} className="bg-white rounded-[24px] border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.04)] overflow-hidden flex flex-col">
+                      <div className="flex h-[160px]">
+                         {/* Room Image & Status */}
+                         <div className="w-[130px] h-full relative shrink-0 p-2 pl-2">
+                            <img src={room.image} alt="Room" className="w-full h-full object-cover rounded-[16px]" />
+                            <div className="absolute top-4 left-4">
+                               <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${room.status === "Terisi" ? "bg-[#E7F6ED] text-[#0D5C36]" : "bg-orange-100 text-orange-600"}`}>
+                                  {room.status}
+                               </span>
+                            </div>
+                         </div>
+                         
+                         {/* Room Info */}
+                         <div className="p-3 pr-4 flex-1 flex flex-col justify-between">
+                            <div>
+                               <div className="flex justify-between items-start mb-1.5">
+                                  <div className="flex items-center gap-2">
+                                     <h3 className="font-black text-[18px] text-gray-900 leading-none">{room.id}</h3>
+                                     <span className="bg-[#F2FAF5] text-[#0D5C36] text-[9px] font-bold px-2 py-0.5 rounded-full">{room.type}</span>
+                                  </div>
+                                  <button onClick={() => { setKosRoomWizardMode("edit"); setShowKosRoomMenu(true); }} className="text-gray-400 hover:text-gray-600">
+                                     <MoreHorizontal size={16} />
+                                  </button>
+                               </div>
+
+                               <div className="flex flex-wrap gap-x-3 gap-y-1 mt-3">
+                                  {room.amenities.map(am => (
+                                     <div key={am} className="flex items-center gap-1 text-[10px] text-gray-500 font-medium">
+                                        {am === "AC" && <Monitor size={12} />}
+                                        {am === "Kipas" && <Wind size={12} />}
+                                        {am === "WiFi" && <Wifi size={12} />}
+                                        {am.includes("KM") && <Bath size={12} />}
+                                        {am}
+                                     </div>
+                                  ))}
+                               </div>
+                               <div className="flex items-center gap-1 text-[10px] text-gray-500 font-medium mt-1.5">
+                                  <Calendar size={12} /> {room.extraAmenities}
+                               </div>
+                            </div>
+
+                            <div className="mt-3 flex justify-between items-end">
+                               <div className="flex flex-col">
+                                  {room.status === "Terisi" ? (
+                                     <>
+                                        <p className="text-[9px] text-gray-400 mb-1 font-medium">Penghuni</p>
+                                        <div className="flex items-center gap-1.5">
+                                           <img src={room.avatar!} className="w-5 h-5 rounded-full" />
+                                           <span className="font-bold text-[11px] text-gray-900">{room.occupant}</span>
+                                        </div>
+                                     </>
+                                  ) : (
+                                     <div className="h-6" /> // Placeholder
+                                  )}
+                               </div>
+                               <div className="text-right">
+                                  <p className="font-black text-[15px] text-[#0D5C36] leading-none">{rp(room.price)}</p>
+                                  <p className="text-[9px] text-gray-400 font-medium mt-0.5">/ bulan</p>
+                               </div>
+                            </div>
+                         </div>
+                      </div>
+                   </div>
+                ))}
+             </div>
+
+             {/* Sticky Bottom Bar */}
+             <div className="sticky bottom-4 mx-4 mb-4 mt-auto bg-[#F2FAF5] border border-[#E7F6ED] rounded-[24px] p-4 flex items-center justify-between shadow-lg z-30">
+                <div className="flex items-center gap-3">
+                   <div className="w-10 h-10 rounded-xl bg-white text-[#0D5C36] flex items-center justify-center shrink-0 shadow-sm border border-green-50">
+                      <Building2 size={20} />
+                   </div>
+                   <div>
+                      <p className="text-[10px] text-gray-500 font-bold mb-0.5">Potensi Pendapatan</p>
+                      <p className="font-black text-[16px] text-[#0D5C36] leading-none">Rp 23.100.000 <span className="text-[10px] font-medium text-gray-500">/ bulan</span></p>
+                   </div>
+                </div>
+                <button className="text-[11px] font-bold text-[#0D5C36] border border-[#0D5C36]/20 bg-white px-3 py-2 rounded-[14px] flex items-center gap-1 shadow-sm active:scale-95 transition-transform">
+                   Lihat Laporan <ChevronRight size={14} />
+                </button>
+             </div>
+          </div>
+        </>
+      ) : activeLaundryScreen === "kos_manajemen_penghuni" ? (
+        <>
+          <div className="bg-white flex-1 min-h-0 overflow-y-auto flex flex-col rounded-b-[32px] shadow-sm relative">
+             {/* Header */}
+             <div className="bg-white px-5 pt-10 pb-4 shrink-0 z-10 sticky top-0 flex items-center gap-3">
+                <button onClick={() => setActiveLaundryScreen("dashboard")} className="w-10 h-10 flex items-center -ml-2 text-gray-900 active:scale-95 transition-transform">
+                  <ArrowLeft size={22} />
+                </button>
+                <div className="flex-1">
+                   <h2 className="font-extrabold text-[18px] text-gray-900 leading-none">Manajemen Penghuni</h2>
+                   <p className="text-[12px] text-gray-500 font-medium mt-1">Kelola semua penghuni kos Anda</p>
+                </div>
+                <div className="flex items-center gap-2">
+                   <button className="w-9 h-9 rounded-full border border-gray-200 text-gray-600 flex items-center justify-center bg-white shadow-sm hover:bg-gray-50 transition-colors">
+                     <Search size={16} />
+                   </button>
+                   <button className="w-9 h-9 rounded-full text-white bg-[#0D5C36] flex items-center justify-center shadow-md shadow-[#0D5C36]/30 hover:bg-[#0A4A2A] transition-colors">
+                     <Plus size={18} />
+                   </button>
+                </div>
+             </div>
+
+             {/* Stats Row */}
+             <div className="flex gap-3 overflow-x-auto px-5 pb-5 pt-2 shrink-0" style={{ scrollbarWidth: "none" }}>
+                {[
+                   { label: "Total Penghuni", value: "10", sub: "Orang", color: "gray-900", bg: "gray-50", subColor: "gray-400" },
+                   { label: "Aktif", value: "10", sub: "100%", color: "green-600", bg: "green-50", subColor: "green-500", icon: <CheckCircle size={10} className="inline ml-1" /> },
+                   { label: "Akan Keluar", value: "0", sub: "0%", color: "red-500", bg: "red-50", subColor: "red-400" },
+                   { label: "Check-out", value: "0", sub: "0%", color: "blue-500", bg: "blue-50", subColor: "blue-400" },
+                ].map((stat, i) => (
+                   <div key={i} className="min-w-[105px] h-[95px] rounded-[20px] bg-white border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] flex flex-col justify-center items-center shrink-0">
+                      <p className="text-[10px] font-bold text-gray-500 text-center mb-1 leading-tight">{stat.label} {stat.icon}</p>
+                      <h3 className={`font-black text-[26px] leading-none mb-1 text-${stat.color}`}>{stat.value}</h3>
+                      <p className={`text-[10px] font-bold text-${stat.subColor}`}>{stat.sub}</p>
+                   </div>
+                ))}
+             </div>
+
+             {/* Filter Tabs */}
+             <div className="flex items-center gap-3 overflow-x-auto px-5 pb-5 shrink-0" style={{ scrollbarWidth: "none" }}>
+                {["Semua (10)", "Aktif (10)", "Akan Keluar (0)", "Check-out (0)"].map(tab => (
+                   <button 
+                      key={tab}
+                      onClick={() => setKosPenghuniFilter(tab)}
+                      className={`whitespace-nowrap text-[12px] font-bold px-4 py-2 rounded-full transition-colors ${kosPenghuniFilter === tab ? "bg-[#0D5C36] text-white" : "bg-white border border-gray-200 text-gray-500"}`}
+                   >
+                      {tab}
+                   </button>
+                ))}
+                <button className="w-9 h-9 rounded-full border border-gray-200 text-gray-600 flex items-center justify-center bg-white shadow-sm shrink-0 ml-auto">
+                   <Filter size={16} />
+                </button>
+             </div>
+
+             {/* Occupants List */}
+             <div className="px-5 pb-8">
+                <div className="bg-white rounded-[24px] border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.02)] overflow-hidden">
+                   {MOCK_KOS_OCCUPANTS.map((occ, idx) => (
+                      <div key={idx} className="p-4 border-b border-gray-100 last:border-b-0 flex gap-4">
+                         <img src={occ.avatar} className="w-14 h-14 rounded-full object-cover shrink-0" />
+                         <div className="flex-1 flex justify-between">
+                            {/* Left Column */}
+                            <div className="flex flex-col justify-between">
+                               <div>
+                                  <div className="flex items-center gap-2 mb-1">
+                                     <h3 className="font-extrabold text-[15px] text-[#1D2939] leading-none">{occ.name}</h3>
+                                     <span className="bg-[#E7F6ED] text-[#0D5C36] text-[9px] font-bold px-2 py-0.5 rounded-full">{occ.status}</span>
+                                  </div>
+                                  <p className="text-[12px] font-medium text-gray-500">{occ.room} • {occ.type}</p>
+                               </div>
+                               
+                               <div className="flex flex-col gap-1 mt-3">
+                                  <p className="text-[11px] font-medium text-gray-500 flex items-center gap-1.5">
+                                     <Phone size={12} className="text-gray-400" /> {occ.phone}
+                                  </p>
+                                  <p className="text-[11px] font-medium text-gray-500 flex items-center gap-1.5">
+                                     <Calendar size={12} className="text-gray-400" /> Masuk: {occ.entryDate}
+                                  </p>
+                               </div>
+                            </div>
+                            
+                            {/* Right Column */}
+                            <div className="flex flex-col justify-between items-end text-right">
+                               <div className="flex flex-col items-end">
+                                   <button className="text-gray-400 hover:text-gray-600 mb-2 -mt-1 -mr-1">
+                                      <MoreVertical size={16} />
+                                   </button>
+                                   <p className="text-[9px] text-gray-400 font-bold mb-0.5">Sisa Sewa</p>
+                                   <p className={`text-[11px] font-extrabold ${occ.remainingDays <= 10 ? 'text-orange-500' : 'text-[#0D5C36]'}`}>
+                                      {occ.remainingDays} hari lagi
+                                   </p>
+                               </div>
+                               
+                               <div className="mt-2 flex flex-col items-end">
+                                  <p className="font-black text-[14px] text-[#0D5C36] leading-none">{rp(occ.price)}</p>
+                                  <p className="text-[9px] text-gray-400 font-medium mt-0.5">/ bulan</p>
+                               </div>
+                            </div>
+                         </div>
+                      </div>
+                   ))}
+                </div>
+             </div>
+          </div>
+
+          {/* Double Sticky Bottom Bar (OUTSIDE scroll container) */}
+          <div className="w-full p-4 bg-white border-t border-gray-100 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] z-20 flex gap-3 shrink-0 rounded-b-[32px]">
+             <div className="flex-1 bg-[#F2FAF5] border border-[#E7F6ED] rounded-2xl p-3.5 flex justify-between items-center active:scale-95 transition-transform cursor-pointer">
+                <div>
+                   <div className="flex items-center gap-1.5 mb-1">
+                      <div className="w-5 h-5 rounded-md bg-[#0D5C36] flex items-center justify-center text-white">
+                         <Banknote size={10} />
+                      </div>
+                      <p className="text-[9px] text-gray-500 font-bold">Pendapatan Bulan Ini</p>
+                   </div>
+                   <p className="font-black text-[14px] text-[#0D5C36] leading-none ml-6">Rp 12.500.000</p>
+                </div>
+                <ChevronRight size={14} className="text-[#0D5C36]" />
+             </div>
+             
+             <div className="flex-1 bg-[#FFF5F2] border border-[#FFE8E2] rounded-2xl p-3.5 flex justify-between items-center active:scale-95 transition-transform cursor-pointer">
+                <div>
+                   <div className="flex items-center gap-1.5 mb-1">
+                      <div className="w-5 h-5 rounded-md bg-[#FF5C35] flex items-center justify-center text-white">
+                         <FileText size={10} />
+                      </div>
+                      <p className="text-[9px] text-gray-500 font-bold">Tunggakan</p>
+                   </div>
+                   <p className="font-black text-[14px] text-[#FF5C35] leading-none ml-6">Rp 1.500.000</p>
+                </div>
+                <ChevronRight size={14} className="text-[#FF5C35]" />
+             </div>
+          </div>
+        </>
+      ) : activeLaundryScreen === "kos_laporan_keuangan" ? (
+        <>
+          <div className="bg-[#F7FAF8] flex-1 overflow-y-auto flex flex-col rounded-b-[32px] shadow-sm relative pb-20">
+             {/* Header */}
+             <div className="bg-[#F7FAF8] px-5 pt-10 pb-4 shrink-0 z-10 sticky top-0 flex items-center gap-3">
+                <button onClick={() => setActiveLaundryScreen("dashboard")} className="w-10 h-10 flex items-center -ml-2 text-gray-900 active:scale-95 transition-transform">
+                  <ArrowLeft size={22} />
+                </button>
+                <div className="flex-1">
+                   <h2 className="font-extrabold text-[18px] text-gray-900 leading-none mb-1">Laporan Keuangan</h2>
+                   <p className="text-[11px] text-gray-500 font-medium">Ringkasan pemasukan & pengeluaran</p>
+                </div>
+                <button className="h-9 px-3 rounded-full border border-gray-200 text-gray-700 font-bold text-[11px] flex items-center gap-1.5 bg-white shadow-sm hover:bg-gray-50 transition-colors">
+                  <Calendar size={14} className="text-[#0D5C36]" /> Juli 2026 <ChevronDown size={14} />
+                </button>
+             </div>
+
+             <div className="px-5 flex flex-col gap-4">
+                {/* Laba Bersih Card */}
+                <div className="bg-[#0D5C36] rounded-[24px] p-5 relative overflow-hidden shadow-lg shadow-[#0D5C36]/20">
+                   <div className="absolute right-[-10px] top-1/2 -translate-y-1/2 opacity-20 pointer-events-none">
+                      <ClipboardList size={140} strokeWidth={1.5} className="text-white" />
+                   </div>
+                   <div className="relative z-10">
+                      <p className="text-white/80 text-[12px] font-bold mb-1">Laba Bersih</p>
+                      <h2 className="text-white text-[32px] font-black leading-none mb-3">Rp 8.250.000</h2>
+                      <div className="flex items-center gap-2">
+                         <span className="bg-white/20 text-white text-[10px] font-bold px-2 py-1 rounded-md flex items-center gap-1">
+                            <TrendingUp size={12} /> +12%
+                         </span>
+                         <span className="text-white/70 text-[10px] font-medium">dibanding bulan lalu</span>
+                      </div>
+                   </div>
+                </div>
+
+                {/* Metrics */}
+                <div className="flex gap-3 overflow-x-auto pb-2 -mx-5 px-5" style={{ scrollbarWidth: 'none' }}>
+                   {[
+                      { title: "Pendapatan", value: "Rp 12.500.000", change: "+8.5%", icon: <Wallet size={14} />, color: "green", bg: "bg-green-50", text: "text-green-600", border: "border-green-100", changeColor: "text-green-600 bg-green-100" },
+                      { title: "Pengeluaran", value: "Rp 4.250.000", change: "+5.2%", icon: <ArrowDown size={14} />, color: "red", bg: "bg-red-50", text: "text-red-500", border: "border-red-100", changeColor: "text-red-500 bg-red-100" },
+                      { title: "Piutang", value: "Rp 1.500.000", change: "- 0%", icon: <FileText size={14} />, color: "blue", bg: "bg-blue-50", text: "text-blue-500", border: "border-blue-100", changeColor: "text-blue-500 bg-blue-100" },
+                   ].map((m, i) => (
+                      <div key={i} className="min-w-[140px] bg-white rounded-[20px] p-4 border border-gray-100 shadow-sm shrink-0">
+                         <div className={`w-8 h-8 rounded-xl ${m.bg} ${m.text} flex items-center justify-center mb-3`}>
+                            {m.icon}
+                         </div>
+                         <p className="text-[11px] font-bold text-gray-900 mb-1">{m.title}</p>
+                         <p className="font-black text-[14px] text-gray-900 mb-3">{m.value}</p>
+                         <div className="flex items-center gap-1.5">
+                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5 ${m.changeColor}`}>
+                               {m.change.includes('+') ? <ArrowUp size={8} /> : null} {m.change}
+                            </span>
+                            <span className="text-[9px] text-gray-400 font-medium">vs bulan lalu</span>
+                         </div>
+                      </div>
+                   ))}
+                </div>
+
+                {/* Pendapatan Bulanan Chart */}
+                <div className="bg-white rounded-[24px] p-4 border border-gray-100 shadow-sm">
+                   <div className="flex justify-between items-center mb-6">
+                      <h3 className="font-bold text-[13px] text-gray-900">Pendapatan Bulanan</h3>
+                      <button className="text-[10px] font-bold text-[#0D5C36] flex items-center gap-0.5">Lihat Detail <ChevronRight size={12} /></button>
+                   </div>
+                   <div className="relative h-32 w-full mt-2">
+                      {/* Grid Lines */}
+                      <div className="absolute inset-0 flex flex-col justify-between text-[9px] text-gray-400">
+                         <div className="flex items-center border-b border-gray-100 h-0 w-full relative"><span className="absolute -left-1 -top-1.5 pr-2 bg-white">15 jt</span></div>
+                         <div className="flex items-center border-b border-gray-100 h-0 w-full relative"><span className="absolute -left-1 -top-1.5 pr-2 bg-white">10 jt</span></div>
+                         <div className="flex items-center border-b border-gray-100 h-0 w-full relative"><span className="absolute -left-1 -top-1.5 pr-2 bg-white">5 jt</span></div>
+                         <div className="flex items-center border-b border-gray-100 h-0 w-full relative"><span className="absolute -left-1 -top-1.5 pr-2 bg-white">0</span></div>
+                      </div>
+                      
+                      {/* SVG Line Chart */}
+                      <svg className="absolute inset-0 h-full w-full overflow-visible z-10 pl-6" viewBox="0 0 300 100" preserveAspectRatio="none">
+                         <defs>
+                            <linearGradient id="gradient" x1="0" y1="0" x2="0" y2="1">
+                               <stop offset="0%" stopColor="#0D5C36" stopOpacity="0.2" />
+                               <stop offset="100%" stopColor="#0D5C36" stopOpacity="0" />
+                            </linearGradient>
+                         </defs>
+                         <polygon points="0,70 50,55 100,40 150,48 200,32 250,22 300,10 300,100 0,100" fill="url(#gradient)" />
+                         <polyline points="0,70 50,55 100,40 150,48 200,32 250,22 300,10" fill="none" stroke="#0D5C36" strokeWidth="2.5" />
+                         <circle cx="0" cy="70" r="3" fill="#0D5C36" stroke="white" strokeWidth="1.5" />
+                         <circle cx="50" cy="55" r="3" fill="#0D5C36" stroke="white" strokeWidth="1.5" />
+                         <circle cx="100" cy="40" r="3" fill="#0D5C36" stroke="white" strokeWidth="1.5" />
+                         <circle cx="150" cy="48" r="3" fill="#0D5C36" stroke="white" strokeWidth="1.5" />
+                         <circle cx="200" cy="32" r="3" fill="#0D5C36" stroke="white" strokeWidth="1.5" />
+                         <circle cx="250" cy="22" r="3" fill="#0D5C36" stroke="white" strokeWidth="1.5" />
+                         <circle cx="300" cy="10" r="4.5" fill="#0D5C36" />
+                      </svg>
+                      
+                      {/* Tooltip on last point */}
+                      <div className="absolute right-0 top-[-8px] bg-[#0D5C36] text-white text-[9px] font-bold px-2 py-1 rounded z-20 shadow-md">
+                         Rp 12.500.000
+                      </div>
+
+                      {/* X Axis Labels */}
+                      <div className="absolute -bottom-6 left-6 right-0 flex justify-between text-[9px] text-gray-500 font-medium">
+                         <span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>Mei</span><span>Jun</span><span className="text-[#0D5C36] font-extrabold">Jul</span>
+                      </div>
+                   </div>
+                </div>
+
+                {/* Komposisi Pengeluaran */}
+                <div className="bg-white rounded-[24px] p-5 border border-gray-100 shadow-sm flex items-center gap-6">
+                   <div className="flex-1 max-w-[120px]">
+                      <h3 className="font-bold text-[13px] text-gray-900 leading-tight mb-2">Komposisi Pengeluaran</h3>
+                      {/* Pure CSS Donut Chart */}
+                      <div className="w-24 h-24 rounded-full relative ml-2 mt-4" style={{
+                         background: "conic-gradient(#0D5C36 0% 45%, #4ADE80 45% 65%, #3B82F6 65% 80%, #FBBF24 80% 90%, #9CA3AF 90% 100%)"
+                      }}>
+                         {/* Donut Hole */}
+                         <div className="absolute inset-0 m-[18px] bg-white rounded-full flex flex-col items-center justify-center shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)]">
+                            <span className="text-[7px] font-medium text-gray-400">Total</span>
+                            <span className="text-[8px] font-extrabold text-gray-900 leading-none">Rp 4.250.000</span>
+                         </div>
+                      </div>
+                   </div>
+                   <div className="flex-1 flex flex-col gap-2.5">
+                      {[
+                         { label: "Operasional", percent: "45%", color: "bg-[#0D5C36]" },
+                         { label: "Listrik", percent: "20%", color: "bg-[#4ADE80]" },
+                         { label: "Air", percent: "15%", color: "bg-[#3B82F6]" },
+                         { label: "Perawatan", percent: "10%", color: "bg-[#FBBF24]" },
+                         { label: "Lainnya", percent: "10%", color: "bg-[#9CA3AF]" },
+                      ].map((item, i) => (
+                         <div key={i} className="flex justify-between items-center text-[10px]">
+                            <div className="flex items-center gap-2">
+                               <div className={`w-2 h-2 rounded-full ${item.color}`}></div>
+                               <span className="text-gray-600 font-medium">{item.label}</span>
+                            </div>
+                            <span className="font-bold text-gray-900">{item.percent}</span>
+                         </div>
+                      ))}
+                   </div>
+                </div>
+
+                {/* Transaksi Terbaru */}
+                <div>
+                   <div className="flex justify-between items-center mb-3">
+                      <h3 className="font-bold text-[13px] text-gray-900">Transaksi Terbaru</h3>
+                      <button className="text-[10px] font-bold text-[#0D5C36] flex items-center gap-0.5">Lihat Semua <ChevronRight size={12} /></button>
+                   </div>
+                   
+                   <div className="flex gap-2 mb-4">
+                      <div className="flex-1 relative">
+                         <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                         <input type="text" placeholder="Cari transaksi..." className="w-full pl-8 pr-3 py-2 text-[11px] bg-white border border-gray-200 rounded-full outline-none focus:border-[#0D5C36]" />
+                      </div>
+                      {["Semua", "Pendapatan", "Pengeluaran"].map(tab => (
+                         <button 
+                            key={tab} 
+                            onClick={() => setKosFinanceFilter(tab)}
+                            className={`px-3 py-1.5 rounded-full text-[10px] font-bold whitespace-nowrap border transition-colors ${kosFinanceFilter === tab ? "bg-[#0D5C36] text-white border-[#0D5C36]" : "bg-white text-gray-500 border-gray-200"}`}
+                         >
+                            {tab}
+                         </button>
+                      ))}
+                   </div>
+
+                   <div className="bg-white rounded-[24px] border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.02)] overflow-hidden">
+                      {MOCK_KOS_FINANCE_TRANSACTIONS.map((trx, idx) => (
+                         <div key={idx} className="flex items-center gap-3 p-4 border-b border-gray-50 last:border-b-0 active:bg-gray-50 cursor-pointer">
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${trx.type === 'in' ? 'bg-[#E7F6ED] text-[#0D5C36]' : 'bg-[#FFF5F2] text-[#FF5C35]'}`}>
+                               {trx.type === 'in' ? <ArrowUp size={18} /> : <ArrowDown size={18} />}
+                            </div>
+                            <div className="flex-1">
+                               <p className="font-extrabold text-[12px] text-gray-900 leading-tight mb-1">{trx.title}</p>
+                               <p className="text-[10px] text-gray-500 font-medium">{trx.subtitle}</p>
+                            </div>
+                            <div className="text-right flex items-center gap-2">
+                               <p className={`font-black text-[13px] ${trx.type === 'in' ? 'text-[#0D5C36]' : 'text-[#FF5C35]'}`}>
+                                  {trx.type === 'in' ? '+' : '-'} {rp(trx.amount)}
+                               </p>
+                               <ChevronRight size={14} className="text-gray-300" />
+                            </div>
+                         </div>
+                      ))}
+                   </div>
+                </div>
+
+                {/* Bottom Summary Cards */}
+                <div className="flex gap-3 mt-2 mb-4">
+                   {/* Ringkasan Keuangan */}
+                   <div className="flex-1 bg-white rounded-[24px] p-4 border border-gray-100 shadow-sm flex flex-col justify-between">
+                      <div>
+                         <div className="flex items-center gap-1.5 mb-2">
+                            <Building2 size={14} className="text-[#0D5C36]" />
+                            <h4 className="font-bold text-[11px] text-gray-900">Ringkasan Keuangan</h4>
+                         </div>
+                         <p className="text-[9px] text-gray-500 font-medium">Total Pendapatan</p>
+                         <p className="font-black text-[14px] text-gray-900 leading-tight mb-3">Rp 12.500.000</p>
+                      </div>
+                      <div className="flex justify-between border-t border-gray-100 pt-3">
+                         <div>
+                            <p className="text-[9px] text-gray-400 font-medium">Tunai</p>
+                            <p className="font-bold text-[11px] text-gray-900">Rp 3.500.000</p>
+                         </div>
+                         <div className="text-right">
+                            <p className="text-[9px] text-gray-400 font-medium">Transfer</p>
+                            <p className="font-bold text-[11px] text-gray-900">Rp 9.000.000</p>
+                         </div>
+                      </div>
+                   </div>
+
+                   {/* Insight Bulan Ini */}
+                   <div className="flex-1 bg-white rounded-[24px] p-4 border border-gray-100 shadow-sm">
+                      <div className="flex items-center gap-1.5 mb-3">
+                         <Zap size={14} className="text-orange-500 fill-orange-500" />
+                         <h4 className="font-bold text-[11px] text-gray-900">Insight Bulan Ini</h4>
+                      </div>
+                      <div className="flex flex-col gap-2.5">
+                         <div className="flex gap-2 items-start">
+                            <TrendingUp size={12} className="text-[#0D5C36] mt-0.5 shrink-0" />
+                            <p className="text-[9px] text-gray-600 font-medium leading-tight">Pendapatan meningkat 12%</p>
+                         </div>
+                         <div className="flex gap-2 items-start">
+                            <Users size={12} className="text-blue-500 mt-0.5 shrink-0" />
+                            <p className="text-[9px] text-gray-600 font-medium leading-tight">Okupansi mencapai 83%</p>
+                         </div>
+                         <div className="flex gap-2 items-start">
+                            <Zap size={12} className="text-orange-500 mt-0.5 shrink-0" />
+                            <p className="text-[9px] text-gray-600 font-medium leading-tight">Pengeluaran listrik naik 8%</p>
+                         </div>
+                         <div className="flex gap-2 items-start">
+                            <AlertTriangle size={12} className="text-red-500 mt-0.5 shrink-0" />
+                            <p className="text-[9px] text-gray-600 font-medium leading-tight">2 penghuni belum membayar sewa</p>
+                         </div>
+                      </div>
+                   </div>
+                </div>
+
+             </div>
+
+             {/* Floating Action Button */}
+             <button className="absolute right-5 bottom-5 w-12 h-12 bg-[#0D5C36] rounded-full text-white flex items-center justify-center shadow-lg shadow-[#0D5C36]/40 hover:bg-[#0A4A2A] active:scale-95 transition-transform z-30">
+                <Plus size={24} />
+             </button>
+          </div>
+        </>
+      ) : activeLaundryScreen === "kos_verifikasi_dp" ? (
+        <>
+          <div className="bg-[#F7FAF8] flex-1 min-h-0 overflow-y-auto flex flex-col relative">
+             {/* Header */}
+             <div className="bg-white px-5 pt-10 pb-4 shrink-0 z-10 sticky top-0 flex items-center gap-3 shadow-sm shadow-gray-100/50">
+                <button onClick={() => setActiveLaundryScreen("dashboard")} className="w-10 h-10 flex items-center -ml-2 text-gray-900 active:scale-95 transition-transform">
+                  <ArrowLeft size={22} />
+                </button>
+                <h2 className="font-extrabold text-[18px] text-gray-900 flex-1">Verifikasi DP</h2>
+             </div>
+
+             <div className="px-5 pt-5 pb-8 flex flex-col gap-4 flex-1">
+                {/* Banner Atas */}
+                <div className="bg-[#E7F6ED] rounded-xl p-4 flex gap-3 items-start border border-[#D1EADC]">
+                   <div className="w-5 h-5 rounded-full bg-[#0D5C36] flex items-center justify-center shrink-0 mt-0.5 text-white">
+                      <div className="w-2.5 h-2.5 rounded-l-full bg-white/20"></div>
+                   </div>
+                   <p className="text-[12px] text-[#0A4A2A] font-medium leading-relaxed">
+                      Pastikan DP sesuai dengan jumlah dan bukti pembayaran yang diterima dari penghuni.
+                   </p>
+                </div>
+
+                {/* Card Detail Booking */}
+                <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm overflow-hidden flex flex-col mt-2">
+                   <div className="p-4 border-b border-gray-50">
+                      <div className="flex items-center gap-2">
+                         <div className="w-7 h-7 rounded-lg bg-[#E7F6ED] text-[#0D5C36] flex items-center justify-center">
+                            <ClipboardList size={14} />
+                         </div>
+                         <h3 className="font-extrabold text-[14px] text-gray-900">Detail Booking</h3>
+                      </div>
+                   </div>
+                   <div className="p-5 flex flex-col gap-4">
+                      {[
+                         { label: "Nama Penghuni", value: "Budi Santoso", bold: true },
+                         { label: "Tipe Kamar", value: "Kos Putra" },
+                         { label: "Kamar", value: "04 (Ahmad)" },
+                         { label: "Tanggal Booking", value: "12 Juli 2026" },
+                         { label: "Total Harga", value: "Rp1.500.000", bold: true },
+                      ].map((item, idx) => (
+                         <div key={idx} className="flex justify-between items-center text-[12px]">
+                            <span className="text-gray-500 font-medium">{item.label}</span>
+                            <span className={`text-gray-900 ${item.bold ? 'font-bold' : 'font-medium'}`}>{item.value}</span>
+                         </div>
+                      ))}
+                   </div>
+                   <div className="p-4 bg-gray-50/50 flex justify-between items-center border-t border-gray-50 text-[13px]">
+                      <span className="text-gray-600 font-medium">Jumlah DP</span>
+                      <div>
+                         <span className="font-extrabold text-[#0D5C36] mr-1">Rp750.000</span>
+                         <span className="font-bold text-[#0D5C36] text-[11px]">(50%)</span>
+                      </div>
+                   </div>
+                </div>
+
+                {/* Card Detail Pembayaran DP */}
+                <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm overflow-hidden flex flex-col">
+                   <div className="p-4 border-b border-gray-50">
+                      <div className="flex items-center gap-2">
+                         <div className="w-7 h-7 rounded-lg bg-[#E7F6ED] text-[#0D5C36] flex items-center justify-center">
+                            <FileText size={14} />
+                         </div>
+                         <h3 className="font-extrabold text-[14px] text-gray-900">Detail Pembayaran DP</h3>
+                      </div>
+                   </div>
+                   <div className="p-5 flex flex-col gap-4">
+                      {[
+                         { label: "Tanggal Transfer", value: "12 Juli 2026, 10:45" },
+                         { label: "Metode Pembayaran", value: "Transfer Bank (BCA)" },
+                         { label: "Dari Rekening", value: "Budi Santoso", bold: true },
+                      ].map((item, idx) => (
+                         <div key={idx} className="flex justify-between items-center text-[12px]">
+                            <span className="text-gray-500 font-medium">{item.label}</span>
+                            <span className={`text-gray-900 ${item.bold ? 'font-bold' : 'font-medium'}`}>{item.value}</span>
+                         </div>
+                      ))}
+                      
+                      <div className="flex justify-between items-center text-[12px] mt-2">
+                         <span className="text-gray-500 font-medium">Jumlah Diterima</span>
+                         <span className="font-black text-[14px] text-gray-900">Rp750.000</span>
+                      </div>
+
+                      <div className="flex justify-between items-start text-[12px] mt-4">
+                         <span className="text-gray-500 font-medium">Bukti Pembayaran</span>
+                         <div className="w-[140px]">
+                            <div className="w-full aspect-[4/3] bg-gray-100 rounded-xl overflow-hidden relative border border-gray-200">
+                               <img src="https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=300&fit=crop" alt="Bukti Transfer" className="w-full h-full object-cover opacity-80" />
+                               <div className="absolute inset-0 bg-black/5" />
+                            </div>
+                            <button className="w-full py-2.5 mt-2 rounded-xl border border-gray-200 flex items-center justify-center gap-1.5 text-[11px] font-bold text-[#0D5C36] active:bg-gray-50 transition-colors">
+                               <Search size={14} /> Lihat Bukti
+                            </button>
+                         </div>
+                      </div>
+                   </div>
+                </div>
+
+                {/* Banner Bawah */}
+                <div className="bg-[#E7F6ED] rounded-xl p-4 flex gap-3 items-start mt-2">
+                   <div className="mt-0.5 shrink-0">
+                      <div className="w-[18px] h-[18px] rounded-full bg-[#0D5C36] flex items-center justify-center text-white">
+                         <Check size={12} strokeWidth={3} />
+                      </div>
+                   </div>
+                   <p className="text-[12px] text-[#0A4A2A] font-bold leading-relaxed">
+                      Setelah verifikasi, status booking akan diperbarui dan kamar akan ditandai sebagai terbooking.
+                   </p>
+                </div>
+             </div>
+          </div>
+          
+          {/* Double Bottom Fixed Bar (Outside scrollable area) */}
+          <div className="bg-white px-5 py-4 border-t border-gray-100 flex gap-3 items-center rounded-b-[32px] shrink-0 z-20 shadow-[0_-4px_15px_rgba(0,0,0,0.03)]">
+             <button onClick={() => setShowKosTolakDPPopup(true)} className="flex-1 py-3.5 rounded-[16px] text-[#0D5C36] font-bold text-[13px] bg-white border-2 border-[#0D5C36] active:bg-gray-50 transition-colors text-center">
+                Tolak DP
+             </button>
+             <button onClick={() => setShowKosTerimaDPPopup(true)} className="flex-[1.5] py-3.5 rounded-[16px] text-white font-bold text-[13px] bg-[#0D5C36] shadow-sm shadow-[#0D5C36]/30 active:scale-[0.98] transition-transform text-center">
+                Verifikasi & Terima DP
+             </button>
+          </div>
+
+          {/* Popup Tolak DP */}
+          {showKosTolakDPPopup && (
+             <div className="fixed inset-0 z-[100] flex items-center justify-center p-5">
+                <div className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setShowKosTolakDPPopup(false)} />
+                <div className="bg-white rounded-[28px] w-full max-w-[320px] p-6 relative z-10 animate-in zoom-in-95 fade-in duration-200 shadow-xl flex flex-col items-center text-center">
+                   <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center text-red-500 mb-4">
+                      <AlertTriangle size={28} strokeWidth={2.5} />
+                   </div>
+                   <h3 className="font-black text-[18px] text-gray-900 mb-2">Tolak Pembayaran DP?</h3>
+                   <p className="text-[13px] text-gray-500 font-medium leading-relaxed mb-6">
+                      Apakah Anda yakin ingin menolak DP ini? Status pesanan akan dikembalikan menjadi tertunda.
+                   </p>
+                   <div className="flex flex-col gap-2.5 w-full">
+                      <button onClick={() => { setShowKosTolakDPPopup(false); setActiveLaundryScreen("dashboard"); }} className="w-full py-3.5 bg-red-500 text-white rounded-[16px] font-bold text-[14px] shadow-sm shadow-red-500/30 active:scale-[0.98] transition-transform">
+                         Ya, Tolak DP
+                      </button>
+                      <button onClick={() => setShowKosTolakDPPopup(false)} className="w-full py-3.5 text-gray-500 font-bold text-[14px] active:bg-gray-50 rounded-[16px] transition-colors">
+                         Batal
+                      </button>
+                   </div>
+                </div>
+             </div>
+          )}
+
+          {/* Popup Terima DP */}
+          {showKosTerimaDPPopup && (
+             <div className="fixed inset-0 z-[100] flex items-center justify-center p-5">
+                <div className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setShowKosTerimaDPPopup(false)} />
+                <div className="bg-white rounded-[28px] w-full max-w-[320px] p-6 relative z-10 animate-in zoom-in-95 fade-in duration-200 shadow-xl flex flex-col items-center text-center">
+                   <div className="w-16 h-16 rounded-full bg-[#E7F6ED] flex items-center justify-center text-[#0D5C36] mb-4">
+                      <CheckCircle size={32} strokeWidth={2.5} />
+                   </div>
+                   <h3 className="font-black text-[18px] text-gray-900 mb-2">Verifikasi Berhasil</h3>
+                   <p className="text-[13px] text-gray-500 font-medium leading-relaxed mb-6">
+                      Pembayaran DP atas nama <strong className="text-gray-900">Budi Santoso</strong> telah dikonfirmasi. Kamar berhasil dipesan!
+                   </p>
+                   <div className="flex flex-col gap-2.5 w-full">
+                      <button onClick={() => { setShowKosTerimaDPPopup(false); setActiveLaundryScreen("dashboard"); }} className="w-full py-3.5 bg-[#0D5C36] text-white rounded-[16px] font-bold text-[14px] shadow-sm shadow-[#0D5C36]/30 active:scale-[0.98] transition-transform">
+                         Kembali ke Dasbor
+                      </button>
+                   </div>
+                </div>
+             </div>
+          )}
+        </>
+      ) : activeLaundryScreen === "kos_kirim_pengingat" ? (
+        <>
+          <div className="bg-[#F7FAF8] flex-1 min-h-0 overflow-y-auto flex flex-col relative pb-8">
+             {/* Header */}
+             <div className="bg-[#F7FAF8] px-5 pt-10 pb-4 shrink-0 z-10 sticky top-0 flex items-center gap-3">
+                <button onClick={() => setActiveLaundryScreen("dashboard")} className="w-10 h-10 flex items-center -ml-2 text-gray-900 active:scale-95 transition-transform">
+                  <ArrowLeft size={22} />
+                </button>
+                <h2 className="font-extrabold text-[18px] text-gray-900 flex-1">Kirim Pengingat</h2>
+             </div>
+
+             <div className="px-5 pt-2 flex flex-col gap-4">
+                {/* Banner Atas */}
+                <div className="bg-[#FFF5F2] rounded-xl p-4 flex gap-3 items-start border border-[#FFE8E2]">
+                   <div className="mt-0.5 shrink-0">
+                      <AlertCircle size={16} className="text-[#FF5C35]" />
+                   </div>
+                   <p className="text-[12px] text-gray-700 font-medium leading-relaxed">
+                      Kirim pengingat pembayaran ke penghuni yang belum melunasi pembayaran.
+                   </p>
+                </div>
+
+                {/* Card Detail Tagihan */}
+                <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm overflow-hidden flex flex-col mt-2">
+                   <div className="p-4 border-b border-gray-50">
+                      <div className="flex items-center gap-2">
+                         <div className="w-7 h-7 rounded-lg bg-[#FFF5F2] text-[#FF5C35] flex items-center justify-center">
+                            <FileText size={14} />
+                         </div>
+                         <h3 className="font-extrabold text-[14px] text-gray-900">Detail Tagihan</h3>
+                      </div>
+                   </div>
+                   <div className="p-5 flex flex-col gap-4">
+                      {[
+                         { label: "Nama Penghuni", value: "Budi Santoso" },
+                         { label: "Kamar", value: "04 (Ahmad)" },
+                         { label: "Tipe Kamar", value: "Kos Putra" },
+                      ].map((item, idx) => (
+                         <div key={idx} className="flex justify-between items-center text-[12px]">
+                            <span className="text-gray-500 font-medium">{item.label}</span>
+                            <span className="text-gray-900 font-medium">{item.value}</span>
+                         </div>
+                      ))}
+                      <div className="flex justify-between items-center text-[12px]">
+                         <span className="text-gray-500 font-medium">Tagihan</span>
+                         <span className="text-[#FF5C35] font-bold">Rp1.500.000</span>
+                      </div>
+                      <div className="flex justify-between items-center text-[12px]">
+                         <span className="text-gray-500 font-medium">Jatuh Tempo</span>
+                         <span className="text-[#FF5C35] font-bold">12 Juli 2026 (Hari ini)</span>
+                      </div>
+                      <div className="flex justify-between items-center text-[12px]">
+                         <span className="text-gray-500 font-medium">Status</span>
+                         <span className="bg-[#FFF5F2] text-[#FF5C35] font-bold px-2 py-1 rounded-lg">Belum Dibayar</span>
+                      </div>
+                   </div>
+                </div>
+
+                {/* Pilih Metode Pengiriman */}
+                <div>
+                   <h3 className="font-bold text-[13px] text-gray-900 mb-3 ml-1">Pilih Metode Pengiriman</h3>
+                   <div className="flex flex-col gap-3">
+                      <div 
+                         onClick={() => setKosPengingatMethod("whatsapp")}
+                         className={`p-4 rounded-[16px] border-[1.5px] flex gap-3 items-center cursor-pointer transition-colors ${kosPengingatMethod === "whatsapp" ? "border-[#0D5C36] bg-[#F7FAF8]" : "border-gray-200 bg-white"}`}
+                      >
+                         <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${kosPengingatMethod === "whatsapp" ? "bg-[#E7F6ED] text-[#0D5C36]" : "bg-gray-50 text-gray-400"}`}>
+                            <MessageCircle size={20} />
+                         </div>
+                         <div className="flex-1">
+                            <h4 className="font-bold text-[13px] text-gray-900 mb-0.5">WhatsApp</h4>
+                            <p className="text-[11px] text-gray-500 font-medium">Kirim pengingat melalui WhatsApp</p>
+                         </div>
+                         <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${kosPengingatMethod === "whatsapp" ? "border-[#0D5C36]" : "border-gray-300"}`}>
+                            {kosPengingatMethod === "whatsapp" && <div className="w-2.5 h-2.5 rounded-full bg-[#0D5C36]"></div>}
+                         </div>
+                      </div>
+
+                      <div 
+                         onClick={() => setKosPengingatMethod("sms")}
+                         className={`p-4 rounded-[16px] border-[1.5px] flex gap-3 items-center cursor-pointer transition-colors ${kosPengingatMethod === "sms" ? "border-[#0D5C36] bg-[#F7FAF8]" : "border-gray-200 bg-white"}`}
+                      >
+                         <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${kosPengingatMethod === "sms" ? "bg-[#E7F6ED] text-[#0D5C36]" : "bg-gray-50 text-gray-400"}`}>
+                            <MessageSquare size={20} />
+                         </div>
+                         <div className="flex-1">
+                            <h4 className="font-bold text-[13px] text-gray-900 mb-0.5">SMS</h4>
+                            <p className="text-[11px] text-gray-500 font-medium">Kirim pengingat melalui SMS</p>
+                         </div>
+                         <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${kosPengingatMethod === "sms" ? "border-[#0D5C36]" : "border-gray-300"}`}>
+                            {kosPengingatMethod === "sms" && <div className="w-2.5 h-2.5 rounded-full bg-[#0D5C36]"></div>}
+                         </div>
+                      </div>
+                   </div>
+                </div>
+
+                {/* Pesan Pengingat */}
+                <div className="mt-2">
+                   <h3 className="font-bold text-[13px] text-gray-900 mb-3 ml-1">Pesan Pengingat</h3>
+                   <div className="bg-white rounded-[20px] p-4 border border-gray-200 shadow-sm relative mb-3">
+                      <p className="text-[12px] text-gray-800 font-medium leading-relaxed whitespace-pre-wrap">
+Halo Budi Santoso,<br/><br/>
+Ini adalah pengingat bahwa pembayaran untuk kamar 04 (Ahmad) dengan total Rp1.500.000 telah jatuh tempo hari ini (12 Juli 2026).<br/><br/>
+Mohon segera lakukan pembayaran. Terima kasih!<br/><br/>
+- Kosan Pak Rahman
+                      </p>
+                      <div className="text-right mt-2">
+                         <span className="text-[10px] font-medium text-gray-400">162/200</span>
+                      </div>
+                   </div>
+                   
+                   {/* Banner Tips */}
+                   <div className="bg-[#FFF8E1] rounded-xl p-3 flex gap-2.5 items-center border border-[#FFECB3]">
+                      <div className="w-6 h-6 rounded-full bg-orange-100 flex items-center justify-center shrink-0 text-orange-500">
+                         <Info size={12} strokeWidth={3} />
+                      </div>
+                      <p className="text-[11px] text-orange-700 font-medium">
+                         Tips: Pesan akan dikirim secara personal ke penghuni.
+                      </p>
+                   </div>
+                </div>
+
+             </div>
+          </div>
+          
+          {/* Bottom Fixed Bar */}
+          <div className="bg-white px-5 py-4 border-t border-gray-100 flex items-center rounded-b-[32px] shrink-0 z-20 shadow-[0_-4px_15px_rgba(0,0,0,0.03)] relative">
+             <button onClick={() => setShowKosKirimPengingatPopup(true)} className="w-full py-4 rounded-[16px] text-white font-bold text-[14px] bg-[#0D5C36] shadow-sm shadow-[#0D5C36]/30 active:scale-[0.98] transition-transform text-center relative overflow-hidden">
+                Kirim Pengingat
+                <div className="absolute top-0 -inset-full h-full w-1/2 z-5 block transform -skew-x-12 bg-gradient-to-r from-transparent to-white opacity-20 group-hover:animate-shine" />
+             </button>
+          </div>
+
+          {/* Popup Kirim Pengingat */}
+          {showKosKirimPengingatPopup && (
+             <div className="fixed inset-0 z-[100] flex items-center justify-center p-5">
+                <div className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setShowKosKirimPengingatPopup(false)} />
+                <div className="bg-white rounded-[28px] w-full max-w-[320px] p-6 relative z-10 animate-in zoom-in-95 fade-in duration-200 shadow-xl flex flex-col items-center text-center">
+                   <div className="w-16 h-16 rounded-full bg-[#E7F6ED] flex items-center justify-center text-[#0D5C36] mb-4 relative overflow-hidden">
+                      <Send size={28} className="relative z-10 animate-bounce" />
+                   </div>
+                   <h3 className="font-black text-[18px] text-gray-900 mb-2">Berhasil Terkirim</h3>
+                   <p className="text-[13px] text-gray-500 font-medium leading-relaxed mb-6">
+                      Pesan pengingat tagihan berhasil dikirimkan ke <strong className="text-gray-900">Budi Santoso</strong> melalui {kosPengingatMethod === "whatsapp" ? "WhatsApp" : "SMS"}.
+                   </p>
+                   <div className="flex flex-col gap-2.5 w-full">
+                      <button onClick={() => { setShowKosKirimPengingatPopup(false); setActiveLaundryScreen("dashboard"); }} className="w-full py-3.5 bg-[#0D5C36] text-white rounded-[16px] font-bold text-[14px] shadow-sm shadow-[#0D5C36]/30 active:scale-[0.98] transition-transform">
+                         Kembali ke Dasbor
+                      </button>
+                   </div>
+                </div>
+             </div>
+          )}
+        </>
+      ) : activeLaundryScreen === "kos_notifikasi" ? (
+        <>
+          <div className="bg-[#F7FAF8] flex-1 min-h-0 flex flex-col relative overflow-hidden">
+             {/* Header */}
+             <div className="bg-[#F7FAF8] px-5 pt-10 pb-4 shrink-0 z-10 flex items-center gap-3">
+                <button onClick={() => setActiveLaundryScreen("dashboard")} className="w-10 h-10 flex items-center -ml-2 text-gray-900 active:scale-95 transition-transform">
+                  <ArrowLeft size={22} />
+                </button>
+                <h2 className="font-extrabold text-[18px] text-gray-900 flex-1">Notifikasi</h2>
+                <button className="text-[11px] font-bold text-[#0D5C36]">Tandai semua dibaca</button>
+             </div>
+
+             {/* Scrolling Content */}
+             <div className="flex-1 min-h-0 overflow-y-auto flex flex-col relative pb-32">
+             {/* Tabs */}
+             <div className="px-5 pb-4 overflow-x-auto flex gap-2 shrink-0" style={{ scrollbarWidth: "none" }}>
+                {[
+                   { id: "Semua", icon: null, badge: 7 },
+                   { id: "Transaksi", icon: Wallet, badge: 3 },
+                   { id: "Pembayaran", icon: BellRing, badge: 2 },
+                   { id: "Sistem", icon: Bell, badge: 2 }
+                ].map(tab => (
+                   <button 
+                      key={tab.id}
+                      onClick={() => setKosNotifikasiTab(tab.id)}
+                      className={`flex items-center gap-1.5 px-4 py-2 rounded-full border border-gray-100 whitespace-nowrap transition-colors relative ${kosNotifikasiTab === tab.id ? "bg-[#0D5C36] text-white" : "bg-white text-gray-600"}`}
+                   >
+                      {tab.icon && <tab.icon size={14} className={kosNotifikasiTab === tab.id ? "text-white" : tab.id === "Transaksi" ? "text-green-500" : tab.id === "Pembayaran" ? "text-orange-400" : "text-blue-500"} />}
+                      <span className="font-bold text-[12px]">{tab.id}</span>
+                      {tab.badge > 0 && (
+                         <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-[1.5px] border-[#F7FAF8] text-white text-[9px] font-bold flex items-center justify-center">
+                            {tab.badge}
+                         </span>
+                      )}
+                   </button>
+                ))}
+             </div>
+
+             <div className="px-5 pb-6 flex flex-col gap-6">
+                
+                {/* Section: Baru */}
+                <div>
+                   <h3 className="font-extrabold text-[15px] text-gray-900 mb-3 ml-1">Baru</h3>
+                   <div className="flex flex-col gap-3">
+                      
+                      {/* Booking Baru */}
+                      <div onClick={() => setActiveLaundryScreen("kos_verifikasi_dp")} className="bg-white rounded-[20px] p-4 border border-gray-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)] flex gap-3 items-center relative cursor-pointer active:scale-[0.99] transition-transform">
+                         <div className="w-12 h-12 rounded-full bg-orange-50 flex items-center justify-center text-orange-500 shrink-0 relative">
+                            <Bell size={20} />
+                            <div className="absolute top-0 right-0 w-2.5 h-2.5 bg-orange-500 rounded-full border-2 border-white" />
+                         </div>
+                         <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between mb-1">
+                               <h4 className="font-bold text-[14px] text-gray-900 truncate pr-2">Booking Kamar Baru</h4>
+                               <span className="text-[10px] font-bold text-[#0D5C36] bg-[#E7F6ED] px-2 py-0.5 rounded-full shrink-0">Baru saja</span>
+                            </div>
+                            <p className="text-[12px] text-gray-500 leading-relaxed pr-4">Budi Santoso telah membayar DP untuk tipe <strong className="text-gray-900">Kos Putra</strong>.</p>
+                         </div>
+                         <ChevronRight size={16} className="text-gray-300 shrink-0" />
+                      </div>
+
+                      {/* Pembayaran Diterima */}
+                      <div className="bg-white rounded-[20px] p-4 border border-gray-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)] flex gap-3 items-center relative cursor-pointer active:scale-[0.99] transition-transform">
+                         <div className="w-12 h-12 rounded-full bg-[#E7F6ED] flex items-center justify-center text-[#0D5C36] shrink-0 relative">
+                            <Wallet size={20} />
+                            <div className="absolute top-0 right-0 w-2.5 h-2.5 bg-[#0D5C36] rounded-full border-2 border-white" />
+                         </div>
+                         <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between mb-1">
+                               <h4 className="font-bold text-[14px] text-gray-900 truncate pr-2">Pembayaran Diterima</h4>
+                               <span className="text-[10px] text-gray-400 shrink-0">10 menit lalu</span>
+                            </div>
+                            <p className="text-[12px] text-gray-500 leading-relaxed pr-4">Pembayaran kamar A-03 oleh Budi Santoso sebesar <strong className="text-[#0D5C36]">Rp1.500.000</strong> berhasil diterima.</p>
+                         </div>
+                         <ChevronRight size={16} className="text-gray-300 shrink-0" />
+                      </div>
+
+                      {/* Tagihan Jatuh Tempo */}
+                      <div onClick={() => setActiveLaundryScreen("kos_kirim_pengingat")} className="bg-white rounded-[20px] p-4 border border-gray-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)] flex gap-3 items-center relative cursor-pointer active:scale-[0.99] transition-transform">
+                         <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center text-red-500 shrink-0 relative">
+                            <AlertCircle size={20} />
+                            <div className="absolute top-0 right-0 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white" />
+                         </div>
+                         <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between mb-1">
+                               <h4 className="font-bold text-[14px] text-gray-900 truncate pr-2">Tagihan Jatuh Tempo</h4>
+                               <span className="text-[10px] text-gray-400 shrink-0">1 jam lalu</span>
+                            </div>
+                            <p className="text-[12px] text-gray-500 leading-relaxed pr-4">Kamar 04 (Ahmad) jatuh tempo hari ini sebesar <strong className="text-red-500">Rp1.500.000</strong>.</p>
+                         </div>
+                         <ChevronRight size={16} className="text-gray-300 shrink-0" />
+                      </div>
+
+                   </div>
+                </div>
+
+                {/* Section: Sebelumnya */}
+                <div>
+                   <h3 className="font-extrabold text-[15px] text-gray-900 mb-3 ml-1">Sebelumnya</h3>
+                   <div className="flex flex-col gap-3">
+                      
+                      {/* Laporan Bulanan Siap */}
+                      <div onClick={() => setActiveLaundryScreen("kos_laporan_keuangan")} className="bg-white rounded-[20px] p-4 border border-gray-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)] flex gap-3 items-center cursor-pointer active:scale-[0.99] transition-transform">
+                         <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center text-blue-500 shrink-0">
+                            <BarChart2 size={20} />
+                         </div>
+                         <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between mb-1">
+                               <h4 className="font-bold text-[14px] text-gray-900 truncate pr-2">Laporan Bulanan Siap</h4>
+                               <span className="text-[10px] text-gray-400 shrink-0">Kemarin, 09.00</span>
+                            </div>
+                            <p className="text-[12px] text-gray-500 leading-relaxed pr-4">Laporan keuangan bulan Juni 2026 sudah siap untuk dilihat.</p>
+                         </div>
+                         <ChevronRight size={16} className="text-gray-300 shrink-0" />
+                      </div>
+
+                      {/* Penghuni Baru */}
+                      <div onClick={() => setActiveLaundryScreen("kos_manajemen_penghuni")} className="bg-white rounded-[20px] p-4 border border-gray-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)] flex gap-3 items-center cursor-pointer active:scale-[0.99] transition-transform">
+                         <div className="w-12 h-12 rounded-full bg-[#E7F6ED] flex items-center justify-center text-[#0D5C36] shrink-0">
+                            <Users size={20} />
+                         </div>
+                         <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between mb-1">
+                               <h4 className="font-bold text-[14px] text-gray-900 truncate pr-2">Penghuni Baru Bergabung</h4>
+                               <span className="text-[10px] text-gray-400 shrink-0">2 Jul 2026</span>
+                            </div>
+                            <p className="text-[12px] text-gray-500 leading-relaxed pr-4">Ayu Lestari telah menjadi penghuni kamar B-02.</p>
+                         </div>
+                         <ChevronRight size={16} className="text-gray-300 shrink-0" />
+                      </div>
+
+                      {/* Pengingat Pembayaran Listrik */}
+                      <div className="bg-white rounded-[20px] p-4 border border-gray-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)] flex gap-3 items-center cursor-pointer active:scale-[0.99] transition-transform">
+                         <div className="w-12 h-12 rounded-full bg-orange-50 flex items-center justify-center text-orange-500 shrink-0">
+                            <Zap size={20} />
+                         </div>
+                         <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between mb-1">
+                               <h4 className="font-bold text-[14px] text-gray-900 truncate pr-2">Pengingat Pembayaran Listrik</h4>
+                               <span className="text-[10px] text-gray-400 shrink-0">1 Jul 2026</span>
+                            </div>
+                            <p className="text-[12px] text-gray-500 leading-relaxed pr-4">Pembayaran listrik bulan Juli 2026 sebesar <strong className="text-orange-500">Rp650.000</strong>.</p>
+                         </div>
+                         <ChevronRight size={16} className="text-gray-300 shrink-0" />
+                      </div>
+
+                      {/* Pembaruan Sistem */}
+                      <div className="bg-white rounded-[20px] p-4 border border-gray-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)] flex gap-3 items-center cursor-pointer active:scale-[0.99] transition-transform">
+                         <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center text-blue-500 shrink-0">
+                            <Settings size={20} />
+                         </div>
+                         <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between mb-1">
+                               <h4 className="font-bold text-[14px] text-gray-900 truncate pr-2">Pembaruan Sistem</h4>
+                               <span className="text-[10px] text-gray-400 shrink-0">30 Jun 2026</span>
+                            </div>
+                            <p className="text-[12px] text-gray-500 leading-relaxed pr-4">Aplikasi Kostin telah diperbarui ke versi 2.1.0.</p>
+                         </div>
+                         <ChevronRight size={16} className="text-gray-300 shrink-0" />
+                      </div>
+
+                   </div>
+                </div>
+
+             </div>
+             </div>
+             
+             {/* Bottom Aktifkan Notifikasi */}
+             <div className="absolute bottom-0 left-0 w-full p-5 bg-gradient-to-t from-[#F7FAF8] via-[#F7FAF8] to-transparent pointer-events-none z-20">
+                <div className="bg-[#E7F6ED] rounded-[20px] p-4 flex gap-3 items-center border border-[#D1EADC] pointer-events-auto shadow-sm">
+                   <div className="w-10 h-10 rounded-full bg-[#0D5C36] flex items-center justify-center text-white shrink-0">
+                      <BellRing size={18} />
+                   </div>
+                   <div className="flex-1">
+                      <h4 className="font-extrabold text-[13px] text-gray-900">Aktifkan notifikasi</h4>
+                      <p className="text-[10px] text-gray-600 font-medium">Dapatkan informasi penting secara real-time.</p>
+                   </div>
+                   <button className="px-4 py-2 bg-white rounded-full border border-gray-200 text-[#0D5C36] text-[11px] font-bold active:bg-gray-50 transition-colors shrink-0">
+                      Aktifkan
+                   </button>
+                </div>
+             </div>
+
+          </div>
+        </>
+      ) : null}
+
+      {/* MODAL DETAIL PESANAN LAUNDRY */}
+      {selectedOrder && (
+        <div className="absolute inset-0 z-50 bg-[#F7FAF8] flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-300">
+          {laundryFlowStep === "input_weight" && (
+            <>
+              <div className="bg-white px-5 pt-8 pb-4 flex items-center gap-3 shrink-0 shadow-sm z-10">
+                <button onClick={() => setSelectedLaundryOrderId(null)} className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-900 active:bg-gray-100">
+                  <ArrowLeft size={20} />
+                </button>
+                <div>
+                  <h2 className="font-extrabold text-[17px] text-gray-900 leading-none">Penawaran Harga</h2>
+                  <p className="text-[12px] text-gray-500 mt-1">{selectedOrder.id}</p>
+                </div>
+              </div>
+              <div className="flex-1 overflow-y-auto p-5 pb-32">
+                <div className="flex items-center gap-4 mb-6">
+                  <img src={selectedOrder.userAvatar} className="w-12 h-12 rounded-full object-cover" />
+                  <div>
+                    <p className="font-extrabold text-[15px] text-gray-900">{selectedOrder.name}</p>
+                    <p className="text-[12px] text-gray-500 mt-0.5">{selectedOrder.phone}</p>
+                  </div>
+                  <button className="ml-auto w-10 h-10 rounded-full bg-green-50 text-[#0D5C36] flex items-center justify-center">
+                    <MessageCircle size={18} />
+                  </button>
+                </div>
+
+                <h3 className="font-extrabold text-[14px] text-gray-900 mb-3">Detail Cucian</h3>
+                <div className="bg-white rounded-[20px] p-4 border border-gray-100 shadow-sm mb-6">
+                  <div className="mb-4">
+                    <p className="text-[11px] text-gray-500 mb-1">Jenis Layanan</p>
+                    <div className="w-full bg-gray-50 border border-gray-200 rounded-[12px] p-3 text-[13px] font-bold text-gray-900 flex justify-between">
+                      {selectedOrder.service} <ChevronRight size={16} className="text-gray-400"/>
+                    </div>
+                  </div>
+                  <div className="mb-4">
+                    <p className="text-[11px] text-gray-500 mb-1">Berat Cucian (kg)</p>
+                    <div className="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-[12px] p-2">
+                      <button 
+                        onClick={() => setLaundryWeight(Math.max(1, laundryWeight - 0.5))}
+                        className="w-10 h-10 rounded-[10px] bg-white text-gray-600 shadow-sm flex items-center justify-center text-lg font-bold hover:bg-gray-100 active:scale-95 transition-transform"
+                      >-</button>
+                      <span className="font-black text-xl text-gray-900">{laundryWeight.toFixed(1)}</span>
+                      <button 
+                        onClick={() => setLaundryWeight(laundryWeight + 0.5)}
+                        className="w-10 h-10 rounded-[10px] bg-[#0D5C36] text-white shadow-sm flex items-center justify-center text-lg font-bold hover:bg-[#1B7A4E] active:scale-95 transition-transform"
+                      >+</button>
+                    </div>
+                  </div>
+                  <div className="mb-4">
+                    <p className="text-[11px] text-gray-500 mb-1">Catatan</p>
+                    <p className="text-[13px] font-bold text-gray-900">{selectedOrder.notes}</p>
+                  </div>
+                  <div>
+                    <p className="text-[11px] text-gray-500 mb-1">Estimasi Selesai</p>
+                    <p className="text-[13px] font-bold text-gray-900">{selectedOrder.date}</p>
+                  </div>
+                </div>
+
+                <h3 className="font-extrabold text-[14px] text-gray-900 mb-3">Rincian Harga</h3>
+                <div className="bg-white rounded-[20px] p-4 border border-gray-100 shadow-sm">
+                  <div className="flex justify-between items-center mb-2">
+                    <p className="text-[12px] text-gray-500">Harga per Kg</p>
+                    <p className="text-[13px] font-bold text-gray-900">{rp(selectedOrder.pricePerKg)}</p>
+                  </div>
+                  <div className="flex justify-between items-center mb-2">
+                    <p className="text-[12px] text-gray-500">Subtotal</p>
+                    <p className="text-[13px] font-bold text-gray-900">{rp(selectedOrder.pricePerKg * laundryWeight)}</p>
+                  </div>
+                  <div className="flex justify-between items-center mb-3 pb-3 border-b border-dashed border-gray-200">
+                    <p className="text-[12px] text-gray-500">Ongkos Pickup</p>
+                    <p className="text-[13px] font-bold text-gray-900">{rp(5000)}</p>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <p className="text-[14px] font-extrabold text-gray-900">Total Harga</p>
+                    <p className="text-[18px] font-black text-[#0D5C36]">{rp(selectedOrder.pricePerKg * laundryWeight + 5000)}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="absolute bottom-0 left-0 w-full p-5 bg-white border-t border-gray-100 shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
+                <button 
+                  onClick={() => {
+                    setLaundryOrders(prev => prev.map(o => o.id === selectedOrder.id ? { ...o, weight: laundryWeight, total: selectedOrder.pricePerKg * laundryWeight + 5000, status: "menunggu_pembayaran" } : o));
+                    setLaundryFlowStep("waiting_payment");
+                    setTimeout(() => {
+                      setLaundryOrders(prev => prev.map(o => o.id === selectedOrder.id ? { ...o, status: "diproses" } : o));
+                      setLaundryFlowStep("detail");
+                    }, 3000);
+                  }}
+                  className="w-full h-14 rounded-[16px] bg-[#0D5C36] text-white font-extrabold text-[15px] flex items-center justify-center active:scale-[0.98] transition-transform"
+                >
+                  Kirim Penawaran Harga
+                </button>
+              </div>
+            </>
+          )}
+
+          {laundryFlowStep === "waiting_payment" && (
+            <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-white">
+              <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mb-6 relative">
+                 <div className="absolute inset-0 rounded-full border-4 border-[#0D5C36] border-t-transparent animate-spin" />
+                 <CheckCircle size={32} className="text-[#0D5C36] opacity-50" />
+              </div>
+              <h2 className="text-xl font-black text-gray-900 mb-2">Menunggu Pembayaran...</h2>
+              <p className="text-sm text-gray-500 mb-8 max-w-[250px]">Penawaran harga telah dikirim. Menunggu konfirmasi pembayaran dari pelanggan.</p>
+              <div className="p-4 bg-[#F7FAF8] rounded-[16px] border border-gray-100 w-full max-w-[280px]">
+                <p className="text-xs text-gray-500 mb-1">Simulasi:</p>
+                <p className="text-sm font-bold text-gray-900">Pembayaran otomatis sukses dalam 3 detik.</p>
+              </div>
+            </div>
+          )}
+
+          {laundryFlowStep === "detail" && (
+            <>
+              <div className="bg-white px-5 pt-8 pb-4 flex items-center justify-between shrink-0 shadow-sm z-10 border-b border-gray-50">
+                <div className="flex items-center gap-3">
+                  <button onClick={() => setSelectedLaundryOrderId(null)} className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-900 active:bg-gray-100">
+                    <ArrowLeft size={20} />
+                  </button>
+                  <div>
+                    <h2 className="font-extrabold text-[17px] text-gray-900 leading-none">Detail Order</h2>
+                    <p className="text-[12px] text-gray-500 mt-1">{selectedOrder.id}</p>
+                  </div>
+                </div>
+                <button className="w-10 h-10 rounded-full bg-green-50 text-[#0D5C36] flex items-center justify-center">
+                  <MessageCircle size={18} />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-5 pb-32">
+                <div className="bg-white rounded-[20px] p-5 border border-gray-100 shadow-sm mb-6">
+                  <h3 className="font-extrabold text-[14px] text-gray-900 mb-4">Status Pesanan</h3>
+                  <div className="flex flex-col gap-0 relative">
+                    <div className="absolute left-[11px] top-2 bottom-6 w-0.5 bg-gray-100" />
+                    
+                    <div className="flex gap-4 relative mb-6">
+                      <div className="w-6 h-6 rounded-full bg-[#0D5C36] flex items-center justify-center shrink-0 z-10 relative">
+                        <CheckCircle size={12} className="text-white" />
+                      </div>
+                      <div>
+                        <p className="font-bold text-[13px] text-gray-900">Baru</p>
+                        <p className="text-[11px] text-gray-500">Pesanan baru diterima</p>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-4 relative mb-6">
+                      <div className="w-6 h-6 rounded-full bg-[#0D5C36] flex items-center justify-center shrink-0 z-10 relative">
+                        <CheckCircle size={12} className="text-white" />
+                      </div>
+                      <div>
+                        <p className="font-bold text-[13px] text-gray-900">Dibayar</p>
+                        <p className="text-[11px] text-gray-500">Pelanggan telah membayar</p>
+                      </div>
+                    </div>
+
+                    <div className={`flex gap-4 relative mb-6 ${['diproses', 'diantar', 'selesai'].includes(selectedOrder.status) ? '' : 'opacity-40'}`}>
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 z-10 relative ${['diproses', 'diantar', 'selesai'].includes(selectedOrder.status) ? 'bg-[#0D5C36]' : 'bg-gray-200'}`}>
+                        {selectedOrder.status !== 'diproses' && <CheckCircle size={12} className="text-white" />}
+                        {selectedOrder.status === 'diproses' && <div className="w-2 h-2 rounded-full bg-white" />}
+                      </div>
+                      <div>
+                        <p className="font-bold text-[13px] text-gray-900">Diproses</p>
+                        <p className="text-[11px] text-gray-500">Cucian sedang dalam proses</p>
+                      </div>
+                    </div>
+
+                    <div className={`flex gap-4 relative mb-6 ${['diantar', 'selesai'].includes(selectedOrder.status) ? '' : 'opacity-40'}`}>
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 z-10 relative ${['diantar', 'selesai'].includes(selectedOrder.status) ? 'bg-[#0D5C36]' : 'bg-gray-200'}`}>
+                        {selectedOrder.status === 'selesai' && <CheckCircle size={12} className="text-white" />}
+                        {selectedOrder.status === 'diantar' && <div className="w-2 h-2 rounded-full bg-white" />}
+                      </div>
+                      <div>
+                        <p className="font-bold text-[13px] text-gray-900">Diserahkan Kurir</p>
+                        <p className="text-[11px] text-gray-500">Sedang diantar ke alamat user</p>
+                      </div>
+                    </div>
+
+                    <div className={`flex gap-4 relative ${selectedOrder.status === 'selesai' ? '' : 'opacity-40'}`}>
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 z-10 relative ${selectedOrder.status === 'selesai' ? 'bg-[#0D5C36]' : 'bg-gray-200'}`}>
+                        {selectedOrder.status === 'selesai' && <CheckCircle size={12} className="text-white" />}
+                      </div>
+                      <div>
+                        <p className="font-bold text-[13px] text-gray-900">Selesai</p>
+                        <p className="text-[11px] text-gray-500">Cucian selesai dan diterima</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <h3 className="font-extrabold text-[14px] text-gray-900 mb-3">Detail Order</h3>
+                <div className="bg-white rounded-[20px] p-4 border border-gray-100 shadow-sm">
+                  <div className="flex justify-between items-center mb-3">
+                    <p className="text-[12px] text-gray-500">Layanan</p>
+                    <p className="text-[13px] font-bold text-gray-900">{selectedOrder.service}</p>
+                  </div>
+                  <div className="flex justify-between items-center mb-3">
+                    <p className="text-[12px] text-gray-500">Berat</p>
+                    <p className="text-[13px] font-bold text-gray-900">{selectedOrder.weight || 3.0} kg</p>
+                  </div>
+                  <div className="flex justify-between items-center mb-3">
+                    <p className="text-[12px] text-gray-500">Catatan</p>
+                    <p className="text-[13px] font-bold text-gray-900">{selectedOrder.notes}</p>
+                  </div>
+                  <div className="flex justify-between items-center mb-3 pb-3 border-b border-dashed border-gray-200">
+                    <p className="text-[12px] text-gray-500">Estimasi Selesai</p>
+                    <p className="text-[13px] font-bold text-gray-900">{selectedOrder.date}</p>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <p className="text-[14px] font-extrabold text-gray-900">Total Harga</p>
+                    <p className="text-[16px] font-black text-[#0D5C36]">{rp(selectedOrder.total)}</p>
+                  </div>
+                </div>
+              </div>
+
+              {selectedOrder.status !== "selesai" && (
+                <div className="absolute bottom-0 left-0 w-full p-5 bg-white border-t border-gray-100 shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
+                  <button 
+                    onClick={() => {
+                      setLaundryOrders(prev => prev.map(o => o.id === selectedOrder.id ? { 
+                        ...o, 
+                        status: o.status === "diproses" ? "diantar" : "selesai" 
+                      } : o));
+                    }}
+                    className="w-full h-14 rounded-[16px] bg-[#0D5C36] text-white font-extrabold text-[15px] flex items-center justify-center active:scale-[0.98] transition-transform"
+                  >
+                    {selectedOrder.status === "diproses" ? "Serahkan ke Kurir" : "Selesaikan Pesanan"}
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+      {/* KOS ROOM ACTION MENU (BOTTOM SHEET) */}
+      <AnimatePresence>
+        {showKosRoomMenu && (
+          <motion.div 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-black/60 z-50 flex flex-col justify-end"
+            onClick={() => setShowKosRoomMenu(false)}
+          >
+            <motion.div 
+              initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="bg-white rounded-t-[32px] p-6 pb-8 shadow-2xl flex flex-col items-center"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="w-12 h-1 bg-gray-200 rounded-full mb-6" />
+              
+              <div className="w-full flex flex-col gap-2">
+                <button onClick={() => { setShowKosRoomMenu(false); setKosRoomWizardMode("add"); setKosRoomWizardStep(1); }} className="flex items-center gap-4 p-4 hover:bg-gray-50 rounded-2xl transition-colors w-full text-left">
+                  <div className="w-12 h-12 rounded-full bg-green-50 text-[#0D5C36] flex items-center justify-center shrink-0">
+                    <Plus size={22} />
+                  </div>
+                  <div>
+                    <h3 className="font-extrabold text-[15px] text-gray-900">Tambah Kamar Baru</h3>
+                    <p className="text-[12px] text-gray-500 mt-0.5">Buat kamar baru untuk disewakan</p>
+                  </div>
+                </button>
+
+                <button onClick={() => { setShowKosRoomMenu(false); setKosRoomWizardMode("edit"); setKosRoomWizardStep(1); }} className="flex items-center gap-4 p-4 hover:bg-gray-50 rounded-2xl transition-colors w-full text-left">
+                  <div className="w-12 h-12 rounded-full bg-green-50 text-[#0D5C36] flex items-center justify-center shrink-0">
+                    <Edit3 size={22} />
+                  </div>
+                  <div>
+                    <h3 className="font-extrabold text-[15px] text-gray-900">Edit Kamar</h3>
+                    <p className="text-[12px] text-gray-500 mt-0.5">Ubah informasi kamar yang sudah ada</p>
+                  </div>
+                </button>
+
+                <button className="flex items-center gap-4 p-4 hover:bg-gray-50 rounded-2xl transition-colors w-full text-left">
+                  <div className="w-12 h-12 rounded-full bg-green-50 text-[#0D5C36] flex items-center justify-center shrink-0">
+                    <Copy size={22} />
+                  </div>
+                  <div>
+                    <h3 className="font-extrabold text-[15px] text-gray-900">Duplikat Kamar</h3>
+                    <p className="text-[12px] text-gray-500 mt-0.5">Salin data kamar untuk kamar baru</p>
+                  </div>
+                </button>
+
+                <button className="flex items-center gap-4 p-4 hover:bg-gray-50 rounded-2xl transition-colors w-full text-left">
+                  <div className="w-12 h-12 rounded-full bg-orange-50 text-orange-500 flex items-center justify-center shrink-0">
+                    <EyeOff size={22} />
+                  </div>
+                  <div>
+                    <h3 className="font-extrabold text-[15px] text-gray-900">Nonaktifkan Kamar</h3>
+                    <p className="text-[12px] text-gray-500 mt-0.5">Sembunyikan kamar dari pencarian</p>
+                  </div>
+                </button>
+
+                <button className="flex items-center gap-4 p-4 hover:bg-gray-50 rounded-2xl transition-colors w-full text-left">
+                  <div className="w-12 h-12 rounded-full bg-red-50 text-red-500 flex items-center justify-center shrink-0">
+                    <Trash2 size={22} />
+                  </div>
+                  <div>
+                    <h3 className="font-extrabold text-[15px] text-gray-900">Hapus Kamar</h3>
+                    <p className="text-[12px] text-gray-500 mt-0.5">Hapus kamar secara permanen</p>
+                  </div>
+                </button>
+              </div>
+
+              <button onClick={() => setShowKosRoomMenu(false)} className="w-full mt-4 py-4 rounded-2xl font-bold text-[15px] text-gray-900 bg-gray-50 active:bg-gray-100 transition-colors">
+                Batal
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* MULTI-STEP WIZARD MODAL */}
+      <AnimatePresence>
+        {kosRoomWizardStep > 0 && (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
+            className="absolute inset-0 bg-white z-[60] flex flex-col"
+          >
+            {/* Wizard Header */}
+            <div className="px-5 pt-8 pb-4 flex items-center justify-between border-b border-gray-100 shrink-0">
+              <div className="flex-1"></div>
+              <h2 className="font-extrabold text-[16px] text-gray-900 flex-1 text-center">
+                {kosRoomWizardMode === "add" ? "Tambah Kamar Baru" : kosRoomWizardStep === 3 ? "Detail & Status" : "Edit Kamar 1A"}
+              </h2>
+              <div className="flex-1 flex justify-end">
+                <button onClick={() => setKosRoomWizardStep(0)} className="w-8 h-8 flex items-center justify-center text-gray-500 active:scale-95 transition-transform">
+                  <X size={20} />
+                </button>
+              </div>
+            </div>
+
+            {/* Stepper Indicator */}
+            <div className="px-10 py-6 shrink-0">
+              <div className="flex items-center justify-between relative">
+                <div className="absolute left-4 right-4 h-0.5 bg-gray-100 top-1/2 -translate-y-1/2 z-0" />
+                {[1, 2, 3].map(step => (
+                  <div key={step} className={`w-8 h-8 rounded-full flex items-center justify-center text-[12px] font-bold relative z-10 transition-colors ${
+                    kosRoomWizardStep === step ? "bg-[#0D5C36] text-white ring-4 ring-green-50" :
+                    kosRoomWizardStep > step ? "bg-[#0D5C36] text-white" : "bg-gray-100 text-gray-400"
+                  }`}>
+                    {step}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Wizard Content Scrollable */}
+            <div className="flex-1 overflow-y-auto px-5 pb-32">
+              {kosRoomWizardStep === 1 && (
+                <div className="flex flex-col gap-5 animate-in fade-in slide-in-from-right-4 duration-300">
+                  <h3 className="font-extrabold text-[16px] text-gray-900 mb-2">Informasi Dasar</h3>
+                  
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[12px] font-bold text-gray-900">Nomor Kamar <span className="text-red-500">*</span></label>
+                    <input type="text" placeholder="Contoh: 1A" defaultValue={kosRoomWizardMode === "edit" ? "1A" : ""} className="w-full h-12 px-4 rounded-xl border border-gray-200 text-[14px] font-medium focus:border-[#0D5C36] focus:ring-1 focus:ring-[#0D5C36] outline-none transition-all placeholder:text-gray-400" />
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[12px] font-bold text-gray-900">Tipe Kamar <span className="text-red-500">*</span></label>
+                    <div className="relative">
+                      <select defaultValue={kosRoomWizardMode === "edit" ? "Tipe AC" : ""} className="w-full h-12 px-4 pr-10 rounded-xl border border-gray-200 text-[14px] font-medium focus:border-[#0D5C36] focus:ring-1 focus:ring-[#0D5C36] outline-none transition-all appearance-none bg-white text-gray-900">
+                        <option value="" disabled>Pilih tipe kamar</option>
+                        <option value="Tipe AC">Tipe AC</option>
+                        <option value="Tipe Standar">Tipe Standar</option>
+                      </select>
+                      <ChevronDown size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[12px] font-bold text-gray-900">Harga Sewa / bulan <span className="text-red-500">*</span></label>
+                    <div className="relative flex items-center">
+                      <span className="absolute left-4 text-[14px] font-bold text-gray-500">Rp</span>
+                      <input type="number" placeholder="0" defaultValue={kosRoomWizardMode === "edit" ? "1200000" : ""} className="w-full h-12 pl-12 pr-4 rounded-xl border border-gray-200 text-[14px] font-bold focus:border-[#0D5C36] focus:ring-1 focus:ring-[#0D5C36] outline-none transition-all placeholder:text-gray-400" />
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[12px] font-bold text-gray-900">Deskripsi (Opsional)</label>
+                    <textarea placeholder="Tambahkan deskripsi kamar..." defaultValue={kosRoomWizardMode === "edit" ? "Kamar nyaman dan bersih, cocok untuk mahasiswa atau pekerja." : ""} className="w-full h-24 p-4 rounded-xl border border-gray-200 text-[14px] font-medium focus:border-[#0D5C36] focus:ring-1 focus:ring-[#0D5C36] outline-none transition-all placeholder:text-gray-400 resize-none" />
+                  </div>
+                </div>
+              )}
+
+              {kosRoomWizardStep === 2 && (
+                <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                  <div>
+                    <h3 className="font-extrabold text-[16px] text-gray-900 mb-1">Fasilitas Kamar</h3>
+                    <p className="text-[11px] text-gray-500 mb-4">Pilih fasilitas yang tersedia</p>
+                    
+                    <div className="flex flex-wrap gap-2.5">
+                      {["AC", "Kipas", "WiFi", "KM Dalam", "KM Luar", "Kasur", "Lemari", "Meja", "Kursi", "TV", "Dispenser", "Parkir"].map(am => {
+                        const isSelected = kosRoomAmenities.includes(am);
+                        return (
+                          <button 
+                            key={am} 
+                            onClick={() => setKosRoomAmenities(prev => isSelected ? prev.filter(x => x !== am) : [...prev, am])}
+                            className={`px-4 py-2.5 rounded-xl border flex items-center gap-1.5 text-[12px] font-bold transition-all ${isSelected ? "border-[#0D5C36] bg-[#F2FAF5] text-[#0D5C36]" : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"}`}
+                          >
+                            {am === "AC" && <Monitor size={14} />}
+                            {am === "Kipas" && <Wind size={14} />}
+                            {am === "WiFi" && <Wifi size={14} />}
+                            {am.includes("KM") && <Bath size={14} />}
+                            {am}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="font-extrabold text-[16px] text-gray-900 mb-1">Foto Kamar</h3>
+                    <p className="text-[11px] text-gray-500 mb-4">Tambahkan foto kamar (Maks. 5 foto)</p>
+                    
+                    <div className="flex gap-3 overflow-x-auto pb-2" style={{ scrollbarWidth: "none" }}>
+                      {kosRoomWizardMode === "edit" && [
+                        "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=200&h=200&fit=crop",
+                        "https://images.unsplash.com/photo-1505691938895-1758d7feb511?w=200&h=200&fit=crop",
+                        "https://images.unsplash.com/photo-1505693314120-0d443867891c?w=200&h=200&fit=crop"
+                      ].map((img, i) => (
+                        <div key={i} className="w-20 h-20 rounded-xl bg-gray-100 shrink-0 relative overflow-hidden border border-gray-200">
+                          <img src={img} className="w-full h-full object-cover" />
+                          <button className="absolute top-1 right-1 w-5 h-5 bg-black/50 rounded-full flex items-center justify-center text-white backdrop-blur-sm">
+                            <X size={12} />
+                          </button>
+                        </div>
+                      ))}
+                      <button className="w-20 h-20 rounded-xl bg-gray-50 border border-dashed border-gray-300 shrink-0 flex flex-col items-center justify-center gap-1 text-[#0D5C36] hover:bg-[#F2FAF5] hover:border-[#0D5C36] transition-colors">
+                        <Plus size={20} />
+                        <span className="text-[9px] font-bold">Tambah Foto</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {kosRoomWizardStep === 3 && (
+                <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                  {kosRoomWizardMode === "add" && (
+                    <div>
+                      <h3 className="font-extrabold text-[16px] text-gray-900 mb-1">Ringkasan</h3>
+                      <p className="text-[11px] text-gray-500 mb-4">Periksa kembali informasi kamar Anda</p>
+                      
+                      <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm mb-4">
+                        <div className="flex gap-3 items-center mb-4">
+                          <div className="w-16 h-16 rounded-xl bg-gray-100 shrink-0 overflow-hidden">
+                            <ImageIcon size={24} className="m-auto mt-5 text-gray-400" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2 mb-1">
+                              <h4 className="font-black text-[16px] text-gray-900">1A</h4>
+                              <span className="bg-[#F2FAF5] text-[#0D5C36] text-[9px] font-bold px-2 py-0.5 rounded-full">Tipe AC</span>
+                            </div>
+                            <p className="font-black text-[14px] text-[#0D5C36] leading-none">Rp 1.200.000 <span className="text-[9px] text-gray-400 font-medium">/ bulan</span></p>
+                          </div>
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          <div className="flex justify-between items-start gap-4">
+                            <p className="text-[11px] font-bold text-gray-900 shrink-0">Fasilitas</p>
+                            <p className="text-[11px] text-gray-500 text-right">AC, WiFi, KM Dalam, Kasur, Lemari, Meja</p>
+                          </div>
+                          <div className="flex justify-between items-start gap-4">
+                            <p className="text-[11px] font-bold text-gray-900 shrink-0">Deskripsi</p>
+                            <p className="text-[11px] text-gray-500 text-right">Kamar nyaman dan bersih, cocok untuk mahasiswa atau pekerja.</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div>
+                    <h3 className="font-extrabold text-[16px] text-gray-900 mb-4">{kosRoomWizardMode === "add" ? "Status Kamar" : "Detail & Status"}</h3>
+                    
+                    <div className="flex flex-col gap-3">
+                      <label className={`flex items-center gap-3 p-4 rounded-xl border transition-colors cursor-pointer ${kosRoomWizardMode === "add" ? "border-[#0D5C36] bg-[#F2FAF5]" : "border-gray-200"}`}>
+                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${kosRoomWizardMode === "add" ? "border-[#0D5C36]" : "border-gray-300"}`}>
+                          {kosRoomWizardMode === "add" && <div className="w-2.5 h-2.5 rounded-full bg-[#0D5C36]" />}
+                        </div>
+                        <div>
+                          <p className={`font-bold text-[13px] ${kosRoomWizardMode === "add" ? "text-[#0D5C36]" : "text-gray-900"}`}>Tersedia</p>
+                          <p className="text-[11px] text-gray-500 mt-0.5">Kamar siap disewakan</p>
+                        </div>
+                      </label>
+                      <label className={`flex items-center gap-3 p-4 rounded-xl border transition-colors cursor-pointer ${kosRoomWizardMode === "add" ? "border-gray-200" : "border-[#0D5C36] bg-[#F2FAF5]"}`}>
+                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${kosRoomWizardMode === "add" ? "border-gray-300" : "border-[#0D5C36]"}`}>
+                          {kosRoomWizardMode === "edit" && <div className="w-2.5 h-2.5 rounded-full bg-[#0D5C36]" />}
+                        </div>
+                        <div>
+                          <p className={`font-bold text-[13px] ${kosRoomWizardMode === "add" ? "text-gray-900" : "text-[#0D5C36]"}`}>Tidak Tersedia</p>
+                          <p className="text-[11px] text-gray-500 mt-0.5">Sembunyikan kamar sementara</p>
+                        </div>
+                      </label>
+                    </div>
+                    
+                    {kosRoomWizardMode === "edit" && (
+                      <div className="mt-6 flex flex-col gap-3 p-4 bg-gray-50 rounded-xl border border-gray-100">
+                        <div className="flex justify-between items-center">
+                          <p className="text-[11px] text-gray-500">Dibuat pada</p>
+                          <p className="text-[11px] font-bold text-gray-900">12 Jan 2024</p>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <p className="text-[11px] text-gray-500">Terakhir diubah</p>
+                          <p className="text-[11px] font-bold text-gray-900">14 Jul 2026</p>
+                        </div>
+                        <div className="flex justify-between items-center pt-3 border-t border-gray-200">
+                          <p className="text-[11px] text-gray-500">Riwayat Penyewa</p>
+                          <button className="text-[11px] font-bold text-[#0D5C36]">Lihat riwayat</button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Bottom Actions */}
+            <div className="absolute bottom-0 left-0 w-full p-5 bg-white border-t border-gray-100 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] z-20 flex gap-3">
+              {kosRoomWizardMode === "edit" && (
+                <button onClick={() => setKosRoomWizardStep(0)} className="h-14 px-6 rounded-2xl bg-red-50 text-red-500 font-extrabold text-[14px] flex items-center justify-center shrink-0 active:scale-95 transition-transform">
+                  Hapus Kamar
+                </button>
+              )}
+              <button 
+                onClick={() => {
+                  if (kosRoomWizardStep < 3) setKosRoomWizardStep(prev => prev + 1);
+                  else setKosRoomWizardStep(0);
+                }} 
+                className="h-14 flex-1 rounded-2xl bg-[#0D5C36] text-white font-extrabold text-[15px] flex items-center justify-center gap-2 active:scale-[0.98] transition-transform shadow-md shadow-[#0D5C36]/30"
+              >
+                {kosRoomWizardStep < 3 ? "Lanjut" : kosRoomWizardMode === "add" ? "Simpan Kamar" : "Simpan Perubahan"}
+                {kosRoomWizardStep < 3 && <ArrowLeft size={18} className="rotate-180" />}
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
