@@ -6194,6 +6194,8 @@ export default function App() {
         myOrders={myOrders}
         setMyOrders={setMyOrders}
         showToast={showToast}
+        dompetBalance={dompetBalance}
+        setDompetBalance={setDompetBalance}
       />
     );
     if (screen === "c_laundry") return <LaundryScreen navigate={navigate} />;
