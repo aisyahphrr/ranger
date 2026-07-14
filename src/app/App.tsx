@@ -6211,6 +6211,35 @@ function DriverHome({ navigate, activeMitraRoles, showToast }: Nav & { activeMit
     { id: "PO-482", customer: "Ibu Amanda", package: "Nasi Box Ayam Bakar (50 Pax)", date: "17 Juli 2026, 10:00 WIB", status: "Menunggu Bahan" }
   ];
 
+  const [showCatFinance, setShowCatFinance] = useState(false);
+  const [showCatHolidays, setShowCatHolidays] = useState(false);
+  const [showCatInvoice, setShowCatInvoice] = useState(false);
+
+  const [catFinanceData, setCatFinanceData] = useState({
+    totalOmzet: 1850000,
+    dpSettled: 1500000,
+    pendingPelunasan: 350000,
+    withdrawn: 1000000
+  });
+
+  const [catHolidays, setCatHolidays] = useState([
+    { id: 1, name: "Tahun Baru Islam", date: "19 Juli 2026", active: true },
+    { id: 2, name: "Libur Dapur Bersama", date: "25 Juli 2026", active: false }
+  ]);
+
+  const catInvoiceData = {
+    poId: "PO-481",
+    customer: "Rizky Pangestu",
+    phone: "0812-9876-5432",
+    package: "Paket Nasi Tumpeng Mini (20 Pax)",
+    deliveryTime: "Besok, 12:00 WIB",
+    address: "Kost Orange Room 3, Gg. Barokah, Kamojang",
+    totalPrice: 500000,
+    dpPaid: 150000,
+    remaining: 350000,
+    paymentMethod: "Dompet Rangers"
+  };
+
   const hasDriver = activeMitraRoles.includes("driver");
   const hasBusiness = activeMitraRoles.some(r => ["kos", "laundry", "catering", "marketplace"].includes(r));
 
@@ -6469,6 +6498,34 @@ function DriverHome({ navigate, activeMitraRoles, showToast }: Nav & { activeMit
                       <SlidersHorizontal size={18} />
                     </div>
                     <span className="text-[10px] font-black text-gray-700 text-center leading-tight">Aturan PO</span>
+                  </button>
+
+                  <button 
+                    onClick={() => setShowCatFinance(true)}
+                    className="bg-white border border-gray-100 hover:border-amber-200 p-3.5 rounded-2xl shadow-sm flex flex-col items-center gap-2 cursor-pointer transition-all active:scale-95 group"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center group-hover:bg-amber-100 transition-colors">
+                      <Wallet size={18} />
+                    </div>
+                    <span className="text-[10px] font-black text-gray-700 text-center leading-tight">Ringkasan Uang</span>
+                  </button>
+                  <button 
+                    onClick={() => setShowCatHolidays(true)}
+                    className="bg-white border border-gray-100 hover:border-amber-200 p-3.5 rounded-2xl shadow-sm flex flex-col items-center gap-2 cursor-pointer transition-all active:scale-95 group"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center group-hover:bg-amber-100 transition-colors">
+                      <AlertCircle size={18} />
+                    </div>
+                    <span className="text-[10px] font-black text-gray-700 text-center leading-tight">Hari Libur</span>
+                  </button>
+                  <button 
+                    onClick={() => setShowCatInvoice(true)}
+                    className="bg-white border border-gray-100 hover:border-amber-200 p-3.5 rounded-2xl shadow-sm flex flex-col items-center gap-2 cursor-pointer transition-all active:scale-95 group"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center group-hover:bg-amber-100 transition-colors">
+                      <Package size={18} />
+                    </div>
+                    <span className="text-[10px] font-black text-gray-700 text-center leading-tight">Nota & Surat Jalan</span>
                   </button>
                 </div>
               </div>
@@ -7218,6 +7275,258 @@ function DriverHome({ navigate, activeMitraRoles, showToast }: Nav & { activeMit
             >
               Simpan Aturan PO
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Keuangan & Payout Katering (GoBiz style) */}
+      {showCatFinance && (
+        <div className="absolute inset-0 bg-[#F7FAF8] z-50 flex flex-col text-foreground">
+          <div className="bg-[#FF7043] text-white shrink-0">
+            <StatusBar light />
+            <div className="px-5 pb-4 pt-2 flex items-center gap-3">
+              <button 
+                onClick={() => setShowCatFinance(false)}
+                className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white cursor-pointer active:scale-90 transition-transform"
+              >
+                <ArrowLeft size={16} />
+              </button>
+              <div>
+                <h3 className="font-extrabold text-sm">Ringkasan Uang & Payout</h3>
+                <p className="text-[10px] text-orange-100">Pantau omzet DP & pelunasan Anda</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4" style={{ scrollbarWidth: "none" }}>
+            
+            {/* Financial Overview Cards */}
+            <div className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 flex flex-col gap-4">
+              <div className="flex justify-between items-center">
+                <div>
+                  <span className="text-[10px] text-gray-400 block uppercase font-bold tracking-wider">Total Omzet PO</span>
+                  <span className="text-xl font-black text-gray-900">{rp(catFinanceData.totalOmzet)}</span>
+                </div>
+                <span className="text-xs bg-amber-100 text-amber-800 font-bold px-2 py-1 rounded-lg">Catering</span>
+              </div>
+              <div className="border-t border-dashed border-gray-100 pt-3 grid grid-cols-2 gap-3">
+                <div>
+                  <span className="text-[9px] text-gray-400 block uppercase font-bold tracking-wider">DP Cair (30%/50%)</span>
+                  <span className="text-sm font-extrabold text-emerald-600">{rp(catFinanceData.dpSettled)}</span>
+                </div>
+                <div>
+                  <span className="text-[9px] text-gray-400 block uppercase font-bold tracking-wider">Pending Pelunasan</span>
+                  <span className="text-sm font-extrabold text-amber-600">{rp(catFinanceData.pendingPelunasan)}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Account Balance Card */}
+            <div className="bg-gradient-to-br from-amber-600 to-orange-600 rounded-3xl p-5 text-white shadow flex flex-col gap-3 relative overflow-hidden">
+              <div className="absolute right-[-15px] bottom-[-15px] w-24 h-24 bg-white/10 rounded-full" />
+              <div>
+                <span className="text-[10px] font-black text-orange-200 uppercase tracking-wider">Saldo Yang Bisa Ditarik</span>
+                <h4 className="text-2xl font-black mt-0.5">{rp(catFinanceData.dpSettled - catFinanceData.withdrawn)}</h4>
+              </div>
+              <button 
+                onClick={() => {
+                  if (catFinanceData.dpSettled - catFinanceData.withdrawn <= 0) {
+                    showToast("Saldo Anda tidak mencukupi untuk penarikan!");
+                  } else {
+                    setCatFinanceData(prev => ({ ...prev, withdrawn: prev.dpSettled }));
+                    showToast("Penarikan saldo berhasil dikirim ke rekening terdaftar!");
+                  }
+                }}
+                className="w-full py-2.5 bg-white text-orange-600 font-extrabold rounded-xl text-xs hover:bg-orange-50 transition-colors shadow"
+              >
+                💸 Tarik Saldo ke Rekening Bank
+              </button>
+            </div>
+
+            {/* Transaction Log */}
+            <div className="flex flex-col gap-3">
+              <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Riwayat Mutasi Saldo</h4>
+              <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex flex-col gap-3">
+                <div className="flex justify-between items-center text-xs">
+                  <div>
+                    <p className="font-bold text-gray-800">DP PO #CAT-481 Cair</p>
+                    <p className="text-[10px] text-gray-400">14 Jul 2026, 12:45</p>
+                  </div>
+                  <span className="font-extrabold text-emerald-600">+{rp(150000)}</span>
+                </div>
+                <div className="border-t border-gray-50 pt-3 flex justify-between items-center text-xs">
+                  <div>
+                    <p className="font-bold text-gray-800">Penarikan Saldo Sukses</p>
+                    <p className="text-[10px] text-gray-400">12 Jul 2026, 09:00</p>
+                  </div>
+                  <span className="font-extrabold text-red-500">-{rp(1000000)}</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* Kalender Hari Libur Dapur (GoBiz style) */}
+      {showCatHolidays && (
+        <div className="absolute inset-0 bg-[#F7FAF8] z-50 flex flex-col text-foreground">
+          <div className="bg-[#FF7043] text-white shrink-0">
+            <StatusBar light />
+            <div className="px-5 pb-4 pt-2 flex items-center gap-3">
+              <button 
+                onClick={() => setShowCatHolidays(false)}
+                className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white cursor-pointer active:scale-90 transition-transform"
+              >
+                <ArrowLeft size={16} />
+              </button>
+              <div>
+                <h3 className="font-extrabold text-sm">Kalender Hari Libur</h3>
+                <p className="text-[10px] text-orange-100">Atur hari libur operasional dapur katering</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4" style={{ scrollbarWidth: "none" }}>
+            
+            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-amber-800 text-[11px] leading-relaxed">
+              ⚠️ **Perhatian**: Menghidupkan hari libur akan menolak pesanan masuk otomatis pada tanggal tersebut. Pastikan Anda menyelesaikan PO aktif sebelum tanggal libur yang diatur.
+            </div>
+
+            <div className="flex flex-col gap-3">
+              <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Tanggal Libur Terjadwal</h4>
+              {catHolidays.map(h => (
+                <div key={h.id} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex justify-between items-center gap-3">
+                  <div>
+                    <h5 className="font-bold text-xs text-gray-800">{h.name}</h5>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">{h.date}</p>
+                  </div>
+                  <button 
+                    onClick={() => {
+                      setCatHolidays(prev => prev.map(x => x.id === h.id ? { ...x, active: !h.active } : x));
+                      showToast(`Status libur ${h.name} ${!h.active ? 'diaktifkan' : 'dinonaktifkan'}`);
+                    }}
+                    className={`w-12 h-6.5 rounded-full relative transition-colors duration-200 cursor-pointer ${h.active ? "bg-primary" : "bg-gray-300"}`}
+                  >
+                    <div className={`absolute top-0.5 w-5.5 h-5.5 bg-white rounded-full shadow transition-transform duration-200 ${h.active ? "translate-x-6" : "translate-x-0.5"}`} />
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <button 
+              onClick={() => showToast("Fitur tambah hari libur kustom akan tersedia di rilis beta berikutnya!")}
+              className="w-full py-3.5 bg-primary text-white font-extrabold rounded-2xl shadow-md cursor-pointer hover:bg-primary-dark transition-colors text-center text-xs mt-4"
+            >
+              ➕ Tambah Hari Libur Baru
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Cetak Surat Jalan & Nota Pesanan (GoBiz style) */}
+      {showCatInvoice && (
+        <div className="absolute inset-0 bg-[#F7FAF8] z-50 flex flex-col text-foreground">
+          <div className="bg-[#FF7043] text-white shrink-0">
+            <StatusBar light />
+            <div className="px-5 pb-4 pt-2 flex items-center gap-3">
+              <button 
+                onClick={() => setShowCatInvoice(false)}
+                className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white cursor-pointer active:scale-90 transition-transform"
+              >
+                <ArrowLeft size={16} />
+              </button>
+              <div>
+                <h3 className="font-extrabold text-sm">Nota Pesanan / Surat Jalan</h3>
+                <p className="text-[10px] text-orange-100">Pratinjau label pengiriman kotak katering</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4" style={{ scrollbarWidth: "none" }}>
+            
+            {/* Nota Printable Container */}
+            <div className="bg-white rounded-3xl p-5 shadow-sm border border-gray-200 flex flex-col gap-4 text-xs font-mono relative overflow-hidden">
+              {/* Decorative top border */}
+              <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-amber-500 to-orange-500" />
+              
+              <div className="text-center pb-2 border-b border-dashed border-gray-200">
+                <h4 className="font-bold text-sm text-gray-800">RANGERS CATERING</h4>
+                <p className="text-[10px] text-gray-400">Garut, Jawa Barat</p>
+              </div>
+
+              <div className="flex flex-col gap-1.5 text-[11px] text-gray-700">
+                <div className="flex justify-between">
+                  <span>ID PO:</span>
+                  <span className="font-bold">#{catInvoiceData.poId}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Pelanggan:</span>
+                  <span className="font-bold">{catInvoiceData.customer}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Kontak:</span>
+                  <span>{catInvoiceData.phone}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Pengiriman:</span>
+                  <span className="font-bold">{catInvoiceData.deliveryTime}</span>
+                </div>
+              </div>
+
+              <div className="border-t border-dashed border-gray-200 my-1" />
+
+              <div>
+                <div className="font-bold mb-1 text-[11px] text-gray-800">Detail Paket:</div>
+                <div className="flex justify-between text-gray-700 text-[11px]">
+                  <span>{catInvoiceData.package}</span>
+                  <span className="font-bold">{rp(catInvoiceData.totalPrice)}</span>
+                </div>
+              </div>
+
+              <div className="border-t border-dashed border-gray-200 my-1" />
+
+              <div className="flex flex-col gap-1 text-[11px] text-gray-700">
+                <div className="flex justify-between">
+                  <span>DP Lunas (30%):</span>
+                  <span className="text-emerald-600 font-bold">-{rp(catInvoiceData.dpPaid)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Sisa Pelunasan:</span>
+                  <span className="text-amber-600 font-bold">{rp(catInvoiceData.remaining)}</span>
+                </div>
+                <div className="flex justify-between text-xs pt-1 border-t border-dashed border-gray-200 font-bold text-gray-900">
+                  <span>Total Tagihan:</span>
+                  <span>{rp(catInvoiceData.totalPrice)}</span>
+                </div>
+              </div>
+
+              <div className="border-t border-dashed border-gray-200 my-1" />
+
+              <div className="text-[10px] text-gray-500">
+                <div className="font-bold text-gray-700 mb-0.5">Alamat Pengiriman:</div>
+                <p className="leading-relaxed">{catInvoiceData.address}</p>
+              </div>
+
+              <div className="text-center pt-2 text-[9px] text-gray-400 italic">
+                *Tempelkan nota ini pada kemasan katering utama sebagai surat jalan kurir.*
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-2">
+              <button 
+                onClick={() => showToast("Nota berhasil disimpan ke folder download!")}
+                className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-extrabold rounded-2xl text-xs cursor-pointer transition-colors text-center border border-gray-200"
+              >
+                💾 Simpan PDF
+              </button>
+              <button 
+                onClick={() => showToast("Nota berhasil dikirim ke printer bluetooth!")}
+                className="flex-1 py-3 bg-primary text-white font-extrabold rounded-2xl text-xs cursor-pointer hover:bg-primary-dark transition-colors text-center shadow-md"
+              >
+                🖨️ Cetak Nota
+              </button>
+            </div>
           </div>
         </div>
       )}
