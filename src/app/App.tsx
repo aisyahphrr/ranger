@@ -6446,6 +6446,84 @@ function DriverHome({ navigate, activeMitraRoles }: Nav & { activeMitraRoles: st
               </div>
             </div>
             )}
+
+            {/* Catering PO Orders */}
+            {activeMitraRoles.includes("catering") && (
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-3 mt-2">
+                  <h3 className="font-bold text-sm text-gray-900">Pesanan Catering PO Masuk</h3>
+                  <Pill color="yellow">1 pending</Pill>
+                </div>
+                
+                <div className="bg-white rounded-[20px] p-4 border border-gray-100 shadow-sm relative overflow-hidden">
+                  <div className="absolute top-0 left-0 w-1.5 h-full bg-yellow-500" />
+                  <div className="flex justify-between items-center mb-3 border-b border-dashed border-gray-100 pb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-full bg-yellow-50 text-yellow-600 flex items-center justify-center">
+                        <Coffee size={14} />
+                      </div>
+                      <div>
+                        <p className="font-extrabold text-[13px] text-gray-900">PO #CAT-481</p>
+                        <p className="text-[10px] text-gray-500">Rizky Pangestu · Nasi Tumpeng (20 Pax)</p>
+                      </div>
+                    </div>
+                    <span className="bg-amber-100 text-amber-800 text-[9px] font-bold px-2 py-0.5 rounded">DP 30% Lunas</span>
+                  </div>
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <p className="text-[9px] text-gray-400">Tanggal Pengiriman</p>
+                      <p className="font-extrabold text-[11px] text-gray-800">Besok, 12:00 WIB</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[9px] text-gray-400">Sisa Pelunasan</p>
+                      <p className="font-extrabold text-[12px] text-amber-700">{rp(350000)}</p>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="text-[10px] text-gray-400">Total Nilai PO</p>
+                      <p className="font-black text-[14px] text-gray-900">{rp(500000)}</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button className="px-3.5 py-2 rounded-xl bg-primary text-white text-xs font-bold hover:bg-primary-dark transition-colors">Proses Masak</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Marketplace/Toko Orders */}
+            {activeMitraRoles.includes("marketplace") && (
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-3 mt-2">
+                  <h3 className="font-bold text-sm text-gray-900">Pesanan Toko Baru</h3>
+                  <Pill color="green">1 baru</Pill>
+                </div>
+                
+                <div className="bg-white rounded-[20px] p-4 border border-gray-100 shadow-sm relative overflow-hidden">
+                  <div className="absolute top-0 left-0 w-1.5 h-full bg-emerald-500" />
+                  <div className="flex justify-between items-center mb-3 border-b border-dashed border-gray-100 pb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                        <Store size={14} />
+                      </div>
+                      <div>
+                        <p className="font-extrabold text-[13px] text-gray-900">Order #MKT-802</p>
+                        <p className="text-[10px] text-gray-500">Bambang Wijaya · Nasi Timbel Komplit (2x)</p>
+                      </div>
+                    </div>
+                    <span className="bg-green-100 text-green-700 text-[9px] font-bold px-2 py-0.5 rounded">Bayar Lunas</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="text-[10px] text-gray-400">Total Transaksi</p>
+                      <p className="font-black text-[14px] text-gray-900">{rp(50000)}</p>
+                    </div>
+                    <button className="px-3.5 py-2 rounded-xl bg-primary text-white text-xs font-bold hover:bg-primary-dark transition-colors">Siapkan & Panggil Kurir</button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
