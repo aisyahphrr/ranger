@@ -6100,8 +6100,8 @@ function MitraRegistrationScreen({ navigate, setActiveMitraRoles }: Nav & { setA
 
         {step === 3 && (
           <div className="p-6">
-            <h3 className="text-xl font-black text-gray-900 mb-2">Detail Usaha / Kendaraan</h3>
-            <p className="text-sm text-gray-500 mb-6">Lengkapi informasi spesifik untuk peran yang Anda pilih.</p>
+            <h3 className="text-xl font-black text-gray-900 mb-2">Detail Usaha & Legalitas</h3>
+            <p className="text-sm text-gray-500 mb-6">Lengkapi informasi spesifik untuk verifikasi pendaftaran peran Anda.</p>
             
             <div className="flex flex-col gap-6">
               {roles.includes("driver") && (
@@ -6110,19 +6110,56 @@ function MitraRegistrationScreen({ navigate, setActiveMitraRoles }: Nav & { setA
                   <div className="flex flex-col gap-3">
                     <input type="text" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm" placeholder="Plat Nomor Kendaraan (Cth: D 1234 ABC)" />
                     <input type="text" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm" placeholder="Tipe Kendaraan (Cth: Honda Beat)" />
-                    <div className="w-full h-24 border border-dashed border-gray-300 rounded-xl flex items-center justify-center bg-white text-gray-400">
-                      <span className="text-xs font-medium">+ Upload Foto SIM C</span>
+                    <div className="w-full h-24 border border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center bg-white text-gray-400">
+                      <Camera size={20} className="mb-1" />
+                      <span className="text-[10px] font-medium">Upload Foto SIM C</span>
                     </div>
                   </div>
                 </div>
               )}
 
-              {(roles.includes("kos") || roles.includes("laundry") || roles.includes("catering")) && (
+              {roles.includes("marketplace") && (
                 <div className="p-4 border border-gray-100 rounded-2xl bg-gray-50">
-                  <h4 className="font-bold text-sm text-primary flex items-center gap-2 mb-3"><Store size={16} /> Data Usaha</h4>
+                  <h4 className="font-bold text-sm text-primary flex items-center gap-2 mb-3"><Store size={16} /> Data Toko & Izin Usaha (Marketplace)</h4>
+                  <div className="flex flex-col gap-3">
+                    <input type="text" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm" placeholder="Nama Toko / Outlet" />
+                    <select className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700 focus:outline-none">
+                      <option value="">Pilih Kategori Bisnis</option>
+                      <option value="makanan">Makanan & Minuman</option>
+                      <option value="fashion">Pakaian & Fashion</option>
+                      <option value="kesehatan">Kesehatan & Kecantikan</option>
+                      <option value="lainnya">Kerajinan & Lainnya</option>
+                    </select>
+                    <input type="text" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm" placeholder="Nomor Induk Berusaha (NIB) / Izin Usaha" />
+                    <div className="w-full h-24 border border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center bg-white text-gray-400">
+                      <Camera size={20} className="mb-1" />
+                      <span className="text-[10px] font-medium">Upload Foto Fisik Depan Toko</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {roles.includes("catering") && (
+                <div className="p-4 border border-gray-100 rounded-2xl bg-gray-50">
+                  <h4 className="font-bold text-sm text-primary flex items-center gap-2 mb-3"><Coffee size={16} /> Data Dapur & Sertifikasi (Catering)</h4>
+                  <div className="flex flex-col gap-3">
+                    <input type="text" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm" placeholder="Nama Dapur Catering" />
+                    <input type="number" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm" placeholder="Kapasitas Dapur Harian (Pax / Hari)" />
+                    <input type="text" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm" placeholder="Nomor Sertifikat Halal MUI (Boleh Dikosongkan)" />
+                    <div className="w-full h-24 border border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center bg-white text-gray-400">
+                      <Camera size={20} className="mb-1" />
+                      <span className="text-[10px] font-medium">Upload Foto Area Dapur Produksi</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {(roles.includes("kos") || roles.includes("laundry")) && (
+                <div className="p-4 border border-gray-100 rounded-2xl bg-gray-50">
+                  <h4 className="font-bold text-sm text-primary flex items-center gap-2 mb-3"><Building2 size={16} /> Data Properti & Lokasi Usaha</h4>
                   <div className="flex flex-col gap-3">
                     <input type="text" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm" placeholder="Nama Usaha (Cth: Kos Putri Melati)" />
-                    <textarea className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm h-24 resize-none" placeholder="Alamat Lengkap Usaha..." />
+                    <textarea className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm h-20 resize-none focus:outline-none" placeholder="Alamat Lengkap Usaha..." />
                   </div>
                 </div>
               )}
