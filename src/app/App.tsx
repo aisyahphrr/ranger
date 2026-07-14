@@ -3575,9 +3575,6 @@ function PesananScreen({
       return;
     }
 
-    const confirm = window.confirm(`Apakah Anda yakin ingin melunasi sisa pembayaran sebesar ${rp(sisa)} untuk ${order.item} menggunakan Dompet Rangers?`);
-    if (!confirm) return;
-
     setDompetBalance(prev => prev - sisa);
     setMyOrders(prev => prev.map(o => {
       if (o.id === order.id) {
@@ -3588,7 +3585,7 @@ function PesananScreen({
           sisaAmount: 0,
           paymentType: "Full",
           paymentHistory: [
-            ...o.paymentHistory,
+            ...(o.paymentHistory || []),
             { label: "Pelunasan PO", amount: sisa, date: "Hari Ini", method: "Dompet Rangers" }
           ]
         };
@@ -3596,7 +3593,7 @@ function PesananScreen({
       return o;
     }));
 
-    showToast("Pelunasan PO Katering berhasil!");
+    showToast(`Pelunasan PO sebesar ${rp(sisa)} berhasil!`);
   };
 
   return (
@@ -3653,9 +3650,13 @@ function PesananScreen({
                         </div>
                       ))}
                       {o.sisaAmount > 0 && (
-                        <div className="flex justify-between items-center text-[10px] text-amber-700 font-bold border-t border-dashed border-border pt-1.5 mt-1">
-                          <span>○ Sisa Pembayaran PO</span>
-                          <span>{rp(o.sisaAmount)}</span>
+                        <div 
+                          onClick={() => handleLunasi(o)}
+                          className="flex justify-between items-center text-[10px] text-amber-700 font-bold border-t border-dashed border-border pt-1.5 mt-1 cursor-pointer hover:underline"
+                          title="Klik untuk melunasi sisa pembayaran"
+                        >
+                          <span>○ Sisa Pembayaran PO (Klik untuk lunasi)</span>
+                          <span className="bg-amber-100 px-2 py-0.5 rounded text-amber-900">{rp(o.sisaAmount)}</span>
                         </div>
                       )}
                     </div>
