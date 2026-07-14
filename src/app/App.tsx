@@ -6170,6 +6170,28 @@ function DriverHome({ navigate, activeMitraRoles, showToast }: Nav & { activeMit
   const [mktOrderStatus, setMktOrderStatus] = useState<"new" | "preparing" | "searching" | "otw">("new");
   const [menuStatusList, setMenuStatusList] = useState({ 1: true, 2: true, 3: false });
 
+  const [showMktHistory, setShowMktHistory] = useState(false);
+  const [showMktPromo, setShowMktPromo] = useState(false);
+  const [showMktSettings, setShowMktSettings] = useState(false);
+
+  const [promoList, setPromoList] = useState([
+    { id: 1, type: "Diskon Ongkir", name: "Subsidi Ongkir Kamojang", value: 5000, active: true },
+    { id: 2, type: "Coret Harga", name: "Diskon Sore Nasi Timbel", value: 3000, active: false }
+  ]);
+
+  const [mktStoreInfo, setMktStoreInfo] = useState({
+    name: "Warung Bu Siti Khas Kamojang",
+    hours: "08:00 - 20:00",
+    address: "Jl. Aster No. 7, Kamojang, Kab. Garut",
+    phone: "0812-3456-7890"
+  });
+
+  const mktHistoryData = [
+    { id: "MKT-799", customer: "Asep Sunandar", items: "1x Nasi Timbel, 1x Es Jeruk", total: 33000, date: "Hari Ini, 10:20", status: "Selesai" },
+    { id: "MKT-798", customer: "Neng Lilis", items: "2x Ayam Bakar Madu", total: 56000, date: "Kemarin, 19:40", status: "Selesai" },
+    { id: "MKT-797", customer: "Kang Emil", items: "3x Nasi Timbel Komplit", total: 75000, date: "13 Jan 2024, 12:15", status: "Selesai" }
+  ];
+
   const hasDriver = activeMitraRoles.includes("driver");
   const hasBusiness = activeMitraRoles.some(r => ["kos", "laundry", "catering", "marketplace"].includes(r));
 
@@ -6360,6 +6382,78 @@ function DriverHome({ navigate, activeMitraRoles, showToast }: Nav & { activeMit
                 </div>
               )}
             </div>
+
+            {/* Outlet Status Banner for Marketplace */}
+            {activeMitraRoles.includes("marketplace") && (
+              <div className="bg-emerald-950 text-white rounded-[24px] p-4 flex flex-col gap-3.5 shadow-md relative overflow-hidden">
+                <div className="absolute right-[-20px] top-[-20px] w-24 h-24 bg-emerald-800/20 rounded-full" />
+                <div className="flex items-center justify-between relative z-10">
+                  <div>
+                    <h4 className="text-[10px] font-black text-emerald-300 uppercase tracking-widest">Status Outlet Anda</h4>
+                    <p className="text-sm font-extrabold mt-0.5">{storeOpen ? "🟢 Toko Buka (Menerima Order)" : "🔴 Toko Tutup (Offline)"}</p>
+                  </div>
+                  <button 
+                    onClick={() => {
+                      setStoreOpen(!storeOpen);
+                      showToast(storeOpen ? "Status outlet diubah menjadi TUTUP" : "Status outlet diubah menjadi BUKA");
+                    }}
+                    className={`px-3 py-1.5 rounded-xl font-bold text-xs cursor-pointer shadow transition-all ${storeOpen ? "bg-red-500 text-white hover:bg-red-600" : "bg-emerald-500 text-white hover:bg-emerald-600"}`}
+                  >
+                    {storeOpen ? "Tutup Outlet" : "Buka Outlet"}
+                  </button>
+                </div>
+                <div className="border-t border-emerald-800/50 pt-3 grid grid-cols-3 gap-2 text-center text-[10px] relative z-10">
+                  <div>
+                    <span className="text-emerald-300 block">Rating Toko</span>
+                    <span className="font-bold text-sm">4.9 ★</span>
+                  </div>
+                  <div>
+                    <span className="text-emerald-300 block">Penyelesaian</span>
+                    <span className="font-bold text-sm">99.4%</span>
+                  </div>
+                  <div>
+                    <span className="text-emerald-300 block">Kecepatan</span>
+                    <span className="font-bold text-sm">11 mnt</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* GoBiz Management Hub for Marketplace Owners */}
+            {activeMitraRoles.includes("marketplace") && (
+              <div className="mb-2">
+                <h3 className="font-bold text-sm text-gray-900 mb-3">Pusat Kelola Outlet (GoBiz Hub)</h3>
+                <div className="grid grid-cols-3 gap-2.5">
+                  <button 
+                    onClick={() => setShowMktHistory(true)}
+                    className="bg-white border border-gray-100 hover:border-emerald-200 p-3.5 rounded-2xl shadow-sm flex flex-col items-center gap-2 cursor-pointer transition-all active:scale-95 group"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:bg-emerald-100 transition-colors">
+                      <BarChart2 size={18} />
+                    </div>
+                    <span className="text-[10px] font-black text-gray-700 text-center leading-tight">Riwayat Transaksi</span>
+                  </button>
+                  <button 
+                    onClick={() => setShowMktPromo(true)}
+                    className="bg-white border border-gray-100 hover:border-emerald-200 p-3.5 rounded-2xl shadow-sm flex flex-col items-center gap-2 cursor-pointer transition-all active:scale-95 group"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:bg-emerald-100 transition-colors">
+                      <Percent size={18} />
+                    </div>
+                    <span className="text-[10px] font-black text-gray-700 text-center leading-tight">Kelola Promo</span>
+                  </button>
+                  <button 
+                    onClick={() => setShowMktSettings(true)}
+                    className="bg-white border border-gray-100 hover:border-emerald-200 p-3.5 rounded-2xl shadow-sm flex flex-col items-center gap-2 cursor-pointer transition-all active:scale-95 group"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:bg-emerald-100 transition-colors">
+                      <Settings size={18} />
+                    </div>
+                    <span className="text-[10px] font-black text-gray-700 text-center leading-tight">Pengaturan Outlet</span>
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Pending Kos Booking */}
             {activeMitraRoles.includes("kos") && (
@@ -6652,6 +6746,186 @@ function DriverHome({ navigate, activeMitraRoles, showToast }: Nav & { activeMit
           </div>
         )}
       </div>
+
+      {/* Riwayat Transaksi Toko (GoBiz style) */}
+      {showMktHistory && (
+        <div className="absolute inset-0 bg-[#F7FAF8] z-50 flex flex-col text-foreground">
+          <div className="bg-[#1B7A4E] text-white shrink-0">
+            <StatusBar light />
+            <div className="px-5 pb-4 pt-2 flex items-center gap-3">
+              <button 
+                onClick={() => setShowMktHistory(false)}
+                className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white cursor-pointer active:scale-90 transition-transform"
+              >
+                <ArrowLeft size={16} />
+              </button>
+              <div>
+                <h3 className="font-extrabold text-sm">Riwayat Transaksi</h3>
+                <p className="text-[10px] text-green-200">Log order selesai - Live data</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3" style={{ scrollbarWidth: "none" }}>
+            {mktHistoryData.map(h => (
+              <div key={h.id} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex flex-col gap-2 relative overflow-hidden">
+                <div className="flex justify-between items-center text-[10px] text-muted-foreground">
+                  <span>ID: #{h.id} · {h.date}</span>
+                  <span className="bg-green-50 text-green-700 font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider">Selesai</span>
+                </div>
+                <div className="border-t border-dashed border-gray-100 my-1" />
+                <div className="text-xs font-bold text-gray-800">{h.customer}</div>
+                <div className="text-[11px] text-muted-foreground">{h.items}</div>
+                <div className="flex justify-between items-center mt-2.5 pt-2 border-t border-gray-50">
+                  <span className="text-[10px] text-gray-400">Total Penjualan</span>
+                  <span className="text-sm font-black text-primary">{rp(h.total)}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Kelola Promo Outlet (GoBiz style) */}
+      {showMktPromo && (
+        <div className="absolute inset-0 bg-[#F7FAF8] z-50 flex flex-col text-foreground">
+          <div className="bg-[#1B7A4E] text-white shrink-0">
+            <StatusBar light />
+            <div className="px-5 pb-4 pt-2 flex items-center gap-3">
+              <button 
+                onClick={() => setShowMktPromo(false)}
+                className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white cursor-pointer active:scale-90 transition-transform"
+              >
+                <ArrowLeft size={16} />
+              </button>
+              <div>
+                <h3 className="font-extrabold text-sm">Kelola Promo Outlet</h3>
+                <p className="text-[10px] text-green-200">Buat diskon & voucher mandiri</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4" style={{ scrollbarWidth: "none" }}>
+            
+            {/* Promo Header banner */}
+            <div className="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-3xl p-5 text-white flex flex-col gap-2 relative overflow-hidden shadow">
+              <div className="absolute right-[-10px] top-[-10px] w-20 h-20 bg-white/10 rounded-full" />
+              <div className="text-[10px] font-black uppercase tracking-widest text-emerald-200">PROMO MERDEKA UMKM</div>
+              <h4 className="text-base font-extrabold">Naikkan Penjualan Toko!</h4>
+              <p className="text-[10px] leading-relaxed text-emerald-100">Aktifkan promo voucher agar produk Anda muncul di halaman rekomendasi utama.</p>
+            </div>
+
+            {/* List of active promos */}
+            <div className="flex flex-col gap-3">
+              <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Daftar Promo</h4>
+              {promoList.map(p => (
+                <div key={p.id} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex justify-between items-center gap-3">
+                  <div className="flex-1">
+                    <span className="bg-primary/10 text-primary text-[8px] font-extrabold px-1.5 py-0.5 rounded-full uppercase tracking-wider">{p.type}</span>
+                    <h5 className="font-bold text-xs text-gray-800 mt-1.5">{p.name}</h5>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">Potongan: {rp(p.value)}</p>
+                  </div>
+                  <button 
+                    onClick={() => {
+                      setPromoList(prev => prev.map(x => x.id === p.id ? { ...x, active: !x.active } : x));
+                      showToast(`Promo ${p.name} ${!p.active ? 'diaktifkan' : 'dinonaktifkan'}`);
+                    }}
+                    className={`w-12 h-6.5 rounded-full relative transition-colors duration-200 cursor-pointer ${p.active ? "bg-primary" : "bg-gray-300"}`}
+                  >
+                    <div className={`absolute top-0.5 w-5.5 h-5.5 bg-white rounded-full shadow transition-transform duration-200 ${p.active ? "translate-x-6" : "translate-x-0.5"}`} />
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            {/* Add new promo action */}
+            <button 
+              onClick={() => showToast("Fitur integrasi kustom promo akan tersedia di rilis beta berikutnya!")}
+              className="w-full py-4 bg-primary text-white font-extrabold rounded-2xl shadow-md cursor-pointer hover:bg-primary-dark transition-colors flex items-center justify-center gap-2 mt-4 text-xs"
+            >
+              ➕ Buat Promo Baru
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Pengaturan Profil Toko (GoBiz style) */}
+      {showMktSettings && (
+        <div className="absolute inset-0 bg-[#F7FAF8] z-50 flex flex-col text-foreground">
+          <div className="bg-[#1B7A4E] text-white shrink-0">
+            <StatusBar light />
+            <div className="px-5 pb-4 pt-2 flex items-center gap-3">
+              <button 
+                onClick={() => setShowMktSettings(false)}
+                className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white cursor-pointer active:scale-90 transition-transform"
+              >
+                <ArrowLeft size={16} />
+              </button>
+              <div>
+                <h3 className="font-extrabold text-sm">Pengaturan Profil Toko</h3>
+                <p className="text-[10px] text-green-200">Konfigurasi outlet & jam buka</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-4" style={{ scrollbarWidth: "none" }}>
+            
+            <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex flex-col gap-3">
+              <div>
+                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">Nama Toko Outlet</label>
+                <input 
+                  type="text" 
+                  value={mktStoreInfo.name} 
+                  onChange={(e) => setMktStoreInfo(prev => ({ ...prev, name: e.target.value }))}
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs text-foreground focus:outline-none focus:border-primary font-semibold"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">Jam Operasional</label>
+                <input 
+                  type="text" 
+                  value={mktStoreInfo.hours} 
+                  onChange={(e) => setMktStoreInfo(prev => ({ ...prev, hours: e.target.value }))}
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs text-foreground focus:outline-none focus:border-primary font-semibold"
+                  placeholder="Contoh: 08:00 - 20:00"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">Nomor Telepon Outlet</label>
+                <input 
+                  type="text" 
+                  value={mktStoreInfo.phone} 
+                  onChange={(e) => setMktStoreInfo(prev => ({ ...prev, phone: e.target.value }))}
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs text-foreground focus:outline-none focus:border-primary font-semibold"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">Alamat Outlet</label>
+                <textarea 
+                  value={mktStoreInfo.address} 
+                  onChange={(e) => setMktStoreInfo(prev => ({ ...prev, address: e.target.value }))}
+                  rows={3}
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3.5 text-xs text-foreground focus:outline-none focus:border-primary font-semibold resize-none"
+                />
+              </div>
+            </div>
+
+            <button 
+              onClick={() => {
+                setShowMktSettings(false);
+                showToast("Perubahan profil outlet berhasil disimpan!");
+              }}
+              className="w-full py-3.5 bg-primary text-white font-extrabold rounded-2xl shadow-md cursor-pointer hover:bg-primary-dark transition-colors text-center text-xs"
+            >
+              Simpan Perubahan
+            </button>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
