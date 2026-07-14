@@ -6192,6 +6192,25 @@ function DriverHome({ navigate, activeMitraRoles, showToast }: Nav & { activeMit
     { id: "MKT-797", customer: "Kang Emil", items: "3x Nasi Timbel Komplit", total: 75000, date: "13 Jan 2024, 12:15", status: "Selesai" }
   ];
 
+  const [kitchenOpen, setKitchenOpen] = useState(true);
+  const [catOrderStatus, setCatOrderStatus] = useState<"pending" | "cooking" | "ready" | "delivered">("pending");
+  const [showCatPackages, setShowCatPackages] = useState(false);
+  const [showCatSchedule, setShowCatSchedule] = useState(false);
+  const [showCatSettings, setShowCatSettings] = useState(false);
+  const [minPoDays, setMinPoDays] = useState(1);
+  const [minPax, setMinPax] = useState(10);
+
+  const [catPackages, setCatPackages] = useState([
+    { id: 1, name: "Paket Nasi Tumpeng Mini", price: 25000, minPax: 10, active: true },
+    { id: 2, name: "Paket Nasi Box Ayam Bakar", price: 22000, minPax: 15, active: true },
+    { id: 3, name: "Paket Bento Kidz Special", price: 27500, minPax: 10, active: false }
+  ]);
+
+  const catScheduleData = [
+    { id: "PO-481", customer: "Rizky Pangestu", package: "Nasi Tumpeng (20 Pax)", date: "Besok, 12:00 WIB", status: "Bumbu & Bahan Siap" },
+    { id: "PO-482", customer: "Ibu Amanda", package: "Nasi Box Ayam Bakar (50 Pax)", date: "17 Juli 2026, 10:00 WIB", status: "Menunggu Bahan" }
+  ];
+
   const hasDriver = activeMitraRoles.includes("driver");
   const hasBusiness = activeMitraRoles.some(r => ["kos", "laundry", "catering", "marketplace"].includes(r));
 
@@ -6383,6 +6402,78 @@ function DriverHome({ navigate, activeMitraRoles, showToast }: Nav & { activeMit
               )}
             </div>
 
+            {/* Kitchen Status Banner for Catering */}
+            {activeMitraRoles.includes("catering") && (
+              <div className="bg-amber-950 text-white rounded-[24px] p-4 flex flex-col gap-3.5 shadow-md relative overflow-hidden">
+                <div className="absolute right-[-20px] top-[-20px] w-24 h-24 bg-amber-800/20 rounded-full" />
+                <div className="flex items-center justify-between relative z-10">
+                  <div>
+                    <h4 className="text-[10px] font-black text-amber-300 uppercase tracking-widest">Status Dapur Katering</h4>
+                    <p className="text-sm font-extrabold mt-0.5">{kitchenOpen ? "🟢 Dapur Aktif (Menerima PO)" : "🔴 Dapur Sibuk (PO Dijeda)"}</p>
+                  </div>
+                  <button 
+                    onClick={() => {
+                      setKitchenOpen(!kitchenOpen);
+                      showToast(kitchenOpen ? "Status dapur diubah menjadi SIBUK (PO Dijeda)" : "Status dapur diubah menjadi AKTIF (Menerima PO)");
+                    }}
+                    className={`px-3 py-1.5 rounded-xl font-bold text-xs cursor-pointer shadow transition-all ${kitchenOpen ? "bg-red-500 text-white hover:bg-red-600" : "bg-amber-500 text-white hover:bg-amber-600"}`}
+                  >
+                    {kitchenOpen ? "Set Sibuk" : "Set Aktif"}
+                  </button>
+                </div>
+                <div className="border-t border-amber-800/50 pt-3 grid grid-cols-3 gap-2 text-center text-[10px] relative z-10">
+                  <div>
+                    <span className="text-amber-300 block">Rating Rasa</span>
+                    <span className="font-bold text-sm">4.9 ★</span>
+                  </div>
+                  <div>
+                    <span className="text-amber-300 block">Tepat Waktu</span>
+                    <span className="font-bold text-sm">100%</span>
+                  </div>
+                  <div>
+                    <span className="text-amber-300 block">Kapasitas Dapur</span>
+                    <span className="font-bold text-sm">85/100 pax</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Catering Management Hub */}
+            {activeMitraRoles.includes("catering") && (
+              <div className="mb-2">
+                <h3 className="font-bold text-sm text-gray-900 mb-3">Pusat Kelola Katering (Catering Hub)</h3>
+                <div className="grid grid-cols-3 gap-2.5">
+                  <button 
+                    onClick={() => setShowCatSchedule(true)}
+                    className="bg-white border border-gray-100 hover:border-amber-200 p-3.5 rounded-2xl shadow-sm flex flex-col items-center gap-2 cursor-pointer transition-all active:scale-95 group"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center group-hover:bg-amber-100 transition-colors">
+                      <Clock size={18} />
+                    </div>
+                    <span className="text-[10px] font-black text-gray-700 text-center leading-tight">Jadwal Kirim PO</span>
+                  </button>
+                  <button 
+                    onClick={() => setShowCatPackages(true)}
+                    className="bg-white border border-gray-100 hover:border-amber-200 p-3.5 rounded-2xl shadow-sm flex flex-col items-center gap-2 cursor-pointer transition-all active:scale-95 group"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center group-hover:bg-amber-100 transition-colors">
+                      <Utensils size={18} />
+                    </div>
+                    <span className="text-[10px] font-black text-gray-700 text-center leading-tight">Daftar Paket</span>
+                  </button>
+                  <button 
+                    onClick={() => setShowCatSettings(true)}
+                    className="bg-white border border-gray-100 hover:border-amber-200 p-3.5 rounded-2xl shadow-sm flex flex-col items-center gap-2 cursor-pointer transition-all active:scale-95 group"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center group-hover:bg-amber-100 transition-colors">
+                      <SlidersHorizontal size={18} />
+                    </div>
+                    <span className="text-[10px] font-black text-gray-700 text-center leading-tight">Aturan PO</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Outlet Status Banner for Marketplace */}
             {activeMitraRoles.includes("marketplace") && (
               <div className="bg-emerald-950 text-white rounded-[24px] p-4 flex flex-col gap-3.5 shadow-md relative overflow-hidden">
@@ -6550,11 +6641,15 @@ function DriverHome({ navigate, activeMitraRoles, showToast }: Nav & { activeMit
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-3 mt-2">
                   <h3 className="font-bold text-sm text-gray-900">Pesanan Catering PO Masuk</h3>
-                  <Pill color="yellow">1 pending</Pill>
+                  {catOrderStatus === "pending" && <Pill color="yellow">1 pending</Pill>}
+                  {catOrderStatus === "cooking" && <Pill color="orange">Sedang dimasak</Pill>}
+                  {catOrderStatus === "ready" && <Pill color="green">Siap kirim</Pill>}
+                  {catOrderStatus === "delivered" && <Pill color="blue">Telah dikirim</Pill>}
                 </div>
                 
-                <div className="bg-white rounded-[20px] p-4 border border-gray-100 shadow-sm relative overflow-hidden">
-                  <div className="absolute top-0 left-0 w-1.5 h-full bg-yellow-500" />
+                <div className="bg-white rounded-[20px] p-4 border border-gray-100 shadow-sm relative overflow-hidden transition-all duration-300">
+                  <div className={`absolute top-0 left-0 w-1.5 h-full transition-colors ${catOrderStatus === 'pending' ? 'bg-yellow-500' : catOrderStatus === 'cooking' ? 'bg-orange-500' : catOrderStatus === 'ready' ? 'bg-green-500' : 'bg-blue-500'}`} />
+                  
                   <div className="flex justify-between items-center mb-3 border-b border-dashed border-gray-100 pb-3">
                     <div className="flex items-center gap-2">
                       <div className="w-8 h-8 rounded-full bg-yellow-50 text-yellow-600 flex items-center justify-center">
@@ -6582,9 +6677,47 @@ function DriverHome({ navigate, activeMitraRoles, showToast }: Nav & { activeMit
                       <p className="text-[10px] text-gray-400">Total Nilai PO</p>
                       <p className="font-black text-[14px] text-gray-900">{rp(500000)}</p>
                     </div>
-                    <div className="flex gap-2">
-                      <button className="px-3.5 py-2 rounded-xl bg-primary text-white text-xs font-bold hover:bg-primary-dark transition-colors">Proses Masak</button>
-                    </div>
+                    
+                    {catOrderStatus === "pending" && (
+                      <button 
+                        onClick={() => {
+                          setCatOrderStatus("cooking");
+                          showToast("Status PO diubah: Memulai proses memasak!");
+                        }}
+                        className="px-3.5 py-2 rounded-xl bg-orange-500 text-white text-xs font-bold hover:bg-orange-600 transition-colors cursor-pointer"
+                      >
+                        Terima & Mulai Masak
+                      </button>
+                    )}
+
+                    {catOrderStatus === "cooking" && (
+                      <button 
+                        onClick={() => {
+                          setCatOrderStatus("ready");
+                          showToast("Status PO diubah: Hidangan selesai disiapkan & siap kirim!");
+                        }}
+                        className="px-3.5 py-2 rounded-xl bg-green-500 text-white text-xs font-bold hover:bg-green-600 transition-colors cursor-pointer"
+                      >
+                        Tandai Siap Kirim
+                      </button>
+                    )}
+
+                    {catOrderStatus === "ready" && (
+                      <button 
+                        onClick={() => {
+                          setCatOrderStatus("delivered");
+                          showToast("Status PO diubah: Pesanan sedang diantarkan kurir!");
+                        }}
+                        className="px-3.5 py-2 rounded-xl bg-blue-500 text-white text-xs font-bold hover:bg-blue-600 transition-colors cursor-pointer"
+                      >
+                        Panggil Kurir / Kirim
+                      </button>
+                    )}
+
+                    {catOrderStatus === "delivered" && (
+                      <span className="text-xs font-bold text-gray-400 italic">Pesanan Selesai Dikirim</span>
+                    )}
+
                   </div>
                 </div>
               </div>
@@ -6921,6 +7054,169 @@ function DriverHome({ navigate, activeMitraRoles, showToast }: Nav & { activeMit
               className="w-full py-3.5 bg-primary text-white font-extrabold rounded-2xl shadow-md cursor-pointer hover:bg-primary-dark transition-colors text-center text-xs"
             >
               Simpan Perubahan
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Jadwal Pengiriman PO (GoBiz style) */}
+      {showCatSchedule && (
+        <div className="absolute inset-0 bg-[#F7FAF8] z-50 flex flex-col text-foreground">
+          <div className="bg-[#FF7043] text-white shrink-0">
+            <StatusBar light />
+            <div className="px-5 pb-4 pt-2 flex items-center gap-3">
+              <button 
+                onClick={() => setShowCatSchedule(false)}
+                className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white cursor-pointer active:scale-90 transition-transform"
+              >
+                <ArrowLeft size={16} />
+              </button>
+              <div>
+                <h3 className="font-extrabold text-sm">Jadwal Pengiriman PO</h3>
+                <p className="text-[10px] text-orange-100">Kalender persiapan dapur katering</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3" style={{ scrollbarWidth: "none" }}>
+            {catScheduleData.map(s => (
+              <div key={s.id} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex flex-col gap-2 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-1.5 h-full bg-orange-400" />
+                <div className="flex justify-between items-center text-[10px] text-muted-foreground">
+                  <span className="font-bold text-gray-800">ID: #{s.id}</span>
+                  <span className="bg-orange-50 text-orange-700 font-extrabold px-2 py-0.5 rounded-full text-[9px] uppercase tracking-wider">{s.status}</span>
+                </div>
+                <div className="border-t border-dashed border-gray-100 my-1" />
+                <div className="text-xs font-bold text-gray-800">{s.customer}</div>
+                <div className="text-[11px] text-muted-foreground">{s.package}</div>
+                <div className="flex justify-between items-center mt-2 pt-2 border-t border-gray-50 text-[10px]">
+                  <span className="text-gray-400">Rencana Pengiriman</span>
+                  <span className="font-bold text-primary">{s.date}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Kelola Daftar Paket Catering (GoBiz style) */}
+      {showCatPackages && (
+        <div className="absolute inset-0 bg-[#F7FAF8] z-50 flex flex-col text-foreground">
+          <div className="bg-[#FF7043] text-white shrink-0">
+            <StatusBar light />
+            <div className="px-5 pb-4 pt-2 flex items-center gap-3">
+              <button 
+                onClick={() => setShowCatPackages(false)}
+                className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white cursor-pointer active:scale-90 transition-transform"
+              >
+                <ArrowLeft size={16} />
+              </button>
+              <div>
+                <h3 className="font-extrabold text-sm">Kelola Paket Katering</h3>
+                <p className="text-[10px] text-orange-100">Live menu paket katering Anda</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3" style={{ scrollbarWidth: "none" }}>
+            {catPackages.map(pkg => (
+              <div key={pkg.id} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex justify-between items-center gap-3">
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-bold text-xs text-gray-900">{pkg.name}</h4>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">Min. Order: {pkg.minPax} Pax</p>
+                  <p className="text-sm font-black text-primary mt-1">{rp(pkg.price)}<span className="text-[9px] font-normal text-muted-foreground">/Pax</span></p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${pkg.active ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                    {pkg.active ? "Aktif" : "Nonaktif"}
+                  </span>
+                  <button 
+                    onClick={() => {
+                      setCatPackages(prev => prev.map(x => x.id === pkg.id ? { ...x, active: !pkg.active } : x));
+                      showToast(`${pkg.name} ${!pkg.active ? 'diaktifkan' : 'dinonaktifkan'}`);
+                    }}
+                    className={`w-10 h-6 rounded-full relative transition-colors duration-200 cursor-pointer ${pkg.active ? "bg-primary" : "bg-gray-300"}`}
+                  >
+                    <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${pkg.active ? "translate-x-4.5" : "translate-x-0.5"}`} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Pengaturan Aturan Pre-Order (GoBiz style) */}
+      {showCatSettings && (
+        <div className="absolute inset-0 bg-[#F7FAF8] z-50 flex flex-col text-foreground">
+          <div className="bg-[#FF7043] text-white shrink-0">
+            <StatusBar light />
+            <div className="px-5 pb-4 pt-2 flex items-center gap-3">
+              <button 
+                onClick={() => setShowCatSettings(false)}
+                className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white cursor-pointer active:scale-90 transition-transform"
+              >
+                <ArrowLeft size={16} />
+              </button>
+              <div>
+                <h3 className="font-extrabold text-sm">Pengaturan Aturan PO</h3>
+                <p className="text-[10px] text-orange-100">Konfigurasi batas waktu & minimum order</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-4" style={{ scrollbarWidth: "none" }}>
+            
+            <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex flex-col gap-4">
+              <div>
+                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">Batas Waktu Pre-Order Minimum</label>
+                <div className="flex items-center gap-3 bg-gray-50 rounded-xl p-1 border border-gray-200">
+                  <button 
+                    onClick={() => setMinPoDays(prev => Math.max(1, prev - 1))}
+                    className="w-8 h-8 rounded-lg bg-white flex items-center justify-center font-bold text-sm shadow-sm cursor-pointer"
+                  >
+                    -
+                  </button>
+                  <span className="flex-1 text-center font-extrabold text-xs text-gray-800">H - {minPoDays} Hari</span>
+                  <button 
+                    onClick={() => setMinPoDays(prev => Math.min(7, prev + 1))}
+                    className="w-8 h-8 rounded-lg bg-white flex items-center justify-center font-bold text-sm shadow-sm cursor-pointer"
+                  >
+                    +
+                  </button>
+                </div>
+                <p className="text-[9px] text-gray-400 mt-1">Batas minimal hari bagi pelanggan sebelum memesan makanan katering Anda.</p>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">Jumlah Minimum Pax per PO</label>
+                <div className="flex items-center gap-3 bg-gray-50 rounded-xl p-1 border border-gray-200">
+                  <button 
+                    onClick={() => setMinPax(prev => Math.max(5, prev - 5))}
+                    className="w-8 h-8 rounded-lg bg-white flex items-center justify-center font-bold text-sm shadow-sm cursor-pointer"
+                  >
+                    -
+                  </button>
+                  <span className="flex-1 text-center font-extrabold text-xs text-gray-800">{minPax} Pax</span>
+                  <button 
+                    onClick={() => setMinPax(prev => Math.min(100, prev + 5))}
+                    className="w-8 h-8 rounded-lg bg-white flex items-center justify-center font-bold text-sm shadow-sm cursor-pointer"
+                  >
+                    +
+                  </button>
+                </div>
+                <p className="text-[9px] text-gray-400 mt-1">Jumlah minimum porsi / pax untuk satu kali order Pre-Order katering.</p>
+              </div>
+            </div>
+
+            <button 
+              onClick={() => {
+                setShowCatSettings(false);
+                showToast("Aturan Pre-Order katering berhasil disimpan!");
+              }}
+              className="w-full py-3.5 bg-primary text-white font-extrabold rounded-2xl shadow-md cursor-pointer hover:bg-primary-dark transition-colors text-center text-xs"
+            >
+              Simpan Aturan PO
             </button>
           </div>
         </div>
