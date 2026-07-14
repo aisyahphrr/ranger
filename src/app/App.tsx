@@ -6162,10 +6162,14 @@ function MitraRegistrationScreen({ navigate, setActiveMitraRoles }: Nav & { setA
 // ─── DRIVER SCREENS ───────────────────────────────────────────────────────────
 
 // ─── DRIVER SCREENS ───────────────────────────────────────────────────────────
-function DriverHome({ navigate, activeMitraRoles }: Nav & { activeMitraRoles: string[] }) {
+function DriverHome({ navigate, activeMitraRoles, showToast }: Nav & { activeMitraRoles: string[]; showToast: (m: string) => void }) {
   const [online, setOnline] = useState(false);
   const [dashboardMode, setDashboardMode] = useState<"driver"|"mitra">(activeMitraRoles.includes("driver") ? "driver" : "mitra");
   
+  const [storeOpen, setStoreOpen] = useState(true);
+  const [mktOrderStatus, setMktOrderStatus] = useState<"new" | "preparing" | "searching" | "otw">("new");
+  const [menuStatusList, setMenuStatusList] = useState({ 1: true, 2: true, 3: false });
+
   const hasDriver = activeMitraRoles.includes("driver");
   const hasBusiness = activeMitraRoles.some(r => ["kos", "laundry", "catering", "marketplace"].includes(r));
 
