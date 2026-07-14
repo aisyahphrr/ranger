@@ -6106,13 +6106,22 @@ function MitraRegistrationScreen({ navigate, setActiveMitraRoles }: Nav & { setA
             <div className="flex flex-col gap-6">
               {roles.includes("driver") && (
                 <div className="p-4 border border-gray-100 rounded-2xl bg-gray-50">
-                  <h4 className="font-bold text-sm text-primary flex items-center gap-2 mb-3"><Bike size={16} /> Data Kendaraan (Driver)</h4>
+                  <h4 className="font-bold text-sm text-primary flex items-center gap-2 mb-3"><Bike size={16} /> Data Kendaraan & SIM (Driver)</h4>
                   <div className="flex flex-col gap-3">
-                    <input type="text" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm" placeholder="Plat Nomor Kendaraan (Cth: D 1234 ABC)" />
-                    <input type="text" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm" placeholder="Tipe Kendaraan (Cth: Honda Beat)" />
-                    <div className="w-full h-24 border border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center bg-white text-gray-400">
-                      <Camera size={20} className="mb-1" />
-                      <span className="text-[10px] font-medium">Upload Foto SIM C</span>
+                    <input type="text" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary" placeholder="Plat Nomor Kendaraan (Cth: D 1234 ABC)" />
+                    <input type="text" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary" placeholder="Tipe Kendaraan (Cth: Honda Beat)" />
+                    <input type="text" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary" placeholder="Nomor SIM C (12 Digit)" />
+                    <input type="text" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary" placeholder="Nomor STNK Kendaraan" />
+                    
+                    <div className="grid grid-cols-2 gap-2 mt-1">
+                      <div className="h-24 border border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center bg-white text-gray-400">
+                        <Camera size={18} className="mb-1" />
+                        <span className="text-[9px] font-medium text-center px-1">Upload SIM C</span>
+                      </div>
+                      <div className="h-24 border border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center bg-white text-gray-400">
+                        <Camera size={18} className="mb-1" />
+                        <span className="text-[9px] font-medium text-center px-1">Upload STNK / Plat</span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -6122,18 +6131,27 @@ function MitraRegistrationScreen({ navigate, setActiveMitraRoles }: Nav & { setA
                 <div className="p-4 border border-gray-100 rounded-2xl bg-gray-50">
                   <h4 className="font-bold text-sm text-primary flex items-center gap-2 mb-3"><Store size={16} /> Data Toko & Izin Usaha (Marketplace)</h4>
                   <div className="flex flex-col gap-3">
-                    <input type="text" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm" placeholder="Nama Toko / Outlet" />
-                    <select className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700 focus:outline-none">
+                    <input type="text" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary" placeholder="Nama Toko / Outlet" />
+                    <select className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700 focus:outline-none focus:border-primary">
                       <option value="">Pilih Kategori Bisnis</option>
                       <option value="makanan">Makanan & Minuman</option>
                       <option value="fashion">Pakaian & Fashion</option>
                       <option value="kesehatan">Kesehatan & Kecantikan</option>
                       <option value="lainnya">Kerajinan & Lainnya</option>
                     </select>
-                    <input type="text" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm" placeholder="Nomor Induk Berusaha (NIB) / Izin Usaha" />
-                    <div className="w-full h-24 border border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center bg-white text-gray-400">
-                      <Camera size={20} className="mb-1" />
-                      <span className="text-[10px] font-medium">Upload Foto Fisik Depan Toko</span>
+                    <input type="text" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary" placeholder="Nomor Induk Berusaha (NIB)" />
+                    <input type="text" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary" placeholder="Nomor NPWP Pemilik Usaha" />
+                    <textarea className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm h-16 resize-none focus:outline-none focus:border-primary" placeholder="Alamat Lengkap Toko & GPS Koordinat..." />
+                    
+                    <div className="grid grid-cols-2 gap-2 mt-1">
+                      <div className="h-24 border border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center bg-white text-gray-400">
+                        <Camera size={18} className="mb-1" />
+                        <span className="text-[9px] font-medium text-center px-1">Upload KTP Pemilik</span>
+                      </div>
+                      <div className="h-24 border border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center bg-white text-gray-400">
+                        <Camera size={18} className="mb-1" />
+                        <span className="text-[9px] font-medium text-center px-1">Upload Foto Toko</span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -6143,12 +6161,27 @@ function MitraRegistrationScreen({ navigate, setActiveMitraRoles }: Nav & { setA
                 <div className="p-4 border border-gray-100 rounded-2xl bg-gray-50">
                   <h4 className="font-bold text-sm text-primary flex items-center gap-2 mb-3"><Coffee size={16} /> Data Dapur & Sertifikasi (Catering)</h4>
                   <div className="flex flex-col gap-3">
-                    <input type="text" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm" placeholder="Nama Dapur Catering" />
-                    <input type="number" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm" placeholder="Kapasitas Dapur Harian (Pax / Hari)" />
-                    <input type="text" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm" placeholder="Nomor Sertifikat Halal MUI (Boleh Dikosongkan)" />
-                    <div className="w-full h-24 border border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center bg-white text-gray-400">
-                      <Camera size={20} className="mb-1" />
-                      <span className="text-[10px] font-medium">Upload Foto Area Dapur Produksi</span>
+                    <input type="text" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary" placeholder="Nama Dapur Catering" />
+                    <select className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700 focus:outline-none focus:border-primary">
+                      <option value="">Pilih Jenis Layanan Utama</option>
+                      <option value="nasibox">Prasmanan & Nasi Box</option>
+                      <option value="tumpeng">Nasi Tumpeng Event</option>
+                      <option value="bento">Bento Kidz Special</option>
+                      <option value="snackbox">Snack Box & Coffee Break</option>
+                    </select>
+                    <input type="number" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary" placeholder="Kapasitas Dapur Harian (Pax / Hari)" />
+                    <input type="text" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary" placeholder="Nomor Sertifikat Halal (Bila Ada)" />
+                    <input type="text" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary" placeholder="No. Sertifikat Higiene Sanitasi Dinas Kesehatan" />
+                    
+                    <div className="grid grid-cols-2 gap-2 mt-1">
+                      <div className="h-24 border border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center bg-white text-gray-400">
+                        <Camera size={18} className="mb-1" />
+                        <span className="text-[9px] font-medium text-center px-1">Upload KTP PJ Dapur</span>
+                      </div>
+                      <div className="h-24 border border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center bg-white text-gray-400">
+                        <Camera size={18} className="mb-1" />
+                        <span className="text-[9px] font-medium text-center px-1">Upload Foto Dapur</span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -6158,8 +6191,8 @@ function MitraRegistrationScreen({ navigate, setActiveMitraRoles }: Nav & { setA
                 <div className="p-4 border border-gray-100 rounded-2xl bg-gray-50">
                   <h4 className="font-bold text-sm text-primary flex items-center gap-2 mb-3"><Building2 size={16} /> Data Properti & Lokasi Usaha</h4>
                   <div className="flex flex-col gap-3">
-                    <input type="text" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm" placeholder="Nama Usaha (Cth: Kos Putri Melati)" />
-                    <textarea className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm h-20 resize-none focus:outline-none" placeholder="Alamat Lengkap Usaha..." />
+                    <input type="text" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary" placeholder="Nama Usaha (Cth: Kos Putri Melati)" />
+                    <textarea className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm h-20 resize-none focus:outline-none focus:border-primary" placeholder="Alamat Lengkap Usaha..." />
                   </div>
                 </div>
               )}
