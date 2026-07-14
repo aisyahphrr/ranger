@@ -6496,12 +6496,16 @@ function DriverHome({ navigate, activeMitraRoles }: Nav & { activeMitraRoles: st
             {activeMitraRoles.includes("marketplace") && (
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-3 mt-2">
-                  <h3 className="font-bold text-sm text-gray-900">Pesanan Toko Baru</h3>
-                  <Pill color="green">1 baru</Pill>
+                  <h3 className="font-bold text-sm text-gray-900">Pesanan Toko Aktif (GoBiz Style)</h3>
+                  {mktOrderStatus === "new" && <Pill color="green">1 baru</Pill>}
+                  {mktOrderStatus === "preparing" && <Pill color="orange">Sedang disiapkan</Pill>}
+                  {mktOrderStatus === "searching" && <Pill color="blue">Mencari kurir</Pill>}
+                  {mktOrderStatus === "otw" && <Pill color="purple">Kurir otw</Pill>}
                 </div>
                 
-                <div className="bg-white rounded-[20px] p-4 border border-gray-100 shadow-sm relative overflow-hidden">
-                  <div className="absolute top-0 left-0 w-1.5 h-full bg-emerald-500" />
+                <div className="bg-white rounded-[20px] p-4 border border-gray-100 shadow-sm relative overflow-hidden transition-all duration-300">
+                  <div className={`absolute top-0 left-0 w-1.5 h-full transition-colors ${mktOrderStatus === 'new' ? 'bg-green-500' : mktOrderStatus === 'preparing' ? 'bg-orange-500' : mktOrderStatus === 'searching' ? 'bg-blue-500' : 'bg-purple-500'}`} />
+                  
                   <div className="flex justify-between items-center mb-3 border-b border-dashed border-gray-100 pb-3">
                     <div className="flex items-center gap-2">
                       <div className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
@@ -6514,13 +6518,130 @@ function DriverHome({ navigate, activeMitraRoles }: Nav & { activeMitraRoles: st
                     </div>
                     <span className="bg-green-100 text-green-700 text-[9px] font-bold px-2 py-0.5 rounded">Bayar Lunas</span>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <p className="text-[10px] text-gray-400">Total Transaksi</p>
-                      <p className="font-black text-[14px] text-gray-900">{rp(50000)}</p>
+
+                  {/* Dynamic Workflow Info */}
+                  {mktOrderStatus === "new" && (
+                    <div className="flex justify-between items-center mt-3">
+                      <div>
+                        <p className="text-[10px] text-gray-400">Total Transaksi</p>
+                        <p className="font-black text-[14px] text-gray-900">{rp(50000)}</p>
+                      </div>
+                      <button 
+                        onClick={() => {
+                          setMktOrderStatus("preparing");
+                          showToast("Pesanan diproses: Mulai menyiapkan makanan!");
+                        }}
+                        className="px-3.5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all active:scale-95 cursor-pointer shadow-md"
+                      >
+                        Terima & Siapkan Makanan
+                      </button>
                     </div>
-                    <button className="px-3.5 py-2 rounded-xl bg-primary text-white text-xs font-bold hover:bg-primary-dark transition-colors">Siapkan & Panggil Kurir</button>
-                  </div>
+                  )}
+
+                  {mktOrderStatus === "preparing" && (
+                    <div className="flex flex-col gap-2 mt-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-muted-foreground">Persiapan Makanan</span>
+                        <span className="text-xs font-bold text-orange-600 animate-pulse">Menyiapkan...</span>
+                      </div>
+                      <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                        <div className="h-full bg-orange-500 rounded-full animate-[shimmer_2s_infinite]" style={{ width: "65%" }} />
+                      </div>
+                      <button 
+                        onClick={() => {
+                          setMktOrderStatus("searching");
+                          showToast("Makanan selesai! Mencari kurir terdekat...");
+                        }}
+                        className="w-full mt-2 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold transition-all cursor-pointer text-center"
+                      >
+                        Selesai Siapkan & Panggil Kurir
+                      </button>
+                    </div>
+                  )}
+
+                  {mktOrderStatus === "searching" && (
+                    <div className="flex flex-col gap-3 mt-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground flex items-center gap-1.5">
+                          <RefreshCw size={12} className="animate-spin text-blue-500" />
+                          Mencari Rangers Driver terdekat...
+                        </span>
+                      </div>
+                      <button 
+                        onClick={() => {
+                          setMktOrderStatus("otw");
+                          showToast("Kurir ditemukan! Pak Rahman sedang menuju ke toko Anda.");
+                        }}
+                        className="w-full py-2 rounded-xl bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold transition-all cursor-pointer text-center"
+                      >
+                        Hubungkan dengan Kurir (Simulasi)
+                      </button>
+                    </div>
+                  )}
+
+                  {mktOrderStatus === "otw" && (
+                    <div className="flex flex-col gap-3 mt-2 bg-slate-50 p-2.5 rounded-xl border border-dashed border-slate-200">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-sm shrink-0">🏍️</div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-bold text-gray-900">Pak Rahman (Driver)</p>
+                          <p className="text-[10px] text-muted-foreground">Supra H 4251 AA · Menuju Toko</p>
+                        </div>
+                      </div>
+                      <button 
+                        onClick={() => {
+                          setMktOrderStatus("new");
+                          showToast("Serah terima makanan selesai! Pesanan diambil oleh kurir.");
+                        }}
+                        className="w-full py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition-all cursor-pointer text-center"
+                      >
+                        Serahkan Makanan ke Kurir
+                      </button>
+                    </div>
+                  )}
+
+                </div>
+              </div>
+            )}
+
+            {/* GoFood-style Menu Management */}
+            {activeMitraRoles.includes("marketplace") && (
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-3 mt-2">
+                  <h3 className="font-bold text-sm text-gray-900">Kelola Menu Outlet (GoBiz)</h3>
+                  <span className="text-[10px] font-bold text-primary">Live Sync</span>
+                </div>
+                <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-4 flex flex-col gap-3">
+                  {[
+                    { id: 1, name: "Nasi Timbel Komplit", price: 25000, desc: "Nasi timbel, ayam goreng, tahu, tempe, lalap, sambal" },
+                    { id: 2, name: "Ayam Bakar Madu", price: 28000, desc: "Ayam bakar bumbu madu khas Kamojang" },
+                    { id: 3, name: "Es Jeruk Peras", price: 8000, desc: "Es jeruk segar dari jeruk asli diperas langsung" }
+                  ].map(menu => {
+                    const isAvailable = (menuStatusList as any)[menu.id] ?? true;
+                    return (
+                      <div key={menu.id} className="flex justify-between items-center gap-3 pb-3 border-b border-gray-50 last:border-b-0 last:pb-0">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-bold text-xs text-gray-900">{menu.name}</h4>
+                          <p className="text-[10px] text-gray-500 mt-0.5 truncate">{menu.desc}</p>
+                          <p className="text-[11px] font-extrabold text-primary mt-1">{rp(menu.price)}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${isAvailable ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                            {isAvailable ? "Tersedia" : "Habis"}
+                          </span>
+                          <button 
+                            onClick={() => {
+                              setMenuStatusList(prev => ({ ...prev, [menu.id]: !isAvailable }));
+                              showToast(`${menu.name} diatur menjadi ${!isAvailable ? 'Tersedia' : 'Habis'}`);
+                            }}
+                            className={`w-10 h-6 rounded-full relative transition-colors duration-200 cursor-pointer ${isAvailable ? "bg-primary" : "bg-gray-300"}`}
+                          >
+                            <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${isAvailable ? "translate-x-4.5" : "translate-x-0.5"}`} />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -6967,7 +7088,7 @@ export default function App() {
 
     // Driver tabs
     if (screen === "mitra_reg") return <MitraRegistrationScreen navigate={navigate} setActiveMitraRoles={setActiveMitraRoles} />;
-    if (screen === "d_home") return <DriverHome navigate={navigate} activeMitraRoles={activeMitraRoles} />;
+    if (screen === "d_home") return <DriverHome navigate={navigate} activeMitraRoles={activeMitraRoles} showToast={showToast} />;
     if (screen === "d_order") return <DriverOrder navigate={navigate} />;
     if (screen === "d_riwayat") return <DriverRiwayat navigate={navigate} />;
     if (screen === "d_pendapatan") return <DriverPendapatan navigate={navigate} />;
