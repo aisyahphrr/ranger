@@ -1370,6 +1370,8 @@ function CateringScreen({
   // Payment PO States
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [paymentOption, setPaymentOption] = useState<"full" | "dp30" | "dp50">("full");
+  const [payMethod, setPayMethod] = useState<"dompet" | "qris">("dompet");
+  const [showQrisSim, setShowQrisSim] = useState(false);
 
   // Autocomplete Suggestions
   const suggestions = ["Nasi Box", "Tumpeng", "Bento", "Murah", "Lengkap", "Diet"];
@@ -1458,13 +1460,14 @@ function CateringScreen({
     }
     const sisaAmount = totalPrice - paidAmount;
 
-    if (dompetBalance < paidAmount) {
-      alert("Saldo Dompet Rangers Anda tidak mencukupi untuk melakukan pembayaran!");
-      return;
+    if (payMethod === "dompet") {
+      if (dompetBalance < paidAmount) {
+        alert("Saldo Dompet Rangers Anda tidak mencukupi untuk melakukan pembayaran!");
+        return;
+      }
+      // Deduct balance
+      setDompetBalance(prev => prev - paidAmount);
     }
-
-    // Deduct balance
-    setDompetBalance(prev => prev - paidAmount);
 
     const newOrderId = `RNG-PO${Math.floor(100 + Math.random() * 900)}`;
     const newOrder = {
@@ -1485,12 +1488,12 @@ function CateringScreen({
           label: sisaAmount > 0 ? `DP ${dpPercent}%` : "Pembayaran Lunas", 
           amount: paidAmount, 
           date: "Hari Ini", 
-          method: "Dompet Rangers" 
+          method: payMethod === "dompet" ? "Dompet Rangers" : "QRIS" 
         }
       ],
       items: [{ id: selectedPackage.id, name: selectedPackage.name, price: selectedPackage.price, quantity: paxCount, img: selectedPackage.img, store: selectedMerchant.name }],
       progressState: 0,
-      payMethod: sisaAmount > 0 ? `DP ${dpPercent}% (Dompet)` : "Dompet Rangers",
+      payMethod: sisaAmount > 0 ? `DP ${dpPercent}% (${payMethod === "dompet" ? "Dompet" : "QRIS"})` : (payMethod === "dompet" ? "Dompet Rangers" : "QRIS"),
       reviewText: "",
       reviewRating: 0,
       address: "Jl. Aster No. 7, Kamojang (Kos Putri Melati)",
@@ -1507,12 +1510,13 @@ function CateringScreen({
     // Setup chat room with welcome details
     setCateringStoreName(selectedMerchant.name);
     setCateringChatMessages([
-      { id: "1", sender: "catering", text: `Halo kak Budi! Booking Pre-Order (${newOrderId}) Anda untuk ${selectedPackage.name} sebanyak ${paxCount} ${isTumpeng ? 'Unit' : 'Pax'} telah kami terima.\n\nStatus Pembayaran: ${sisaAmount > 0 ? `DP ${dpPercent}% Dibayar (${rp(paidAmount)}). Sisa Pelunasan: ${rp(sisaAmount)}` : `Lunas (${rp(totalPrice)})`}.\n\nTanggal Pengiriman: ${bookingDate}.\n\nApakah ada detail pesanan atau request menu khusus yang ingin disesuaikan?`, time: "Baru saja" }
+      { id: "1", sender: "catering", text: `Halo kak Budi! Booking Pre-Order (${newOrderId}) Anda untuk ${selectedPackage.name} sebanyak ${paxCount} ${isTumpeng ? 'Unit' : 'Pax'} telah kami terima.\n\nStatus Pembayaran: ${sisaAmount > 0 ? `DP ${dpPercent}% Dibayar via ${payMethod === 'dompet' ? 'Dompet' : 'QRIS'} (${rp(paidAmount)}). Sisa Pelunasan: ${rp(sisaAmount)}` : `Lunas via ${payMethod === 'dompet' ? 'Dompet' : 'QRIS'} (${rp(totalPrice)})`}.\n\nTanggal Pengiriman: ${bookingDate}.\n\nApakah ada detail pesanan atau request menu khusus yang ingin disesuaikan?`, time: "Baru saja" }
     ]);
     setUnreadCateringCount(1);
     
     showToast(`Booking PO Berhasil! ${sisaAmount > 0 ? "DP Berhasil dibayar." : "Pembayaran Lunas."}`);
     setShowPaymentDialog(false);
+    setShowQrisSim(false);
     setSelectedMerchant(null);
     navigate("c_pesanan");
   };
@@ -2083,17 +2087,55 @@ function CateringScreen({
 
                 </div>
 
-                {/* Dompet Rangers Wallet Info */}
-                <div className="bg-slate-100 border border-slate-200/50 p-3 rounded-2xl flex items-center justify-between mt-1 shrink-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm">🪙</span>
-                    <div className="text-[10px]">
-                      <p className="font-extrabold text-foreground">Dompet Rangers</p>
-                      <p className="text-muted-foreground">Saldo Anda</p>
-                    </div>
+                {/* Payment Method Selector */}
+                <div className="flex flex-col gap-2 mt-1">
+                  <p className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wide">Pilih Metode Pembayaran</p>
+                  <div className="flex gap-2">
+                    {/* Option Dompet */}
+                    <button 
+                      type="button"
+                      onClick={() => setPayMethod("dompet")}
+                      className={`flex-1 py-2 rounded-xl border flex gap-1.5 items-center justify-center transition-all cursor-pointer ${payMethod === "dompet" ? "border-primary bg-primary/[0.03] text-primary" : "border-border bg-white text-muted-foreground hover:bg-slate-50"}`}
+                    >
+                      <span className="text-xs">🪙</span>
+                      <span className="text-[10px] font-bold">Dompet Rangers</span>
+                    </button>
+                    {/* Option QRIS */}
+                    <button 
+                      type="button"
+                      onClick={() => setPayMethod("qris")}
+                      className={`flex-1 py-2 rounded-xl border flex gap-1.5 items-center justify-center transition-all cursor-pointer ${payMethod === "qris" ? "border-primary bg-primary/[0.03] text-primary" : "border-border bg-white text-muted-foreground hover:bg-slate-50"}`}
+                    >
+                      <span className="text-xs">📱</span>
+                      <span className="text-[10px] font-bold">QRIS Barcode</span>
+                    </button>
                   </div>
-                  <span className="text-xs font-black text-primary">{rp(dompetBalance)}</span>
                 </div>
+
+                {/* Wallet Info conditional on selected method */}
+                {payMethod === "dompet" ? (
+                  <div className="bg-slate-100 border border-slate-200/50 p-3 rounded-2xl flex items-center justify-between mt-1 shrink-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm">🪙</span>
+                      <div className="text-[10px]">
+                        <p className="font-extrabold text-foreground">Dompet Rangers</p>
+                        <p className="text-muted-foreground">Saldo Anda</p>
+                      </div>
+                    </div>
+                    <span className="text-xs font-black text-primary">{rp(dompetBalance)}</span>
+                  </div>
+                ) : (
+                  <div className="bg-slate-50 border border-slate-200/50 p-3 rounded-2xl flex items-center justify-between mt-1 shrink-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm">📱</span>
+                      <div className="text-[10px]">
+                        <p className="font-extrabold text-foreground">QRIS (Rangers Pay)</p>
+                        <p className="text-muted-foreground">Bayar instan via barcode scan</p>
+                      </div>
+                    </div>
+                    <span className="text-[9px] bg-primary text-white px-2 py-0.5 rounded font-black uppercase">Aktif</span>
+                  </div>
+                )}
 
               </div>
 
@@ -2106,7 +2148,13 @@ function CateringScreen({
                   Kembali
                 </button>
                 <button 
-                  onClick={handleConfirmPO}
+                  onClick={() => {
+                    if (payMethod === "qris") {
+                      setShowQrisSim(true);
+                    } else {
+                      handleConfirmPO();
+                    }
+                  }}
                   className="flex-[2] py-3 bg-primary hover:bg-primary/95 text-white font-extrabold text-xs rounded-xl shadow-md cursor-pointer text-center"
                 >
                   Bayar & Buat PO
@@ -2114,6 +2162,83 @@ function CateringScreen({
               </div>
 
             </div>
+          </div>
+        );
+      })()}
+
+      {/* QRIS Simulation Dialog for PO checkout */}
+      {showQrisSim && selectedMerchant && selectedPackage && (() => {
+        const totalPrice = selectedPackage.price * paxCount;
+        let paidAmount = totalPrice;
+        if (paymentOption === "dp30") {
+          paidAmount = Math.round(totalPrice * 0.3);
+        } else if (paymentOption === "dp50") {
+          paidAmount = Math.round(totalPrice * 0.5);
+        }
+        return (
+          <div className="absolute inset-0 bg-[#1B7A4E] z-50 flex flex-col items-center justify-center p-6 text-white text-center">
+            <h2 className="text-xl font-extrabold mb-1">Pembayaran QRIS PO</h2>
+            <p className="text-green-200 text-xs mb-6">PGE Kamojang Community Payment Gate</p>
+
+            <div className="bg-white rounded-3xl p-6 shadow-xl w-full max-w-xs text-foreground flex flex-col items-center">
+              <div className="flex items-center justify-between w-full mb-3 border-b border-border pb-2">
+                <span className="text-[10px] font-bold text-gray-400 tracking-wider">QRIS STANDAR NASIONAL</span>
+                <span className="text-[10px] font-bold text-primary">RANGERS APP</span>
+              </div>
+              
+              <div className="text-xs text-muted-foreground mb-1">Jumlah Tagihan PO</div>
+              <div className="text-xl font-extrabold text-foreground mb-4">{rp(paidAmount)}</div>
+              
+              <div className="w-48 h-48 border-4 border-gray-100 p-2 rounded-2xl flex items-center justify-center relative mb-4">
+                <svg viewBox="0 0 100 100" className="w-full h-full text-foreground fill-current">
+                  <rect x="0" y="0" width="25" height="25" fill="#000" />
+                  <rect x="5" y="5" width="15" height="15" fill="#fff" />
+                  <rect x="9" y="9" width="7" height="7" fill="#000" />
+                  
+                  <rect x="75" y="0" width="25" height="25" fill="#000" />
+                  <rect x="75" y="5" width="15" height="15" fill="#fff" />
+                  <rect x="79" y="9" width="7" height="7" fill="#000" />
+
+                  <rect x="0" y="75" width="25" height="25" fill="#000" />
+                  <rect x="5" y="75" width="15" height="15" fill="#fff" />
+                  <rect x="9" y="79" width="7" height="7" fill="#000" />
+
+                  <rect x="35" y="10" width="10" height="20" />
+                  <rect x="55" y="5" width="15" height="10" />
+                  <rect x="40" y="40" width="20" height="20" />
+                  <rect x="10" y="45" width="15" height="15" />
+                  <rect x="70" y="40" width="15" height="15" />
+                  <rect x="30" y="70" width="20" height="15" />
+                  <rect x="65" y="70" width="15" height="20" />
+                  <rect x="45" y="85" width="15" height="10" />
+                  
+                  <circle cx="50" cy="50" r="12" fill="#fff" />
+                  <circle cx="50" cy="50" r="9" fill="#1B7A4E" />
+                  <path d="M47 52 L50 47 L53 52" fill="#fff" />
+                </svg>
+                <div className="absolute inset-0 bg-black/5 rounded-2xl flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                  <span className="bg-white px-2 py-1 rounded text-[9px] font-bold shadow">Simulasi QRIS PO</span>
+                </div>
+              </div>
+
+              <p className="text-[10px] text-muted-foreground text-center">
+                Pindai QR di atas menggunakan aplikasi perbankan atau e-wallet Anda untuk menyelesaikan pembayaran PO
+              </p>
+            </div>
+
+            <button 
+              onClick={handleConfirmPO}
+              className="w-full max-w-xs mt-8 py-3.5 bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-extrabold rounded-2xl text-sm transition-all shadow-md cursor-pointer"
+            >
+              ✅ Simulasikan Bayar PO Sukses
+            </button>
+
+            <button 
+              onClick={() => setShowQrisSim(false)}
+              className="text-xs text-green-200 mt-4 hover:underline cursor-pointer"
+            >
+              Kembali
+            </button>
           </div>
         );
       })()}
@@ -3561,6 +3686,10 @@ function PesananScreen({
   showToast: (m: string) => void;
 }) {
   const [tab, setTab] = useState(0);
+  const [activeLunasiOrder, setActiveLunasiOrder] = useState<any | null>(null);
+  const [lunasiMethod, setLunasiMethod] = useState<"dompet" | "qris">("dompet");
+  const [showLunasiQris, setShowLunasiQris] = useState(false);
+
   const tabs = ["Aktif", "Selesai", "Dibatalkan"];
   const filtered = [
     myOrders.filter(o => o.status === "Dikirim" || o.status === "Diproses" || o.status === "Aktif" || o.status === "Menunggu Pelunasan"),
@@ -3568,14 +3697,18 @@ function PesananScreen({
     [],
   ][tab];
 
-  const handleLunasi = (order: any) => {
+  const handleLunasi = (order: any, methodOverride?: "dompet" | "qris") => {
     const sisa = order.sisaAmount;
-    if (dompetBalance < sisa) {
-      showToast("Saldo Dompet Rangers tidak mencukupi untuk pelunasan!");
-      return;
+    const method = methodOverride || lunasiMethod;
+
+    if (method === "dompet") {
+      if (dompetBalance < sisa) {
+        showToast("Saldo Dompet Rangers tidak mencukupi untuk pelunasan!");
+        return;
+      }
+      setDompetBalance(prev => prev - sisa);
     }
 
-    setDompetBalance(prev => prev - sisa);
     setMyOrders(prev => prev.map(o => {
       if (o.id === order.id) {
         return {
@@ -3586,14 +3719,16 @@ function PesananScreen({
           paymentType: "Full",
           paymentHistory: [
             ...(o.paymentHistory || []),
-            { label: "Pelunasan PO", amount: sisa, date: "Hari Ini", method: "Dompet Rangers" }
+            { label: "Pelunasan PO", amount: sisa, date: "Hari Ini", method: method === "dompet" ? "Dompet Rangers" : "QRIS" }
           ]
         };
       }
       return o;
     }));
 
-    showToast(`Pelunasan PO sebesar ${rp(sisa)} berhasil!`);
+    showToast(`Pelunasan PO sebesar ${rp(sisa)} via ${method === "dompet" ? "Dompet" : "QRIS"} berhasil!`);
+    setActiveLunasiOrder(null);
+    setShowLunasiQris(false);
   };
 
   return (
@@ -3651,7 +3786,7 @@ function PesananScreen({
                       ))}
                       {o.sisaAmount > 0 && (
                         <div 
-                          onClick={() => handleLunasi(o)}
+                          onClick={() => setActiveLunasiOrder(o)}
                           className="flex justify-between items-center text-[10px] text-amber-700 font-bold border-t border-dashed border-border pt-1.5 mt-1 cursor-pointer hover:underline"
                           title="Klik untuk melunasi sisa pembayaran"
                         >
@@ -3670,7 +3805,7 @@ function PesananScreen({
                         <span className="text-amber-900 font-extrabold">{rp(o.sisaAmount)}</span>
                       </div>
                       <button 
-                        onClick={() => handleLunasi(o)}
+                        onClick={() => setActiveLunasiOrder(o)}
                         className="w-full py-2 bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-xs rounded-xl shadow-md cursor-pointer text-center"
                       >
                         Lunasi Sekarang
@@ -3720,6 +3855,172 @@ function PesananScreen({
           </div>
         )}
       </div>
+
+      {/* Pelunasan Payment Option Dialog (Popup Modal) */}
+      {activeLunasiOrder && !showLunasiQris && (() => {
+        const sisa = activeLunasiOrder.sisaAmount;
+        return (
+          <div className="absolute inset-0 bg-black/70 z-50 flex items-center justify-center p-5">
+            <div className="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl border border-border relative flex flex-col max-h-[85%]">
+              
+              <div className="p-4 border-b border-border flex items-center justify-between shrink-0 bg-slate-50">
+                <span className="text-xs font-black text-foreground">Metode Pelunasan PO</span>
+                <button 
+                  onClick={() => setActiveLunasiOrder(null)}
+                  className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-muted-foreground cursor-pointer"
+                >
+                  <X size={12} />
+                </button>
+              </div>
+
+              <div className="p-5 overflow-y-auto flex-1 flex flex-col gap-4" style={{ scrollbarWidth: "none" }}>
+                
+                {/* Order Summary box */}
+                <div className="bg-slate-50 border border-slate-100 p-3.5 rounded-2xl flex flex-col gap-1">
+                  <div className="text-[10px] text-muted-foreground font-bold">Katering PO</div>
+                  <div className="text-xs text-foreground font-extrabold truncate">{activeLunasiOrder.item}</div>
+                  <div className="text-[10px] text-muted-foreground font-semibold mt-1">{activeLunasiOrder.detail}</div>
+                  <div className="flex justify-between items-center text-xs text-foreground font-bold border-t border-dashed border-border pt-2 mt-2">
+                    <span>Sisa Pelunasan</span>
+                    <span className="text-primary font-black text-sm">{rp(sisa)}</span>
+                  </div>
+                </div>
+
+                {/* Choices Selector */}
+                <div className="flex flex-col gap-2.5">
+                  <p className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wide">Pilih Metode Pelunasan</p>
+                  
+                  {/* Option 1: Dompet Rangers */}
+                  <div 
+                    onClick={() => setLunasiMethod("dompet")}
+                    className={`p-3.5 rounded-2xl border-2 transition-all cursor-pointer flex items-center gap-3 bg-white ${lunasiMethod === "dompet" ? "border-primary bg-primary/[0.02]" : "border-border hover:bg-slate-50"}`}
+                  >
+                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${lunasiMethod === "dompet" ? "border-primary" : "border-gray-300"}`}>
+                      {lunasiMethod === "dompet" && <div className="w-2 h-2 rounded-full bg-primary" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-extrabold text-foreground">Dompet Rangers</p>
+                      <p className="text-[9px] text-muted-foreground mt-0.5">Potong langsung dari saldo Anda.</p>
+                      <p className="text-primary font-bold text-xs mt-1">Saldo: {rp(dompetBalance)}</p>
+                    </div>
+                  </div>
+
+                  {/* Option 2: QRIS */}
+                  <div 
+                    onClick={() => setLunasiMethod("qris")}
+                    className={`p-3.5 rounded-2xl border-2 transition-all cursor-pointer flex items-center gap-3 bg-white ${lunasiMethod === "qris" ? "border-primary bg-primary/[0.02]" : "border-border hover:bg-slate-50"}`}
+                  >
+                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${lunasiMethod === "qris" ? "border-primary" : "border-gray-300"}`}>
+                      {lunasiMethod === "qris" && <div className="w-2 h-2 rounded-full bg-primary" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-extrabold text-foreground">QRIS Barcode Scan</p>
+                      <p className="text-[9px] text-muted-foreground mt-0.5">Scan & bayar instan dari aplikasi e-wallet Anda.</p>
+                    </div>
+                  </div>
+
+                </div>
+
+              </div>
+
+              {/* Action Buttons */}
+              <div className="p-4 border-t border-border bg-white flex gap-2.5 shrink-0 shadow-[0_-4px_16px_rgba(0,0,0,0.02)]">
+                <button 
+                  onClick={() => setActiveLunasiOrder(null)}
+                  className="flex-1 py-3 border border-border text-muted-foreground font-bold text-xs rounded-xl cursor-pointer hover:bg-slate-50 text-center"
+                >
+                  Batal
+                </button>
+                <button 
+                  onClick={() => {
+                    if (lunasiMethod === "qris") {
+                      setShowLunasiQris(true);
+                    } else {
+                      handleLunasi(activeLunasiOrder);
+                    }
+                  }}
+                  className="flex-[2] py-3 bg-primary hover:bg-primary/95 text-white font-extrabold text-xs rounded-xl shadow-md cursor-pointer text-center"
+                >
+                  Bayar Pelunasan
+                </button>
+              </div>
+
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Pelunasan QRIS Simulation Dialog */}
+      {showLunasiQris && activeLunasiOrder && (() => {
+        const sisa = activeLunasiOrder.sisaAmount;
+        return (
+          <div className="absolute inset-0 bg-[#1B7A4E] z-50 flex flex-col items-center justify-center p-6 text-white text-center">
+            <h2 className="text-xl font-extrabold mb-1">Pelunasan QRIS</h2>
+            <p className="text-green-200 text-xs mb-6">PGE Kamojang Community Payment Gate</p>
+
+            <div className="bg-white rounded-3xl p-6 shadow-xl w-full max-w-xs text-foreground flex flex-col items-center">
+              <div className="flex items-center justify-between w-full mb-3 border-b border-border pb-2">
+                <span className="text-[10px] font-bold text-gray-400 tracking-wider">QRIS STANDAR NASIONAL</span>
+                <span className="text-[10px] font-bold text-primary">RANGERS APP</span>
+              </div>
+              
+              <div className="text-xs text-muted-foreground mb-1">Jumlah Pelunasan PO</div>
+              <div className="text-xl font-extrabold text-foreground mb-4">{rp(sisa)}</div>
+              
+              <div className="w-48 h-48 border-4 border-gray-100 p-2 rounded-2xl flex items-center justify-center relative mb-4">
+                <svg viewBox="0 0 100 100" className="w-full h-full text-foreground fill-current">
+                  <rect x="0" y="0" width="25" height="25" fill="#000" />
+                  <rect x="5" y="5" width="15" height="15" fill="#fff" />
+                  <rect x="9" y="9" width="7" height="7" fill="#000" />
+                  
+                  <rect x="75" y="0" width="25" height="25" fill="#000" />
+                  <rect x="75" y="5" width="15" height="15" fill="#fff" />
+                  <rect x="79" y="9" width="7" height="7" fill="#000" />
+
+                  <rect x="0" y="75" width="25" height="25" fill="#000" />
+                  <rect x="5" y="75" width="15" height="15" fill="#fff" />
+                  <rect x="9" y="79" width="7" height="7" fill="#000" />
+
+                  <rect x="35" y="10" width="10" height="20" />
+                  <rect x="55" y="5" width="15" height="10" />
+                  <rect x="40" y="40" width="20" height="20" />
+                  <rect x="10" y="45" width="15" height="15" />
+                  <rect x="70" y="40" width="15" height="15" />
+                  <rect x="30" y="70" width="20" height="15" />
+                  <rect x="65" y="70" width="15" height="20" />
+                  <rect x="45" y="85" width="15" height="10" />
+                  
+                  <circle cx="50" cy="50" r="12" fill="#fff" />
+                  <circle cx="50" cy="50" r="9" fill="#1B7A4E" />
+                  <path d="M47 52 L50 47 L53 52" fill="#fff" />
+                </svg>
+                <div className="absolute inset-0 bg-black/5 rounded-2xl flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                  <span className="bg-white px-2 py-1 rounded text-[9px] font-bold shadow">Simulasi QRIS Pelunasan</span>
+                </div>
+              </div>
+
+              <p className="text-[10px] text-muted-foreground text-center">
+                Pindai QR di atas menggunakan aplikasi perbankan atau e-wallet Anda untuk menyelesaikan pelunasan
+              </p>
+            </div>
+
+            <button 
+              onClick={() => handleLunasi(activeLunasiOrder, "qris")}
+              className="w-full max-w-xs mt-8 py-3.5 bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-extrabold rounded-2xl text-sm transition-all shadow-md cursor-pointer"
+            >
+              ✅ Simulasikan Bayar Pelunasan Sukses
+            </button>
+
+            <button 
+              onClick={() => setShowLunasiQris(false)}
+              className="text-xs text-green-200 mt-4 hover:underline cursor-pointer"
+            >
+              Kembali
+            </button>
+          </div>
+        );
+      })()}
+
     </div>
   );
 }
