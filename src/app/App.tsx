@@ -28,7 +28,10 @@ type Role = "customer" | "driver";
 type Nav = { navigate: (s: Screen) => void };
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
-const rp = (n: number) => "Rp " + n.toLocaleString("id-ID");
+const rp = (n: any) => {
+  if (n === undefined || n === null || isNaN(Number(n))) return "Rp 0";
+  return "Rp " + Number(n).toLocaleString("id-ID");
+};
 const uImg = (id: string, w = 400, h = 300) =>
   `https://images.unsplash.com/photo-${id}?w=${w}&h=${h}&fit=crop&auto=format&q=80`;
 
@@ -42,9 +45,17 @@ const PRODUCTS = [
   { id: 6, name: "Tas Anyaman Rotan", store: "Kerajinan Asep", price: 75000, rating: 4.8, sold: 63, img: uImg("1547949003-9792a18a2601", 300, 300), liked: false, cat: "Kerajinan" },
 ];
 const RESTAURANTS = [
-  { id: 1, name: "Saung Sunda Asli", cuisine: "Masakan Sunda", rating: 4.9, distance: "0.3 km", minOrder: 25000, img: uImg("1555939594-58d7cb561ad1", 400, 220), tags: ["Halal", "Populer"], open: true },
-  { id: 2, name: "Catering Bu Haji Nani", cuisine: "Prasmanan & Nasi Box", rating: 4.7, distance: "1.2 km", minOrder: 50000, img: uImg("1563245372-f21724e3856d", 400, 220), tags: ["Halal", "Min. 10 Pax"], open: true },
-  { id: 3, name: "Dapur Asri Kamojang", cuisine: "Masakan Rumahan", rating: 4.8, distance: "0.8 km", minOrder: 20000, img: uImg("1512621776951-a57141f2eefd", 400, 220), tags: ["Halal", "Sehat"], open: false },
+  { id: 1, name: "Saung Sunda Asli", cuisine: "Masakan Sunda", rating: 4.9, distance: 0.3, minOrder: 25000, img: uImg("1555939594-58d7cb561ad1", 400, 220), tags: ["Halal", "Populer"], open: true, priceStarts: 25000 },
+  { id: 2, name: "Catering Bu Haji Nani", cuisine: "Prasmanan & Nasi Box", rating: 4.7, distance: 1.2, minOrder: 50000, img: uImg("1563245372-f21724e3856d", 400, 220), tags: ["Halal", "Min. 10 Pax"], open: true, priceStarts: 22000 },
+  { id: 3, name: "Dapur Asri Kamojang", cuisine: "Masakan Rumahan", rating: 4.8, distance: 0.8, minOrder: 20000, img: uImg("1512621776951-a57141f2eefd", 400, 220), tags: ["Halal", "Sehat"], open: true, priceStarts: 27500 },
+  { id: 4, name: "Bento Box & Snack Kamojang", cuisine: "Jepang & Snack Box", rating: 4.6, distance: 1.5, minOrder: 30000, img: uImg("1546069901-ba9599a7e63c", 400, 220), tags: ["Halal", "Bento"], open: true, priceStarts: 18000 },
+  { id: 5, name: "Warung Prasmanan Bu Edi", cuisine: "Aneka Nasi Box & Lauk", rating: 4.5, distance: 2.1, minOrder: 40000, img: uImg("1565299624946-b28f40a0ae38", 400, 220), tags: ["Promo", "Murah"], open: true, priceStarts: 15000 },
+  { id: 6, name: "Tumpeng Premium Kamojang", cuisine: "Tumpeng & Prasmanan", rating: 4.9, distance: 0.5, minOrder: 150000, img: uImg("1563245372-f21724e3856d", 400, 220), tags: ["Best Seller", "Premium"], open: true, priceStarts: 450000 },
+  { id: 7, name: "Healthy Diet Catering", cuisine: "Healthy Clean Eating", rating: 4.8, distance: 1.9, minOrder: 35000, img: uImg("1512621776951-a57141f2eefd", 400, 220), tags: ["Organik", "Diet"], open: true, priceStarts: 32000 },
+  { id: 8, name: "Snack Box & Jajanan Bu Tini", cuisine: "Snack & Jajanan Pasar", rating: 4.7, distance: 0.4, minOrder: 15000, img: uImg("1509042239860-f550ce710b93", 400, 220), tags: ["Murah", "Lengkap"], open: true, priceStarts: 10000 },
+  { id: 9, name: "Dapur Mini Nasi Box", cuisine: "Nasi Box Nusantara", rating: 4.4, distance: 2.5, minOrder: 25000, img: uImg("1555939594-58d7cb561ad1", 400, 220), tags: ["Halal"], open: true, priceStarts: 20000 },
+  { id: 10, name: "Catering Nasi Liwet Sunda", cuisine: "Nasi Liwet Sunda", rating: 4.9, distance: 0.9, minOrder: 60000, img: uImg("1563245372-f21724e3856d", 400, 220), tags: ["Tradisional", "Lengkap"], open: true, priceStarts: 35000 },
+  { id: 11, name: "Dapur Selera Kita", cuisine: "Prasmanan & Catering", rating: 4.2, distance: 3.2, minOrder: 50000, img: uImg("1512621776951-a57141f2eefd", 400, 220), tags: ["Halal"], open: false, priceStarts: 25000 }
 ];
 const LAUNDRIES = [
   { id: 1, name: "Laundry Express Pak Dedi", address: "Jl. Raya Kamojang No. 12", price: 6000, rating: 4.8, open: true, distance: "0.5 km", type: "Ekspres", img: uImg("1517677208171-0bc6725a3e60", 400, 300) },
@@ -1276,20 +1287,50 @@ function MarketplaceScreen({
 }
 
 
-const CATERING_PACKAGES: Record<number, { id: number; name: string; desc: string; price: number; img: string }[]> = {
+const CATERING_PACKAGES: Record<number, { id: number; name: string; desc: string; price: number; img: string; cat: "Nasi Box" | "Tumpeng" | "Snack Box" | "Bento" }[]> = {
   1: [
-    { id: 101, name: "Paket A - Timbel Ayam Bakar", desc: "Nasi timbel wangi daun pisang, ayam bakar madu empuk, tahu tempe goreng, lalapan segar & sambal terasi.", price: 25000, img: uImg("1565299624946-b28f40a0ae38", 150, 150) },
-    { id: 102, name: "Paket B - Liwet Kakap Bakar", desc: "Nasi liwet gurih teri pete, kakap bakar bumbu kuning, bakwan jagung, sambal cobek terasi.", price: 35000, img: uImg("1546069901-ba9599a7e63c", 150, 150) },
-    { id: 103, name: "Paket Prasmanan Sunda (Min. 50 Pax)", desc: "Menu prasmanan lengkap (nasi, ayam/daging, sayur sup, karedok, dessert es kelapa muda, air mineral). Free sewa alat.", price: 45000, img: uImg("1563245372-f21724e3856d", 150, 150) },
+    { id: 101, name: "Paket A - Timbel Ayam Bakar", desc: "Nasi timbel wangi daun pisang, ayam bakar madu empuk, tahu tempe goreng, lalapan segar & sambal terasi.", price: 25000, img: uImg("1565299624946-b28f40a0ae38", 150, 150), cat: "Nasi Box" },
+    { id: 102, name: "Paket B - Liwet Kakap Bakar", desc: "Nasi liwet gurih teri pete, kakap bakar bumbu kuning, bakwan jagung, sambal cobek terasi.", price: 35000, img: uImg("1546069901-ba9599a7e63c", 150, 150), cat: "Nasi Box" },
+    { id: 103, name: "Tumpeng Sunda Tampah Premium", desc: "Tumpeng dengan nasi kuning/liwet tampah, ayam bakar 10 potong, urap sayur, tempe oreg, sambal.", price: 450000, img: uImg("1563245372-f21724e3856d", 150, 150), cat: "Tumpeng" },
   ],
   2: [
-    { id: 201, name: "Paket Nasi Box Syukuran", desc: "Nasi kuning wangi, ayam goreng lengkuas, sambal goreng kentang ati, telur balado, kerupuk udang.", price: 30000, img: uImg("1546069901-ba9599a7e63c", 150, 150) },
-    { id: 202, name: "Tumpeng Kuning Premium (20 Pax)", desc: "Tumpeng ukuran besar lengkap dengan hiasan, ayam kuning 20 potong, perkedel kentang, mie goreng, kering tempe.", price: 650000, img: uImg("1563245372-f21724e3856d", 150, 150) },
-    { id: 203, name: "Paket Bento Box Kantor", desc: "Nasi putih, rollade asam manis, capcay sayur bakso, nugget ayam premium, buah potong semangka.", price: 22000, img: uImg("1512621776951-a57141f2eefd", 150, 150) },
+    { id: 201, name: "Paket Nasi Box Syukuran", desc: "Nasi kuning wangi, ayam goreng lengkuas, sambal goreng kentang ati, telur balado, kerupuk udang.", price: 30000, img: uImg("1546069901-ba9599a7e63c", 150, 150), cat: "Nasi Box" },
+    { id: 202, name: "Tumpeng Kuning Premium Bu Haji", desc: "Tumpeng ukuran besar lengkap dengan hiasan, ayam kuning 20 potong, perkedel kentang, mie goreng, kering tempe.", price: 650000, img: uImg("1563245372-f21724e3856d", 150, 150), cat: "Tumpeng" },
+    { id: 203, name: "Paket Bento Box Ayam Teriyaki", desc: "Nasi putih, chicken teriyaki premium, salad kol wortel, crispy eggroll, buah potong.", price: 22000, img: uImg("1512621776951-a57141f2eefd", 150, 150), cat: "Bento" },
   ],
   3: [
-    { id: 301, name: "Paket Sehat Diet Kenyang", desc: "Nasi merah organik, ayam suwir sambal matah rendah kalori, pepes tahu jamur tiram, tumis buncis bawang putih.", price: 27500, img: uImg("1512621776951-a57141f2eefd", 150, 150) },
-    { id: 302, name: "Paket Lauk Keluarga (4-5 Orang)", desc: "1 box lauk pauk (pilihan ayam bakar/ikan nila goreng), sayur lodeh mangkuk besar, sambal tomat & tempe bacem.", price: 85000, img: uImg("1563245372-f21724e3856d", 150, 150) },
+    { id: 301, name: "Bento Diet Sehat Kenyang", desc: "Nasi merah organik, ayam suwir sambal matah rendah kalori, pepes tahu jamur tiram, tumis buncis bawang putih.", price: 27500, img: uImg("1512621776951-a57141f2eefd", 150, 150), cat: "Bento" },
+    { id: 302, name: "Paket Lauk Keluarga Box", desc: "1 box lauk pauk (pilihan ayam bakar/ikan nila goreng), sayur lodeh mangkuk besar, sambal tomat & tempe bacem.", price: 85000, img: uImg("1563245372-f21724e3856d", 150, 150), cat: "Nasi Box" },
+  ],
+  4: [
+    { id: 401, name: "Bento Chicken Katsu Premium", desc: "Nasi pulen, chicken katsu renyah saus curry khas jepang, sup miso hangat.", price: 24000, img: uImg("1512621776951-a57141f2eefd", 150, 150), cat: "Bento" },
+    { id: 402, name: "Snack Box Manis Asin", desc: "Kue sus vla vanila, risoles mayo, lemper ayam premium, air mineral botol mini.", price: 18000, img: uImg("1509042239860-f550ce710b93", 150, 150), cat: "Snack Box" }
+  ],
+  5: [
+    { id: 501, name: "Nasi Box Sederhana Lezat", desc: "Nasi putih, telor balado/dadar, oseng kacang panjang, tempe mendoan, sambal hijau.", price: 15000, img: uImg("1565299624946-b28f40a0ae38", 150, 150), cat: "Nasi Box" },
+    { id: 502, name: "Snack Box Rapat Kantoran", desc: "Pastel telur, dadar gulung pandan, bolu gulung coklat, air mineral.", price: 16000, img: uImg("1509042239860-f550ce710b93", 150, 150), cat: "Snack Box" }
+  ],
+  6: [
+    { id: 601, name: "Tumpeng Mini Nasi Uduk", desc: "Tumpeng ukuran personal (untuk 1 orang), ayam suwir bumbu bali, kering tempe, irisan dadar tipis, sambal.", price: 45000, img: uImg("1563245372-f21724e3856d", 150, 150), cat: "Tumpeng" },
+    { id: 602, name: "Tumpeng Raksasa Premium (30 Pax)", desc: "Tumpeng mewah dengan hiasan kelapa dan janur, 30 porsi komplit aneka lauk pendamping.", price: 950000, img: uImg("1563245372-f21724e3856d", 150, 150), cat: "Tumpeng" }
+  ],
+  7: [
+    { id: 701, name: "Bento Salmon Panggang Sehat", desc: "Nasi coklat, fillet salmon panggang omega-3, edamame rebus, wortel & brokoli steam.", price: 48000, img: uImg("1512621776951-a57141f2eefd", 150, 150), cat: "Bento" },
+    { id: 702, name: "Nasi Box Diet Karbo", desc: "Shirataki rice, ayam panggang tanpa kulit, scrambled egg whites, tumis sayur buncis.", price: 32000, img: uImg("1512621776951-a57141f2eefd", 150, 150), cat: "Nasi Box" }
+  ],
+  8: [
+    { id: 801, name: "Snack Box Jajanan Pasar Tradisional", desc: "Kue mangkok merah, talam pandan, lapis legit, klepon gula merah asli.", price: 10000, img: uImg("1509042239860-f550ce710b93", 150, 150), cat: "Snack Box" },
+    { id: 802, name: "Snack Box Modern Premium", desc: "Macaron pelangi, eclair coklat belgian, mini quiche lorraine, fruit tartlet.", price: 25000, img: uImg("1509042239860-f550ce710b93", 150, 150), cat: "Snack Box" }
+  ],
+  9: [
+    { id: 901, name: "Nasi Box Ayam Geprek Kamojang", desc: "Nasi putih hangat, ayam geprek krispi sambal korek level 1-5, lalapan timun.", price: 20000, img: uImg("1555939594-58d7cb561ad1", 150, 150), cat: "Nasi Box" }
+  ],
+  10: [
+    { id: 1001, name: "Nasi Liwet Box Tradisional", desc: "Nasi liwet teri, ayam goreng serundeng, tahu tempe, sambal lalap lengkap.", price: 35000, img: uImg("1563245372-f21724e3856d", 150, 150), cat: "Nasi Box" },
+    { id: 1002, name: "Tumpeng Liwet Sunda (15 Pax)", desc: "Tumpeng nasi liwet gurih dengan lauk ayam goreng, ikan asin peda, pepes tahu, pencok kacang panjang.", price: 550000, img: uImg("1563245372-f21724e3856d", 150, 150), cat: "Tumpeng" }
+  ],
+  11: [
+    { id: 1101, name: "Prasmanan Paket Gold (Min. 50 Pax)", desc: "Menu buffet prasmanan mewah: nasi goreng, soup iga, rendang daging sapi premium, puding saus vanilla.", price: 55000, img: uImg("1512621776951-a57141f2eefd", 150, 150), cat: "Nasi Box" }
   ]
 };
 
@@ -1300,7 +1341,9 @@ function CateringScreen({
   setCateringStoreName,
   myOrders,
   setMyOrders,
-  showToast
+  showToast,
+  dompetBalance,
+  setDompetBalance
 }: Nav & {
   setCateringChatMessages: React.Dispatch<React.SetStateAction<any[]>>;
   setUnreadCateringCount: React.Dispatch<React.SetStateAction<number>>;
@@ -1308,19 +1351,53 @@ function CateringScreen({
   myOrders: any[];
   setMyOrders: React.Dispatch<React.SetStateAction<any[]>>;
   showToast: (m: string) => void;
+  dompetBalance: number;
+  setDompetBalance: React.Dispatch<React.SetStateAction<number>>;
 }) {
   const [selectedMerchant, setSelectedMerchant] = useState<typeof RESTAURANTS[0] | null>(null);
   const [selectedPackage, setSelectedPackage] = useState<any | null>(null);
   const [paxCount, setPaxCount] = useState(10);
-  const [bookingDate, setBookingDate] = useState("Besok (H+1)");
+  const [bookingDate, setBookingDate] = useState("");
   const [note, setNote] = useState("");
+
+  // Search & Filtering States
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("Semua");
+  const [sortOption, setSortOption] = useState("default");
+  const [activeTab, setActiveTab] = useState<"menu" | "review" | "info">("menu");
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Payment PO States
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+  const [paymentOption, setPaymentOption] = useState<"full" | "dp30" | "dp50">("full");
+
+  // Autocomplete Suggestions
+  const suggestions = ["Nasi Box", "Tumpeng", "Bento", "Murah", "Lengkap", "Diet"];
+
+  // Skeleton loading effect when search or filter options change
+  useEffect(() => {
+    setIsLoading(true);
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [searchQuery, selectedCategory, sortOption]);
+
+  const getTomorrowString = () => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow.toISOString().split("T")[0];
+  };
 
   const handleOpenMerchant = (m: typeof RESTAURANTS[0]) => {
     setSelectedMerchant(m);
     const pkgs = CATERING_PACKAGES[m.id] || [];
     setSelectedPackage(pkgs[0] || null);
-    setPaxCount(10);
+    setPaxCount(pkgs[0]?.cat === "Tumpeng" ? 1 : 10);
+    setBookingDate(getTomorrowString());
     setNote("");
+    setActiveTab("menu");
+    setShowPaymentDialog(false);
   };
 
   const handleChatAdmin = () => {
@@ -1335,25 +1412,85 @@ function CateringScreen({
     navigate("c_catering_chat");
   };
 
-  const handlePesanPO = () => {
+  const validateAndTriggerPO = () => {
+    if (!selectedMerchant || !selectedPackage) return;
+    const isTumpeng = selectedPackage.cat === "Tumpeng";
+
+    if (!isTumpeng && paxCount < 10) {
+      alert("Pemesanan katering Nasi Box/Bento minimal 10 pax.");
+      return;
+    }
+    if (isTumpeng && paxCount < 1) {
+      alert("Pemesanan tumpeng minimal 1 unit.");
+      return;
+    }
+    if (!bookingDate) {
+      alert("Silakan pilih tanggal pengiriman.");
+      return;
+    }
+
+    const chosenDate = new Date(bookingDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    chosenDate.setHours(0, 0, 0, 0);
+    if (chosenDate.getTime() <= today.getTime()) {
+      alert("Tanggal pengiriman minimal H-1 (mulai besok).");
+      return;
+    }
+
+    // Open Payment Option modal
+    setShowPaymentDialog(true);
+  };
+
+  const handleConfirmPO = () => {
     if (!selectedMerchant || !selectedPackage) return;
     const totalPrice = selectedPackage.price * paxCount;
-    const newOrderId = `RNG-PO${Math.floor(100 + Math.random() * 900)}`;
+    const isTumpeng = selectedPackage.cat === "Tumpeng";
 
+    let paidAmount = totalPrice;
+    let dpPercent = 100;
+    if (paymentOption === "dp30") {
+      paidAmount = Math.round(totalPrice * 0.3);
+      dpPercent = 30;
+    } else if (paymentOption === "dp50") {
+      paidAmount = Math.round(totalPrice * 0.5);
+      dpPercent = 50;
+    }
+    const sisaAmount = totalPrice - paidAmount;
+
+    if (dompetBalance < paidAmount) {
+      alert("Saldo Dompet Rangers Anda tidak mencukupi untuk melakukan pembayaran!");
+      return;
+    }
+
+    // Deduct balance
+    setDompetBalance(prev => prev - paidAmount);
+
+    const newOrderId = `RNG-PO${Math.floor(100 + Math.random() * 900)}`;
     const newOrder = {
       id: newOrderId,
       type: "Catering",
       icon: Coffee,
       color: "#FF7043",
-      item: `${selectedPackage.name} (${paxCount} Pax)`,
+      item: `${selectedPackage.name} (${paxCount} ${isTumpeng ? 'Unit' : 'Pax'})`,
       detail: selectedMerchant.name,
-      status: "Diproses",
+      status: sisaAmount > 0 ? "Menunggu Pelunasan" : "Diproses",
       statusColor: "orange",
       date: bookingDate,
       total: totalPrice,
+      sisaAmount: sisaAmount,
+      paymentType: sisaAmount > 0 ? "DP" : "Full",
+      paymentHistory: [
+        { 
+          label: sisaAmount > 0 ? `DP ${dpPercent}%` : "Pembayaran Lunas", 
+          amount: paidAmount, 
+          date: "Hari Ini", 
+          method: "Dompet Rangers" 
+        }
+      ],
       items: [{ id: selectedPackage.id, name: selectedPackage.name, price: selectedPackage.price, quantity: paxCount, img: selectedPackage.img, store: selectedMerchant.name }],
       progressState: 0,
-      payMethod: "Dompet Rangers (Pre-Order)",
+      payMethod: sisaAmount > 0 ? `DP ${dpPercent}% (Dompet)` : "Dompet Rangers",
       reviewText: "",
       reviewRating: 0,
       address: "Jl. Aster No. 7, Kamojang (Kos Putri Melati)",
@@ -1367,81 +1504,246 @@ function CateringScreen({
 
     setMyOrders(prev => [newOrder, ...prev]);
 
+    // Setup chat room with welcome details
     setCateringStoreName(selectedMerchant.name);
     setCateringChatMessages([
-      { id: "1", sender: "catering", text: `Halo kak Budi! Booking Pre-Order (${newOrderId}) Anda untuk ${selectedPackage.name} sebanyak ${paxCount} Pax pada tanggal ${bookingDate} telah kami terima. Apakah ada request menu khusus?`, time: "Baru saja" }
+      { id: "1", sender: "catering", text: `Halo kak Budi! Booking Pre-Order (${newOrderId}) Anda untuk ${selectedPackage.name} sebanyak ${paxCount} ${isTumpeng ? 'Unit' : 'Pax'} telah kami terima.\n\nStatus Pembayaran: ${sisaAmount > 0 ? `DP ${dpPercent}% Dibayar (${rp(paidAmount)}). Sisa Pelunasan: ${rp(sisaAmount)}` : `Lunas (${rp(totalPrice)})`}.\n\nTanggal Pengiriman: ${bookingDate}.\n\nApakah ada detail pesanan atau request menu khusus yang ingin disesuaikan?`, time: "Baru saja" }
     ]);
     setUnreadCateringCount(1);
     
-    showToast("Booking Pre-Order Berhasil! Mengalihkan ke Inbox...");
+    showToast(`Booking PO Berhasil! ${sisaAmount > 0 ? "DP Berhasil dibayar." : "Pembayaran Lunas."}`);
+    setShowPaymentDialog(false);
     setSelectedMerchant(null);
     navigate("c_inbox");
   };
 
+  // Fuzzy Search & Kategori Filtering
+  const filteredRestaurants = RESTAURANTS.filter(r => {
+    const pkgs = CATERING_PACKAGES[r.id] || [];
+    const matchesCategory = selectedCategory === "Semua" || pkgs.some(p => p.cat === selectedCategory);
+    if (!matchesCategory) return false;
+
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    const nameMatches = r.name.toLowerCase().includes(q);
+    const cuisineMatches = r.cuisine.toLowerCase().includes(q);
+    const tagsMatches = r.tags.some(t => t.toLowerCase().includes(q));
+    const menuMatches = pkgs.some(p => p.name.toLowerCase().includes(q) || p.desc.toLowerCase().includes(q));
+    return nameMatches || cuisineMatches || tagsMatches || menuMatches;
+  });
+
+  // Sorting
+  const sortedRestaurants = [...filteredRestaurants].sort((a, b) => {
+    if (sortOption === "rating") return b.rating - a.rating;
+    if (sortOption === "distance") return a.distance - b.distance;
+    if (sortOption === "price-asc") return a.priceStarts - b.priceStarts;
+    if (sortOption === "price-desc") return b.priceStarts - a.priceStarts;
+    return 0;
+  });
+
+  // Helper text highlighter
+  const highlightText = (text: string, highlight: string) => {
+    if (!highlight.trim()) return <span>{text}</span>;
+    const regex = new RegExp(`(${highlight.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')})`, 'gi');
+    const parts = text.split(regex);
+    return (
+      <span>
+        {parts.map((part, i) => 
+          regex.test(part) ? (
+            <mark key={i} className="bg-amber-100 text-amber-900 font-extrabold rounded px-0.5">{part}</mark>
+          ) : (
+            part
+          )
+        )}
+      </span>
+    );
+  };
+
+  // Mock Reviews
+  const getMockReviews = (merchantName: string) => [
+    { name: "Budi Santoso", initial: "B", rating: 5, date: "2 hari lalu", text: `Pesanan katering di ${merchantName} sangat memuaskan. Rasa nasinya gurih, ayam bakarnya bumbu meresap sampai ke dalam!` },
+    { name: "Rina Wijaya", initial: "R", rating: 4, date: "1 minggu lalu", text: "Porsi katering pas, lauk pauk bervariasi dan bersih. Sangat direkomendasikan untuk katering kantor." },
+    { name: "Agus Setiawan", initial: "A", rating: 5, date: "3 minggu lalu", text: "Admin katering sangat ramah. Pengiriman tepat waktu 30 menit sebelum acara dimulai. Top!" }
+  ];
+
   return (
     <div className="flex flex-col h-full bg-[#F7FAF8] relative">
-      <div className="bg-white shrink-0">
+      {/* Top Header & Search Bar */}
+      <div className="bg-white shrink-0 shadow-sm z-10 pb-3">
         <StatusBar />
         <BackHeader title="Catering" onBack={() => navigate("c_home")} />
-        <div className="mx-4 mb-3 flex items-center gap-2 bg-muted px-4 py-3 rounded-2xl">
+        
+        {/* Search Input */}
+        <div className="mx-4 mt-1 flex items-center gap-2 bg-muted px-4 py-2.5 rounded-2xl border border-transparent focus-within:border-primary/20 transition-all">
           <Search size={15} className="text-muted-foreground shrink-0" />
-          <input placeholder="Cari restoran atau menu..." className="flex-1 bg-transparent text-sm outline-none" />
+          <input 
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            placeholder="Cari catering, paket, atau menu..." 
+            className="flex-1 bg-transparent text-xs outline-none text-foreground font-semibold"
+          />
+          {searchQuery && (
+            <button onClick={() => setSearchQuery("")} className="text-muted-foreground hover:text-foreground">
+              <X size={14} />
+            </button>
+          )}
         </div>
-      </div>
-      
-      {/* promo */}
-      <div className="mx-4 mt-3 rounded-2xl bg-gradient-to-r from-orange-500 to-red-500 p-4 flex items-center gap-4 shrink-0">
-        <div>
-          <p className="text-white font-extrabold text-sm">Sistem Booking & PO Catering</p>
-          <p className="text-orange-100 text-[10px] mt-0.5">Diskusikan dengan Admin, kelola pesanan langsung dari Inbox</p>
+
+        {/* Suggestion Chips */}
+        <div className="flex gap-2 overflow-x-auto px-4 mt-2.5" style={{ scrollbarWidth: "none" }}>
+          {suggestions.map(s => (
+            <button 
+              key={s}
+              onClick={() => setSearchQuery(s)}
+              className="shrink-0 text-[10px] font-bold px-3 py-1 bg-muted hover:bg-primary/5 text-muted-foreground hover:text-primary rounded-full transition-all border border-border/40"
+            >
+              🔍 {s}
+            </button>
+          ))}
         </div>
-        <Coffee size={32} className="text-white/80 shrink-0" />
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 pt-3 pb-4 flex flex-col gap-3" style={{ scrollbarWidth: "none" }}>
-        {RESTAURANTS.map(r => (
-          <div 
-            key={r.id} 
-            onClick={() => handleOpenMerchant(r)}
-            className="bg-white rounded-2xl overflow-hidden shadow-sm border border-black/[0.02] hover:border-orange-500/20 transition-all cursor-pointer"
+      {/* Filter and Sort Horizontal Bar */}
+      <div className="bg-white border-b border-border py-2 px-4 flex gap-2 overflow-x-auto shrink-0 z-10" style={{ scrollbarWidth: "none" }}>
+        {/* Categories */}
+        {["Semua", "Nasi Box", "Tumpeng", "Snack Box", "Bento"].map(cat => (
+          <button
+            key={cat}
+            onClick={() => setSelectedCategory(cat)}
+            className={`shrink-0 text-[10px] font-extrabold px-3 py-1.5 rounded-xl transition-all ${selectedCategory === cat ? "bg-primary text-white shadow-sm" : "bg-muted text-muted-foreground hover:bg-slate-100"}`}
           >
-            <div className="relative h-32">
-              <img src={r.img} alt={r.name} className="w-full h-full object-cover bg-muted" />
-              <span className={`absolute top-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded-full ${r.open ? "bg-green-500 text-white" : "bg-gray-500 text-white"}`}>
-                {r.open ? "● Buka" : "● Tutup"}
-              </span>
-            </div>
-            <div className="p-4">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h4 className="font-bold text-foreground text-sm">{r.name}</h4>
-                  <p className="text-muted-foreground text-xs mt-0.5">{r.cuisine}</p>
-                </div>
-                <Stars rating={r.rating} />
-              </div>
-              <div className="flex items-center gap-2 mt-2 flex-wrap">
-                {r.tags.map(t => <Pill key={t} color="orange">{t}</Pill>)}
-                <Pill color="gray">📍 {r.distance}</Pill>
-                <Pill color="gray">Min {rp(r.minOrder)}</Pill>
-              </div>
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleOpenMerchant(r);
-                }}
-                className={`w-full mt-3 py-2.5 rounded-xl text-sm font-bold cursor-pointer transition-all ${r.open ? "bg-primary text-white hover:bg-primary-dark" : "bg-muted text-muted-foreground cursor-not-allowed"}`}
-              >
-                {r.open ? "Pesan / Booking PO" : "Sedang Tutup"}
-              </button>
-            </div>
-          </div>
+            {cat}
+          </button>
+        ))}
+
+        <div className="w-px bg-border my-1 mx-1 shrink-0" />
+
+        {/* Sorting selection */}
+        {[
+          { label: "📍 Terdekat", val: "distance" },
+          { label: "⭐ Rating Terbaik", val: "rating" },
+          { label: "💸 Termurah", val: "price-asc" },
+          { label: "📈 Termahal", val: "price-desc" }
+        ].map(opt => (
+          <button
+            key={opt.val}
+            onClick={() => setSortOption(sortOption === opt.val ? "default" : opt.val)}
+            className={`shrink-0 text-[10px] font-bold px-3 py-1.5 rounded-xl transition-all border ${sortOption === opt.val ? "bg-primary/10 border-primary text-primary" : "bg-white border-border text-muted-foreground"}`}
+          >
+            {opt.label}
+          </button>
         ))}
       </div>
 
-      {/* Catering Merchant Popup Modal */}
+      {/* List / Skeleton Loading Container */}
+      <div className="flex-1 overflow-y-auto px-4 pt-3 pb-4 flex flex-col gap-3" style={{ scrollbarWidth: "none" }}>
+        
+        {isLoading ? (
+          /* Skeleton Loader layout */
+          Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="bg-white rounded-2xl overflow-hidden shadow-sm border border-border animate-pulse">
+              <div className="h-36 bg-gray-200" />
+              <div className="p-4 flex flex-col gap-2">
+                <div className="h-4 bg-gray-200 rounded w-2/3" />
+                <div className="h-3 bg-gray-200 rounded w-1/2" />
+                <div className="flex gap-2 mt-2">
+                  <div className="h-4 bg-gray-200 rounded w-16" />
+                  <div className="h-4 bg-gray-200 rounded w-16" />
+                </div>
+                <div className="h-9 bg-gray-200 rounded-xl mt-2" />
+              </div>
+            </div>
+          ))
+        ) : sortedRestaurants.length === 0 ? (
+          /* Empty State Gojek/Grab Level */
+          <div className="flex flex-col items-center justify-center text-center py-16 px-6 gap-4">
+            <div className="w-20 h-20 bg-orange-100/50 rounded-full flex items-center justify-center text-orange-500 shadow-inner">
+              <Search size={36} />
+            </div>
+            <div>
+              <h3 className="font-extrabold text-sm text-foreground">Yah, Catering Tidak Ditemukan</h3>
+              <p className="text-xs text-muted-foreground mt-1 max-w-xs leading-relaxed">
+                Kami tidak menemukan catering "{searchQuery}" di wilayah Kamojang. Coba cari dengan kata kunci lain atau gunakan kategori di atas.
+              </p>
+            </div>
+            <button 
+              onClick={() => {
+                setSearchQuery("");
+                setSelectedCategory("Semua");
+                setSortOption("default");
+              }}
+              className="px-5 py-2.5 bg-primary text-white font-bold text-xs rounded-xl shadow-md hover:bg-primary-dark transition-all cursor-pointer"
+            >
+              Reset Pencarian
+            </button>
+          </div>
+        ) : (
+          /* Render sorted & filtered results */
+          sortedRestaurants.map(r => {
+            const hasPromo = r.tags.includes("Promo") || r.tags.includes("Best Seller") || r.id % 3 === 0;
+            return (
+              <div 
+                key={r.id} 
+                onClick={() => handleOpenMerchant(r)}
+                className="bg-white rounded-2xl overflow-hidden shadow-sm border border-black/[0.02] hover:border-primary/20 hover:shadow-md transition-all cursor-pointer"
+              >
+                {/* Image layout 16:9 */}
+                <div className="relative h-36 bg-muted shrink-0">
+                  <img src={r.img} alt={r.name} className="w-full h-full object-cover" />
+                  <span className={`absolute top-3 left-3 text-[9px] font-extrabold px-2.5 py-1 rounded-full shadow-sm text-white ${r.open ? "bg-green-600" : "bg-gray-500"}`}>
+                    {r.open ? "● Buka" : "● Tutup"}
+                  </span>
+                  {hasPromo && (
+                    <span className="absolute top-3 right-3 text-[9px] font-black px-2.5 py-1 rounded-full shadow-sm bg-gradient-to-r from-orange-500 to-red-500 text-white uppercase tracking-wider">
+                      Promo PO 20%
+                    </span>
+                  )}
+                </div>
+                <div className="p-4">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <h4 className="font-extrabold text-foreground text-sm leading-snug">
+                        {highlightText(r.name, searchQuery)}
+                      </h4>
+                      <p className="text-muted-foreground text-xs mt-0.5">{r.cuisine}</p>
+                    </div>
+                    <div className="flex items-center gap-1 bg-amber-50 text-amber-700 border border-amber-200/50 px-2 py-0.5 rounded-lg text-xs font-bold whitespace-nowrap">
+                      ★ {r.rating}
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-2 mt-3 flex-wrap">
+                    {r.tags.map(t => <Pill key={t} color={t === "Promo" ? "orange" : "green"}>{t}</Pill>)}
+                    <Pill color="gray">📍 {r.distance} km</Pill>
+                    <Pill color="gray">Min {rp(r.minOrder)}</Pill>
+                  </div>
+
+                  <div className="flex justify-between items-center mt-4 pt-3 border-t border-border/60">
+                    <div>
+                      <p className="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">Mulai Dari</p>
+                      <p className="text-primary font-black text-sm">{rp(r.priceStarts)} <span className="text-muted-foreground text-[9px] font-medium">/ pax</span></p>
+                    </div>
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpenMerchant(r);
+                      }}
+                      className={`px-4 py-2.5 rounded-xl text-xs font-bold cursor-pointer transition-all shadow-sm ${r.open ? "bg-primary text-white hover:bg-primary-dark" : "bg-muted text-muted-foreground cursor-not-allowed"}`}
+                    >
+                      Pesan Sekarang
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Catering Merchant Popup Modal (Slide Up) */}
       {selectedMerchant && (() => {
         const packages = CATERING_PACKAGES[selectedMerchant.id] || [];
-        const isTumpeng = selectedPackage?.id === 202;
+        const isTumpeng = selectedPackage?.cat === "Tumpeng";
         return (
           <div className="absolute inset-0 bg-black/60 z-50 flex flex-col justify-end">
             <style>{`
@@ -1454,142 +1756,210 @@ function CateringScreen({
               }
             `}</style>
             <div className="flex-1" onClick={() => setSelectedMerchant(null)} />
-            <div className="bg-white rounded-t-[28px] max-h-[85%] flex flex-col overflow-hidden shadow-2xl relative animate-slide-up">
+            <div className="bg-white rounded-t-[28px] max-h-[88%] flex flex-col overflow-hidden shadow-2xl relative animate-slide-up">
               
               {/* Header Modal */}
-              <div className="p-4 border-b border-border flex items-center justify-between shrink-0 bg-white">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">🍱</span>
+              <div className="p-4 border-b border-border flex items-center justify-between shrink-0 bg-white shadow-sm z-10">
+                <div className="flex items-center gap-2.5">
+                  <span className="text-xl">🍱</span>
                   <div>
-                    <h3 className="text-sm font-extrabold text-foreground leading-tight">{selectedMerchant.name}</h3>
-                    <p className="text-[10px] text-muted-foreground font-semibold">Pre-Order & Booking Catering</p>
+                    <h3 className="text-xs font-black text-foreground leading-tight">{selectedMerchant.name}</h3>
+                    <p className="text-[9px] text-muted-foreground font-semibold">Detail PO & Booking Catering</p>
                   </div>
                 </div>
                 <button 
                   onClick={() => setSelectedMerchant(null)} 
-                  className="w-7 h-7 rounded-full bg-muted flex items-center justify-center text-muted-foreground cursor-pointer"
+                  className="w-7 h-7 rounded-full bg-muted flex items-center justify-center text-muted-foreground cursor-pointer hover:bg-gray-200"
                 >
                   <X size={14} />
                 </button>
               </div>
 
+              {/* Tabs selector */}
+              <div className="flex border-b border-border shrink-0 bg-white z-10">
+                {[
+                  { label: "Menu Katering", val: "menu" },
+                  { label: "Ulasan Komunitas", val: "review" },
+                  { label: "Informasi Toko", val: "info" }
+                ].map(t => (
+                  <button
+                    key={t.val}
+                    onClick={() => setActiveTab(t.val as any)}
+                    className={`flex-1 py-3 text-center text-xs font-bold border-b-2 transition-all cursor-pointer ${activeTab === t.val ? "border-primary text-primary font-black" : "border-transparent text-muted-foreground"}`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+
               {/* Scrollable Modal Content */}
               <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4" style={{ scrollbarWidth: "none" }}>
                 
-                {/* Store Profile Intro */}
-                <div className="flex gap-3 items-center bg-slate-50 border border-slate-100 p-3 rounded-2xl">
-                  <img src={selectedMerchant.img} alt={selectedMerchant.name} className="w-12 h-12 rounded-xl object-cover shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-bold text-foreground leading-normal truncate">{selectedMerchant.name}</p>
-                    <p className="text-[9px] text-muted-foreground truncate leading-tight">{selectedMerchant.cuisine} · {selectedMerchant.distance}</p>
-                    <div className="flex items-center gap-1.5 mt-0.5">
-                      <span className="bg-amber-50 text-amber-700 text-[8px] font-black border border-amber-200 px-1 py-0.2 rounded-full whitespace-nowrap">
-                        ★ {selectedMerchant.rating}
-                      </span>
-                      <span className="text-[8px] text-muted-foreground font-semibold">Mitra Resmi Rangers</span>
+                {activeTab === "menu" && (
+                  /* TAB 1: MENU PACKAGES */
+                  <div className="flex flex-col gap-3">
+                    <div className="flex justify-between items-center mb-1">
+                      <h4 className="text-xs font-bold text-foreground">Daftar Paket Menu PO</h4>
+                      <span className="text-[10px] text-muted-foreground font-medium">{packages.length} paket tersedia</span>
                     </div>
-                  </div>
-                </div>
 
-                {/* Section 1: Packages List */}
-                <div className="flex flex-col gap-2">
-                  <h4 className="text-xs font-bold text-foreground">Pilih Paket Catering</h4>
-                  <div className="flex flex-col gap-2">
-                    {packages.map(p => {
-                      const isSelected = selectedPackage?.id === p.id;
-                      return (
-                        <div 
-                          key={p.id}
-                          onClick={() => {
-                            setSelectedPackage(p);
-                            if (p.id === 202) {
-                              setPaxCount(1);
-                            } else {
-                              setPaxCount(10);
-                            }
-                          }}
-                          className={`flex gap-3 p-3 rounded-xl border-2 transition-all cursor-pointer ${isSelected ? "border-primary bg-primary/[0.02]" : "border-border hover:bg-slate-50"}`}
-                        >
-                          <img src={p.img} alt={p.name} className="w-14 h-14 rounded-lg object-cover bg-muted shrink-0" />
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between">
-                              <p className="text-xs font-bold text-foreground leading-tight truncate">{p.name}</p>
-                              {isSelected && <Check size={12} className="text-primary shrink-0 ml-1 mt-0.5" />}
+                    <div className="flex flex-col gap-2.5">
+                      {packages.map(p => {
+                        const isSelected = selectedPackage?.id === p.id;
+                        return (
+                          <div 
+                            key={p.id}
+                            onClick={() => {
+                              setSelectedPackage(p);
+                              if (p.cat === "Tumpeng") {
+                                setPaxCount(1);
+                              } else {
+                                setPaxCount(10);
+                              }
+                            }}
+                            className={`flex gap-3 p-3 rounded-2xl border-2 transition-all cursor-pointer bg-white ${isSelected ? "border-primary shadow-sm ring-1 ring-primary/10" : "border-border hover:bg-slate-50"}`}
+                          >
+                            <img src={p.img} alt={p.name} className="w-16 h-16 rounded-xl object-cover bg-muted shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between gap-1">
+                                <p className="text-xs font-extrabold text-foreground leading-tight truncate">{p.name}</p>
+                                {isSelected && <span className="bg-primary text-white text-[8px] font-black px-1.5 py-0.5 rounded-full shrink-0 uppercase">Pilihan</span>}
+                              </div>
+                              <p className="text-[10px] text-muted-foreground leading-relaxed mt-1 line-clamp-2">{p.desc}</p>
+                              <div className="flex justify-between items-center mt-2">
+                                <span className="text-[8px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full uppercase tracking-wider">{p.cat}</span>
+                                <p className="text-primary font-black text-xs">{rp(p.price)} <span className="text-muted-foreground text-[8px] font-medium">{p.cat === "Tumpeng" ? "/ unit" : "/ pax"}</span></p>
+                              </div>
                             </div>
-                            <p className="text-[10px] text-muted-foreground leading-snug mt-0.5 line-clamp-2">{p.desc}</p>
-                            <p className="text-primary font-extrabold text-xs mt-1.5">{rp(p.price)} <span className="text-muted-foreground text-[9px] font-medium">{p.id === 202 ? "/ unit" : "/ pax"}</span></p>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Pre-Order Configuration Panel inside Modal */}
+                    {selectedPackage && (
+                      <div className="mt-4 bg-slate-50 border border-slate-100 p-4 rounded-2xl flex flex-col gap-4">
+                        <h4 className="text-xs font-black text-foreground border-b border-border pb-2 -mt-1">Kustomisasi Pre-Order (PO)</h4>
+                        
+                        {/* Portion Counter */}
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-xs font-bold text-foreground">{isTumpeng ? "Jumlah Unit" : "Jumlah Pax (Porsi)"}</p>
+                            <p className="text-[9px] text-muted-foreground mt-0.5">{isTumpeng ? "Minimal pemesanan 1 unit" : "Minimal pemesanan katering box 10 porsi"}</p>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <button 
+                              onClick={() => setPaxCount(prev => Math.max(isTumpeng ? 1 : 10, prev - (isTumpeng ? 1 : 5)))}
+                              className="w-8 h-8 rounded-lg bg-white border border-border flex items-center justify-center text-foreground hover:bg-slate-100 cursor-pointer shadow-sm active:scale-95 transition-transform"
+                            >
+                              <Minus size={13} />
+                            </button>
+                            <span className="text-xs font-extrabold text-foreground w-8 text-center">{paxCount}</span>
+                            <button 
+                              onClick={() => setPaxCount(prev => prev + (isTumpeng ? 1 : 5))}
+                              className="w-8 h-8 rounded-lg bg-white border border-border flex items-center justify-center text-foreground hover:bg-slate-100 cursor-pointer shadow-sm active:scale-95 transition-transform"
+                            >
+                              <Plus size={13} />
+                            </button>
                           </div>
                         </div>
-                      );
-                    })}
+
+                        {/* Native date picker with H-1 validation */}
+                        <div className="flex flex-col gap-1.5">
+                          <div className="flex justify-between items-center">
+                            <p className="text-xs font-bold text-foreground">Pilih Hari Pengiriman</p>
+                            <span className="text-[9px] text-red-500 font-bold">*Min. H-1</span>
+                          </div>
+                          <input 
+                            type="date"
+                            min={getTomorrowString()}
+                            value={bookingDate}
+                            onChange={e => setBookingDate(e.target.value)}
+                            className="w-full px-3 py-2.5 bg-white border border-border rounded-xl text-xs outline-none focus:ring-2 focus:ring-primary/20 transition-all font-semibold text-foreground cursor-pointer"
+                          />
+                        </div>
+
+                        {/* Catatan */}
+                        <div className="flex flex-col gap-1.5">
+                          <p className="text-xs font-bold text-foreground">Catatan untuk Penjual</p>
+                          <input 
+                            value={note}
+                            onChange={e => setNote(e.target.value)}
+                            placeholder="Contoh: Minta sendok plastik, sambal dipisah, dll."
+                            className="w-full px-3 py-2.5 bg-white border border-border rounded-xl text-xs outline-none focus:ring-2 focus:ring-primary/20 transition-all font-semibold"
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
-                </div>
+                )}
 
-                {/* Section 2: PO Configuration */}
-                {selectedPackage && (
-                  <div className="flex flex-col gap-3.5 bg-slate-50 border border-slate-100 p-4 rounded-2xl">
-                    <h4 className="text-xs font-bold text-foreground border-b border-border pb-1.5 -mt-1">Pengaturan Pre-Order (PO)</h4>
-                    
-                    {/* Portion Pax Count */}
-                    <div className="flex items-center justify-between">
+                {activeTab === "review" && (
+                  /* TAB 2: REVIEWS */
+                  <div className="flex flex-col gap-3">
+                    <h4 className="text-xs font-bold text-foreground mb-1">Ulasan Pelanggan</h4>
+                    <div className="flex flex-col gap-2.5">
+                      {getMockReviews(selectedMerchant.name).map((rev, idx) => (
+                        <div key={idx} className="bg-slate-50 border border-slate-100 rounded-2xl p-3.5 flex flex-col gap-2 shadow-sm">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <div className="w-6 h-6 rounded-full bg-primary/10 text-primary text-[10px] font-black flex items-center justify-center uppercase">
+                                {rev.initial}
+                              </div>
+                              <span className="text-[11px] font-extrabold text-foreground">{rev.name}</span>
+                            </div>
+                            <span className="text-[9px] text-muted-foreground font-semibold">{rev.date}</span>
+                          </div>
+                          <div className="flex gap-0.5">
+                            {Array.from({ length: rev.rating }).map((_, i) => (
+                              <Star key={i} size={10} className="fill-amber-400 text-amber-400" />
+                            ))}
+                          </div>
+                          <p className="text-[10px] font-medium text-foreground leading-relaxed">"{rev.text}"</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === "info" && (
+                  /* TAB 3: MERCHANT INFO */
+                  <div className="flex flex-col gap-3.5">
+                    <h4 className="text-xs font-bold text-foreground">Informasi Toko</h4>
+                    <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 flex flex-col gap-3">
                       <div>
-                        <p className="text-xs font-bold text-foreground">{isTumpeng ? "Jumlah Unit" : "Jumlah Pax (Porsi)"}</p>
-                        <p className="text-[9px] text-muted-foreground mt-0.5">{isTumpeng ? "Min. order 1 unit" : "Min. order 10 pax untuk katering box"}</p>
+                        <p className="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">Cuisine & Kategori</p>
+                        <p className="text-xs font-bold text-foreground mt-0.5">{selectedMerchant.cuisine}</p>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <button 
-                          onClick={() => setPaxCount(prev => Math.max(isTumpeng ? 1 : 10, prev - (isTumpeng ? 1 : 5)))}
-                          className="w-8 h-8 rounded-lg bg-white border border-border flex items-center justify-center text-foreground hover:bg-slate-100 cursor-pointer shadow-sm"
-                        >
-                          <Minus size={13} />
-                        </button>
-                        <span className="text-xs font-extrabold text-foreground w-8 text-center">{paxCount}</span>
-                        <button 
-                          onClick={() => setPaxCount(prev => prev + (isTumpeng ? 1 : 5))}
-                          className="w-8 h-8 rounded-lg bg-white border border-border flex items-center justify-center text-foreground hover:bg-slate-100 cursor-pointer shadow-sm"
-                        >
-                          <Plus size={13} />
-                        </button>
+                      <div>
+                        <p className="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">Jarak dari Lokasi Anda</p>
+                        <p className="text-xs font-bold text-foreground mt-0.5">📍 {selectedMerchant.distance} km</p>
                       </div>
-                    </div>
-
-                    {/* Delivery Date selection */}
-                    <div className="flex flex-col gap-1.5">
-                      <p className="text-xs font-bold text-foreground">Pilih Hari Pengiriman</p>
-                      <div className="flex gap-2">
-                        {["Besok (H+1)", "Lusa (H+2)", "Minggu Depan (H+7)"].map(d => (
-                          <button 
-                            key={d} 
-                            onClick={() => setBookingDate(d)}
-                            className={`flex-1 py-2 text-[10px] font-bold rounded-xl border transition-all cursor-pointer ${bookingDate === d ? "bg-primary text-white border-primary shadow-sm" : "bg-white text-muted-foreground border-border hover:bg-slate-100"}`}
-                          >
-                            {d}
-                          </button>
-                        ))}
+                      <div>
+                        <p className="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">Minimum Pembelian</p>
+                        <p className="text-xs font-bold text-foreground mt-0.5">{rp(selectedMerchant.minOrder)}</p>
+                      </div>
+                      <div>
+                        <p className="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">Jam Operasional</p>
+                        <p className="text-xs font-bold text-foreground mt-0.5">⏰ 08:00 - 19:00 WIB</p>
+                      </div>
+                      <div>
+                        <p className="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">Deskripsi Layanan</p>
+                        <p className="text-xs font-medium text-foreground leading-relaxed mt-0.5">
+                          Menyediakan aneka sajian katering sehat dan bersih yang diolah secara higienis oleh chef berpengalaman di Kamojang. Cocok untuk hidangan syukuran, rapat kantor, gathering komunitas, maupun konsumsi harian keluarga.
+                        </p>
                       </div>
                     </div>
-
-                    {/* Notes for Merchant */}
-                    <div className="flex flex-col gap-1">
-                      <p className="text-xs font-bold text-foreground">Catatan Tambahan</p>
-                      <input 
-                        value={note}
-                        onChange={e => setNote(e.target.value)}
-                        placeholder="Contoh: Sambal pisah / tambah sendok / jam antar"
-                        className="w-full px-3 py-2 bg-white border border-border rounded-xl text-xs outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium"
-                      />
-                    </div>
-
                   </div>
                 )}
 
               </div>
 
               {/* Modal Sticky Footer */}
-              {selectedPackage && (
-                <div className="p-4 border-t border-border bg-white flex items-center justify-between gap-3 shrink-0 shadow-[0_-4px_16px_rgba(0,0,0,0.03)]">
+              {selectedPackage && activeTab === "menu" && (
+                <div className="p-4 border-t border-border bg-white flex items-center justify-between gap-3 shrink-0 shadow-[0_-4px_16px_rgba(0,0,0,0.03)] z-10">
                   <div>
-                    <p className="text-[8px] text-muted-foreground font-bold uppercase tracking-wider">Estimasi Harga PO</p>
+                    <p className="text-[8px] text-muted-foreground font-bold uppercase tracking-wider">Total Pembayaran PO</p>
                     <p className="text-base font-black text-primary leading-tight mt-0.5">{rp(selectedPackage.price * paxCount)}</p>
                   </div>
                   <div className="flex-1 flex gap-2">
@@ -1601,14 +1971,147 @@ function CateringScreen({
                       <span>Chat Admin</span>
                     </button>
                     <button 
-                      onClick={handlePesanPO}
-                      className="flex-1 py-3 bg-primary hover:bg-primary/95 text-white font-bold text-xs rounded-xl shadow-md cursor-pointer flex items-center justify-center gap-1.5"
+                      onClick={validateAndTriggerPO}
+                      className="flex-1 py-3 bg-primary hover:bg-primary/95 text-white font-bold text-xs rounded-xl shadow-md cursor-pointer flex items-center justify-center gap-1.5 transition-colors"
                     >
                       <span>Pesan Sekarang (PO)</span>
                     </button>
                   </div>
                 </div>
               )}
+
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Down Payment Option Dialog (Popup Modal) */}
+      {showPaymentDialog && selectedMerchant && selectedPackage && (() => {
+        const totalPrice = selectedPackage.price * paxCount;
+        return (
+          <div className="absolute inset-0 bg-black/70 z-50 flex items-center justify-center p-5">
+            <div className="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl border border-border relative flex flex-col max-h-[85%]">
+              
+              <div className="p-4 border-b border-border flex items-center justify-between shrink-0 bg-slate-50">
+                <span className="text-xs font-black text-foreground">Metode Pembayaran PO</span>
+                <button 
+                  onClick={() => setShowPaymentDialog(false)}
+                  className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-muted-foreground cursor-pointer"
+                >
+                  <X size={12} />
+                </button>
+              </div>
+
+              <div className="p-5 overflow-y-auto flex-1 flex flex-col gap-4" style={{ scrollbarWidth: "none" }}>
+                
+                {/* Order Summary box */}
+                <div className="bg-slate-50 border border-slate-100 p-3 rounded-2xl flex flex-col gap-1.5">
+                  <div className="flex justify-between items-center text-[10px] text-muted-foreground font-bold">
+                    <span>Menu Paket PO</span>
+                    <span>Qty / Porsi</span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs text-foreground font-extrabold border-b border-dashed border-border pb-2 mb-1.5">
+                    <span className="truncate pr-4">{selectedPackage.name}</span>
+                    <span className="shrink-0">{paxCount} {selectedPackage.cat === "Tumpeng" ? "Unit" : "Pax"}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs text-foreground font-bold">
+                    <span>Total Harga PO</span>
+                    <span className="text-primary font-black text-sm">{rp(totalPrice)}</span>
+                  </div>
+                </div>
+
+                {/* DP Choices Option */}
+                <div className="flex flex-col gap-2.5">
+                  <p className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wide">Pilih Opsi Pembayaran</p>
+                  
+                  {/* Option 1: Bayar Full */}
+                  <div 
+                    onClick={() => setPaymentOption("full")}
+                    className={`p-3.5 rounded-2xl border-2 transition-all cursor-pointer flex items-center gap-3 bg-white ${paymentOption === "full" ? "border-primary bg-primary/[0.02]" : "border-border hover:bg-slate-50"}`}
+                  >
+                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${paymentOption === "full" ? "border-primary" : "border-gray-300"}`}>
+                      {paymentOption === "full" && <div className="w-2 h-2 rounded-full bg-primary" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-extrabold text-foreground">Bayar Lunas (100%)</p>
+                      <p className="text-[9px] text-muted-foreground mt-0.5">Dapatkan garansi prioritas pengantaran.</p>
+                      <p className="text-primary font-extrabold text-xs mt-1">{rp(totalPrice)}</p>
+                    </div>
+                  </div>
+
+                  {/* Option 2: DP 30% */}
+                  <div 
+                    onClick={() => setPaymentOption("dp30")}
+                    className={`p-3.5 rounded-2xl border-2 transition-all cursor-pointer flex items-center gap-3 bg-white ${paymentOption === "dp30" ? "border-primary bg-primary/[0.02]" : "border-border hover:bg-slate-50"}`}
+                  >
+                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${paymentOption === "dp30" ? "border-primary" : "border-gray-300"}`}>
+                      {paymentOption === "dp30" && <div className="w-2 h-2 rounded-full bg-primary" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-center gap-2">
+                        <p className="text-xs font-extrabold text-foreground">Bayar DP 30%</p>
+                        <span className="bg-amber-100 text-amber-700 text-[8px] font-black px-1.5 py-0.5 rounded-md uppercase">DP</span>
+                      </div>
+                      <p className="text-[9px] text-muted-foreground mt-0.5">Sisa pelunasan dibayar paling lambat H-1.</p>
+                      <div className="flex justify-between items-center mt-1 flex-wrap gap-1">
+                        <p className="text-primary font-extrabold text-xs">DP: {rp(Math.round(totalPrice * 0.3))}</p>
+                        <p className="text-muted-foreground text-[9px] font-semibold">Sisa: {rp(totalPrice - Math.round(totalPrice * 0.3))}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Option 3: DP 50% */}
+                  <div 
+                    onClick={() => setPaymentOption("dp50")}
+                    className={`p-3.5 rounded-2xl border-2 transition-all cursor-pointer flex items-center gap-3 bg-white ${paymentOption === "dp50" ? "border-primary bg-primary/[0.02]" : "border-border hover:bg-slate-50"}`}
+                  >
+                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${paymentOption === "dp50" ? "border-primary" : "border-gray-300"}`}>
+                      {paymentOption === "dp50" && <div className="w-2 h-2 rounded-full bg-primary" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-center gap-2">
+                        <p className="text-xs font-extrabold text-foreground">Bayar DP 50%</p>
+                        <span className="bg-amber-100 text-amber-700 text-[8px] font-black px-1.5 py-0.5 rounded-md uppercase">DP</span>
+                      </div>
+                      <p className="text-[9px] text-muted-foreground mt-0.5">Sisa pelunasan dibayar paling lambat H-1.</p>
+                      <div className="flex justify-between items-center mt-1 flex-wrap gap-1">
+                        <p className="text-primary font-extrabold text-xs">DP: {rp(Math.round(totalPrice * 0.5))}</p>
+                        <p className="text-muted-foreground text-[9px] font-semibold">Sisa: {rp(totalPrice - Math.round(totalPrice * 0.5))}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+
+                {/* Dompet Rangers Wallet Info */}
+                <div className="bg-slate-100 border border-slate-200/50 p-3 rounded-2xl flex items-center justify-between mt-1 shrink-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm">🪙</span>
+                    <div className="text-[10px]">
+                      <p className="font-extrabold text-foreground">Dompet Rangers</p>
+                      <p className="text-muted-foreground">Saldo Anda</p>
+                    </div>
+                  </div>
+                  <span className="text-xs font-black text-primary">{rp(dompetBalance)}</span>
+                </div>
+
+              </div>
+
+              {/* Action Buttons */}
+              <div className="p-4 border-t border-border bg-white flex gap-2.5 shrink-0 shadow-[0_-4px_16px_rgba(0,0,0,0.02)]">
+                <button 
+                  onClick={() => setShowPaymentDialog(false)}
+                  className="flex-1 py-3 border border-border text-muted-foreground font-bold text-xs rounded-xl cursor-pointer hover:bg-slate-50 text-center"
+                >
+                  Kembali
+                </button>
+                <button 
+                  onClick={handleConfirmPO}
+                  className="flex-[2] py-3 bg-primary hover:bg-primary/95 text-white font-extrabold text-xs rounded-xl shadow-md cursor-pointer text-center"
+                >
+                  Bayar & Buat PO
+                </button>
+              </div>
 
             </div>
           </div>
@@ -3044,18 +3547,58 @@ const statusColor: Record<string, string> = {
 function PesananScreen({ 
   navigate, 
   myOrders, 
-  setActiveTrackingOrderId 
+  setMyOrders,
+  setActiveTrackingOrderId,
+  dompetBalance,
+  setDompetBalance,
+  showToast
 }: Nav & { 
   myOrders: any[]; 
+  setMyOrders: React.Dispatch<React.SetStateAction<any[]>>;
   setActiveTrackingOrderId: (id: string | null) => void; 
+  dompetBalance: number;
+  setDompetBalance: React.Dispatch<React.SetStateAction<number>>;
+  showToast: (m: string) => void;
 }) {
   const [tab, setTab] = useState(0);
   const tabs = ["Aktif", "Selesai", "Dibatalkan"];
   const filtered = [
-    myOrders.filter(o => o.status === "Dikirim" || o.status === "Diproses" || o.status === "Aktif"),
+    myOrders.filter(o => o.status === "Dikirim" || o.status === "Diproses" || o.status === "Aktif" || o.status === "Menunggu Pelunasan"),
     myOrders.filter(o => o.status === "Selesai"),
     [],
   ][tab];
+
+  const handleLunasi = (order: any) => {
+    const sisa = order.sisaAmount;
+    if (dompetBalance < sisa) {
+      showToast("Saldo Dompet Rangers tidak mencukupi untuk pelunasan!");
+      return;
+    }
+
+    const confirm = window.confirm(`Apakah Anda yakin ingin melunasi sisa pembayaran sebesar ${rp(sisa)} untuk ${order.item} menggunakan Dompet Rangers?`);
+    if (!confirm) return;
+
+    setDompetBalance(prev => prev - sisa);
+    setMyOrders(prev => prev.map(o => {
+      if (o.id === order.id) {
+        return {
+          ...o,
+          status: "Diproses",
+          statusColor: "orange",
+          sisaAmount: 0,
+          paymentType: "Full",
+          paymentHistory: [
+            ...o.paymentHistory,
+            { label: "Pelunasan PO", amount: sisa, date: "Hari Ini", method: "Dompet Rangers" }
+          ]
+        };
+      }
+      return o;
+    }));
+
+    showToast("Pelunasan PO Katering berhasil!");
+  };
+
   return (
     <div className="flex flex-col h-full bg-[#F7FAF8]">
       <div className="bg-white shrink-0">
@@ -3098,6 +3641,42 @@ function PesananScreen({
                       <p className="text-muted-foreground text-xs">{o.detail}</p>
                     </div>
                   </div>
+
+                  {/* Payment History and Installment timeline */}
+                  {o.paymentHistory && o.paymentHistory.length > 0 && (
+                    <div className="mt-3 bg-slate-50 rounded-xl p-3 border border-slate-100 flex flex-col gap-1.5">
+                      <p className="text-[9px] font-extrabold text-muted-foreground uppercase tracking-wide">Riwayat Pembayaran PO</p>
+                      {o.paymentHistory.map((h: any, idx: number) => (
+                        <div key={idx} className="flex justify-between items-center text-[10px] text-foreground font-semibold">
+                          <span className="text-muted-foreground">✓ {h.label} ({h.method})</span>
+                          <span className="text-primary font-bold">{rp(h.amount)}</span>
+                        </div>
+                      ))}
+                      {o.sisaAmount > 0 && (
+                        <div className="flex justify-between items-center text-[10px] text-amber-700 font-bold border-t border-dashed border-border pt-1.5 mt-1">
+                          <span>○ Sisa Pembayaran PO</span>
+                          <span>{rp(o.sisaAmount)}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Down Payment (DP) warning banner & payment trigger */}
+                  {o.status === "Menunggu Pelunasan" && (
+                    <div className="mt-3 bg-amber-50 border border-amber-200 rounded-xl p-3 flex flex-col gap-2">
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-amber-800 font-bold">⚠️ Menunggu Pelunasan PO</span>
+                        <span className="text-amber-900 font-extrabold">{rp(o.sisaAmount)}</span>
+                      </div>
+                      <button 
+                        onClick={() => handleLunasi(o)}
+                        className="w-full py-2 bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-xs rounded-xl shadow-md cursor-pointer text-center"
+                      >
+                        Lunasi Sekarang
+                      </button>
+                    </div>
+                  )}
+
                   <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
                     <div>
                       <p className="text-[10px] text-muted-foreground">{o.date}</p>
@@ -5704,7 +6283,17 @@ export default function App() {
     // Customer tabs
     if (screen === "c_home") return <CustomerHome navigate={navigate} dompetBalance={dompetBalance} addToCart={addToCart} setMarketplaceSearch={setMarketplaceSearch} />;
     if (screen === "c_jelajah") return <JelajahScreen navigate={navigate} />;
-    if (screen === "c_pesanan") return <PesananScreen navigate={navigate} myOrders={myOrders} setActiveTrackingOrderId={setActiveTrackingOrderId} />;
+    if (screen === "c_pesanan") return (
+      <PesananScreen 
+        navigate={navigate} 
+        myOrders={myOrders} 
+        setMyOrders={setMyOrders}
+        setActiveTrackingOrderId={setActiveTrackingOrderId}
+        dompetBalance={dompetBalance}
+        setDompetBalance={setDompetBalance}
+        showToast={showToast}
+      />
+    );
     if (screen === "c_inbox") return (
       <InboxScreen 
         navigate={navigate} 
