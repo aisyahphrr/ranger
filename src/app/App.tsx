@@ -29,7 +29,10 @@ type Role = "customer" | "driver";
 type Nav = { navigate: (s: Screen) => void };
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
-const rp = (n: number) => "Rp " + n.toLocaleString("id-ID");
+const rp = (n: any) => {
+  if (n === undefined || n === null || isNaN(Number(n))) return "Rp 0";
+  return "Rp " + Number(n).toLocaleString("id-ID");
+};
 const uImg = (id: string, w = 400, h = 300) =>
   `https://images.unsplash.com/photo-${id}?w=${w}&h=${h}&fit=crop&auto=format&q=80`;
 
@@ -43,9 +46,17 @@ const PRODUCTS = [
   { id: 6, name: "Tas Anyaman Rotan", store: "Kerajinan Asep", price: 75000, rating: 4.8, sold: 63, img: uImg("1547949003-9792a18a2601", 300, 300), liked: false, cat: "Kerajinan" },
 ];
 const RESTAURANTS = [
-  { id: 1, name: "Saung Sunda Asli", cuisine: "Masakan Sunda", rating: 4.9, distance: "0.3 km", minOrder: 25000, img: uImg("1555939594-58d7cb561ad1", 400, 220), tags: ["Halal", "Populer"], open: true },
-  { id: 2, name: "Catering Bu Haji Nani", cuisine: "Prasmanan & Nasi Box", rating: 4.7, distance: "1.2 km", minOrder: 50000, img: uImg("1563245372-f21724e3856d", 400, 220), tags: ["Halal", "Min. 10 Pax"], open: true },
-  { id: 3, name: "Dapur Asri Kamojang", cuisine: "Masakan Rumahan", rating: 4.8, distance: "0.8 km", minOrder: 20000, img: uImg("1512621776951-a57141f2eefd", 400, 220), tags: ["Halal", "Sehat"], open: false },
+  { id: 1, name: "Saung Sunda Asli", cuisine: "Masakan Sunda", rating: 4.9, distance: 0.3, minOrder: 25000, img: uImg("1555939594-58d7cb561ad1", 400, 220), tags: ["Halal", "Populer"], open: true, priceStarts: 25000 },
+  { id: 2, name: "Catering Bu Haji Nani", cuisine: "Prasmanan & Nasi Box", rating: 4.7, distance: 1.2, minOrder: 50000, img: uImg("1563245372-f21724e3856d", 400, 220), tags: ["Halal", "Min. 10 Pax"], open: true, priceStarts: 22000 },
+  { id: 3, name: "Dapur Asri Kamojang", cuisine: "Masakan Rumahan", rating: 4.8, distance: 0.8, minOrder: 20000, img: uImg("1512621776951-a57141f2eefd", 400, 220), tags: ["Halal", "Sehat"], open: true, priceStarts: 27500 },
+  { id: 4, name: "Bento Box & Snack Kamojang", cuisine: "Jepang & Snack Box", rating: 4.6, distance: 1.5, minOrder: 30000, img: uImg("1546069901-ba9599a7e63c", 400, 220), tags: ["Halal", "Bento"], open: true, priceStarts: 18000 },
+  { id: 5, name: "Warung Prasmanan Bu Edi", cuisine: "Aneka Nasi Box & Lauk", rating: 4.5, distance: 2.1, minOrder: 40000, img: uImg("1565299624946-b28f40a0ae38", 400, 220), tags: ["Promo", "Murah"], open: true, priceStarts: 15000 },
+  { id: 6, name: "Tumpeng Premium Kamojang", cuisine: "Tumpeng & Prasmanan", rating: 4.9, distance: 0.5, minOrder: 150000, img: uImg("1563245372-f21724e3856d", 400, 220), tags: ["Best Seller", "Premium"], open: true, priceStarts: 450000 },
+  { id: 7, name: "Healthy Diet Catering", cuisine: "Healthy Clean Eating", rating: 4.8, distance: 1.9, minOrder: 35000, img: uImg("1512621776951-a57141f2eefd", 400, 220), tags: ["Organik", "Diet"], open: true, priceStarts: 32000 },
+  { id: 8, name: "Snack Box & Jajanan Bu Tini", cuisine: "Snack & Jajanan Pasar", rating: 4.7, distance: 0.4, minOrder: 15000, img: uImg("1509042239860-f550ce710b93", 400, 220), tags: ["Murah", "Lengkap"], open: true, priceStarts: 10000 },
+  { id: 9, name: "Dapur Mini Nasi Box", cuisine: "Nasi Box Nusantara", rating: 4.4, distance: 2.5, minOrder: 25000, img: uImg("1555939594-58d7cb561ad1", 400, 220), tags: ["Halal"], open: true, priceStarts: 20000 },
+  { id: 10, name: "Catering Nasi Liwet Sunda", cuisine: "Nasi Liwet Sunda", rating: 4.9, distance: 0.9, minOrder: 60000, img: uImg("1563245372-f21724e3856d", 400, 220), tags: ["Tradisional", "Lengkap"], open: true, priceStarts: 35000 },
+  { id: 11, name: "Dapur Selera Kita", cuisine: "Prasmanan & Catering", rating: 4.2, distance: 3.2, minOrder: 50000, img: uImg("1512621776951-a57141f2eefd", 400, 220), tags: ["Halal"], open: false, priceStarts: 25000 }
 ];
 const LAUNDRIES = [
   { id: 1, name: "Laundry Express Pak Dedi", address: "Jl. Raya Kamojang No. 12", price: 6000, rating: 4.8, open: true, distance: "0.5 km", type: "Ekspres", img: uImg("1517677208171-0bc6725a3e60", 400, 300) },
@@ -1277,20 +1288,50 @@ function MarketplaceScreen({
 }
 
 
-const CATERING_PACKAGES: Record<number, { id: number; name: string; desc: string; price: number; img: string }[]> = {
+const CATERING_PACKAGES: Record<number, { id: number; name: string; desc: string; price: number; img: string; cat: "Nasi Box" | "Tumpeng" | "Snack Box" | "Bento" }[]> = {
   1: [
-    { id: 101, name: "Paket A - Timbel Ayam Bakar", desc: "Nasi timbel wangi daun pisang, ayam bakar madu empuk, tahu tempe goreng, lalapan segar & sambal terasi.", price: 25000, img: uImg("1565299624946-b28f40a0ae38", 150, 150) },
-    { id: 102, name: "Paket B - Liwet Kakap Bakar", desc: "Nasi liwet gurih teri pete, kakap bakar bumbu kuning, bakwan jagung, sambal cobek terasi.", price: 35000, img: uImg("1546069901-ba9599a7e63c", 150, 150) },
-    { id: 103, name: "Paket Prasmanan Sunda (Min. 50 Pax)", desc: "Menu prasmanan lengkap (nasi, ayam/daging, sayur sup, karedok, dessert es kelapa muda, air mineral). Free sewa alat.", price: 45000, img: uImg("1563245372-f21724e3856d", 150, 150) },
+    { id: 101, name: "Paket A - Timbel Ayam Bakar", desc: "Nasi timbel wangi daun pisang, ayam bakar madu empuk, tahu tempe goreng, lalapan segar & sambal terasi.", price: 25000, img: uImg("1565299624946-b28f40a0ae38", 150, 150), cat: "Nasi Box" },
+    { id: 102, name: "Paket B - Liwet Kakap Bakar", desc: "Nasi liwet gurih teri pete, kakap bakar bumbu kuning, bakwan jagung, sambal cobek terasi.", price: 35000, img: uImg("1546069901-ba9599a7e63c", 150, 150), cat: "Nasi Box" },
+    { id: 103, name: "Tumpeng Sunda Tampah Premium", desc: "Tumpeng dengan nasi kuning/liwet tampah, ayam bakar 10 potong, urap sayur, tempe oreg, sambal.", price: 450000, img: uImg("1563245372-f21724e3856d", 150, 150), cat: "Tumpeng" },
   ],
   2: [
-    { id: 201, name: "Paket Nasi Box Syukuran", desc: "Nasi kuning wangi, ayam goreng lengkuas, sambal goreng kentang ati, telur balado, kerupuk udang.", price: 30000, img: uImg("1546069901-ba9599a7e63c", 150, 150) },
-    { id: 202, name: "Tumpeng Kuning Premium (20 Pax)", desc: "Tumpeng ukuran besar lengkap dengan hiasan, ayam kuning 20 potong, perkedel kentang, mie goreng, kering tempe.", price: 650000, img: uImg("1563245372-f21724e3856d", 150, 150) },
-    { id: 203, name: "Paket Bento Box Kantor", desc: "Nasi putih, rollade asam manis, capcay sayur bakso, nugget ayam premium, buah potong semangka.", price: 22000, img: uImg("1512621776951-a57141f2eefd", 150, 150) },
+    { id: 201, name: "Paket Nasi Box Syukuran", desc: "Nasi kuning wangi, ayam goreng lengkuas, sambal goreng kentang ati, telur balado, kerupuk udang.", price: 30000, img: uImg("1546069901-ba9599a7e63c", 150, 150), cat: "Nasi Box" },
+    { id: 202, name: "Tumpeng Kuning Premium Bu Haji", desc: "Tumpeng ukuran besar lengkap dengan hiasan, ayam kuning 20 potong, perkedel kentang, mie goreng, kering tempe.", price: 650000, img: uImg("1563245372-f21724e3856d", 150, 150), cat: "Tumpeng" },
+    { id: 203, name: "Paket Bento Box Ayam Teriyaki", desc: "Nasi putih, chicken teriyaki premium, salad kol wortel, crispy eggroll, buah potong.", price: 22000, img: uImg("1512621776951-a57141f2eefd", 150, 150), cat: "Bento" },
   ],
   3: [
-    { id: 301, name: "Paket Sehat Diet Kenyang", desc: "Nasi merah organik, ayam suwir sambal matah rendah kalori, pepes tahu jamur tiram, tumis buncis bawang putih.", price: 27500, img: uImg("1512621776951-a57141f2eefd", 150, 150) },
-    { id: 302, name: "Paket Lauk Keluarga (4-5 Orang)", desc: "1 box lauk pauk (pilihan ayam bakar/ikan nila goreng), sayur lodeh mangkuk besar, sambal tomat & tempe bacem.", price: 85000, img: uImg("1563245372-f21724e3856d", 150, 150) },
+    { id: 301, name: "Bento Diet Sehat Kenyang", desc: "Nasi merah organik, ayam suwir sambal matah rendah kalori, pepes tahu jamur tiram, tumis buncis bawang putih.", price: 27500, img: uImg("1512621776951-a57141f2eefd", 150, 150), cat: "Bento" },
+    { id: 302, name: "Paket Lauk Keluarga Box", desc: "1 box lauk pauk (pilihan ayam bakar/ikan nila goreng), sayur lodeh mangkuk besar, sambal tomat & tempe bacem.", price: 85000, img: uImg("1563245372-f21724e3856d", 150, 150), cat: "Nasi Box" },
+  ],
+  4: [
+    { id: 401, name: "Bento Chicken Katsu Premium", desc: "Nasi pulen, chicken katsu renyah saus curry khas jepang, sup miso hangat.", price: 24000, img: uImg("1512621776951-a57141f2eefd", 150, 150), cat: "Bento" },
+    { id: 402, name: "Snack Box Manis Asin", desc: "Kue sus vla vanila, risoles mayo, lemper ayam premium, air mineral botol mini.", price: 18000, img: uImg("1509042239860-f550ce710b93", 150, 150), cat: "Snack Box" }
+  ],
+  5: [
+    { id: 501, name: "Nasi Box Sederhana Lezat", desc: "Nasi putih, telor balado/dadar, oseng kacang panjang, tempe mendoan, sambal hijau.", price: 15000, img: uImg("1565299624946-b28f40a0ae38", 150, 150), cat: "Nasi Box" },
+    { id: 502, name: "Snack Box Rapat Kantoran", desc: "Pastel telur, dadar gulung pandan, bolu gulung coklat, air mineral.", price: 16000, img: uImg("1509042239860-f550ce710b93", 150, 150), cat: "Snack Box" }
+  ],
+  6: [
+    { id: 601, name: "Tumpeng Mini Nasi Uduk", desc: "Tumpeng ukuran personal (untuk 1 orang), ayam suwir bumbu bali, kering tempe, irisan dadar tipis, sambal.", price: 45000, img: uImg("1563245372-f21724e3856d", 150, 150), cat: "Tumpeng" },
+    { id: 602, name: "Tumpeng Raksasa Premium (30 Pax)", desc: "Tumpeng mewah dengan hiasan kelapa dan janur, 30 porsi komplit aneka lauk pendamping.", price: 950000, img: uImg("1563245372-f21724e3856d", 150, 150), cat: "Tumpeng" }
+  ],
+  7: [
+    { id: 701, name: "Bento Salmon Panggang Sehat", desc: "Nasi coklat, fillet salmon panggang omega-3, edamame rebus, wortel & brokoli steam.", price: 48000, img: uImg("1512621776951-a57141f2eefd", 150, 150), cat: "Bento" },
+    { id: 702, name: "Nasi Box Diet Karbo", desc: "Shirataki rice, ayam panggang tanpa kulit, scrambled egg whites, tumis sayur buncis.", price: 32000, img: uImg("1512621776951-a57141f2eefd", 150, 150), cat: "Nasi Box" }
+  ],
+  8: [
+    { id: 801, name: "Snack Box Jajanan Pasar Tradisional", desc: "Kue mangkok merah, talam pandan, lapis legit, klepon gula merah asli.", price: 10000, img: uImg("1509042239860-f550ce710b93", 150, 150), cat: "Snack Box" },
+    { id: 802, name: "Snack Box Modern Premium", desc: "Macaron pelangi, eclair coklat belgian, mini quiche lorraine, fruit tartlet.", price: 25000, img: uImg("1509042239860-f550ce710b93", 150, 150), cat: "Snack Box" }
+  ],
+  9: [
+    { id: 901, name: "Nasi Box Ayam Geprek Kamojang", desc: "Nasi putih hangat, ayam geprek krispi sambal korek level 1-5, lalapan timun.", price: 20000, img: uImg("1555939594-58d7cb561ad1", 150, 150), cat: "Nasi Box" }
+  ],
+  10: [
+    { id: 1001, name: "Nasi Liwet Box Tradisional", desc: "Nasi liwet teri, ayam goreng serundeng, tahu tempe, sambal lalap lengkap.", price: 35000, img: uImg("1563245372-f21724e3856d", 150, 150), cat: "Nasi Box" },
+    { id: 1002, name: "Tumpeng Liwet Sunda (15 Pax)", desc: "Tumpeng nasi liwet gurih dengan lauk ayam goreng, ikan asin peda, pepes tahu, pencok kacang panjang.", price: 550000, img: uImg("1563245372-f21724e3856d", 150, 150), cat: "Tumpeng" }
+  ],
+  11: [
+    { id: 1101, name: "Prasmanan Paket Gold (Min. 50 Pax)", desc: "Menu buffet prasmanan mewah: nasi goreng, soup iga, rendang daging sapi premium, puding saus vanilla.", price: 55000, img: uImg("1512621776951-a57141f2eefd", 150, 150), cat: "Nasi Box" }
   ]
 };
 
@@ -1301,7 +1342,9 @@ function CateringScreen({
   setCateringStoreName,
   myOrders,
   setMyOrders,
-  showToast
+  showToast,
+  dompetBalance,
+  setDompetBalance
 }: Nav & {
   setCateringChatMessages: React.Dispatch<React.SetStateAction<any[]>>;
   setUnreadCateringCount: React.Dispatch<React.SetStateAction<number>>;
@@ -1309,19 +1352,55 @@ function CateringScreen({
   myOrders: any[];
   setMyOrders: React.Dispatch<React.SetStateAction<any[]>>;
   showToast: (m: string) => void;
+  dompetBalance: number;
+  setDompetBalance: React.Dispatch<React.SetStateAction<number>>;
 }) {
   const [selectedMerchant, setSelectedMerchant] = useState<typeof RESTAURANTS[0] | null>(null);
   const [selectedPackage, setSelectedPackage] = useState<any | null>(null);
   const [paxCount, setPaxCount] = useState(10);
-  const [bookingDate, setBookingDate] = useState("Besok (H+1)");
+  const [bookingDate, setBookingDate] = useState("");
   const [note, setNote] = useState("");
+
+  // Search & Filtering States
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("Semua");
+  const [sortOption, setSortOption] = useState("default");
+  const [activeTab, setActiveTab] = useState<"menu" | "review" | "info">("menu");
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Payment PO States
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+  const [paymentOption, setPaymentOption] = useState<"full" | "dp30" | "dp50">("full");
+  const [payMethod, setPayMethod] = useState<"dompet" | "qris">("dompet");
+  const [showQrisSim, setShowQrisSim] = useState(false);
+
+  // Autocomplete Suggestions
+  const suggestions = ["Nasi Box", "Tumpeng", "Bento", "Murah", "Lengkap", "Diet"];
+
+  // Skeleton loading effect when search or filter options change
+  useEffect(() => {
+    setIsLoading(true);
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [searchQuery, selectedCategory, sortOption]);
+
+  const getTomorrowString = () => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow.toISOString().split("T")[0];
+  };
 
   const handleOpenMerchant = (m: typeof RESTAURANTS[0]) => {
     setSelectedMerchant(m);
     const pkgs = CATERING_PACKAGES[m.id] || [];
     setSelectedPackage(pkgs[0] || null);
-    setPaxCount(10);
+    setPaxCount(pkgs[0]?.cat === "Tumpeng" ? 1 : 10);
+    setBookingDate(getTomorrowString());
     setNote("");
+    setActiveTab("menu");
+    setShowPaymentDialog(false);
   };
 
   const handleChatAdmin = () => {
@@ -1336,25 +1415,86 @@ function CateringScreen({
     navigate("c_catering_chat");
   };
 
-  const handlePesanPO = () => {
+  const validateAndTriggerPO = () => {
+    if (!selectedMerchant || !selectedPackage) return;
+    const isTumpeng = selectedPackage.cat === "Tumpeng";
+
+    if (!isTumpeng && paxCount < 10) {
+      alert("Pemesanan katering Nasi Box/Bento minimal 10 pax.");
+      return;
+    }
+    if (isTumpeng && paxCount < 1) {
+      alert("Pemesanan tumpeng minimal 1 unit.");
+      return;
+    }
+    if (!bookingDate) {
+      alert("Silakan pilih tanggal pengiriman.");
+      return;
+    }
+
+    const chosenDate = new Date(bookingDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    chosenDate.setHours(0, 0, 0, 0);
+    if (chosenDate.getTime() <= today.getTime()) {
+      alert("Tanggal pengiriman minimal H-1 (mulai besok).");
+      return;
+    }
+
+    // Open Payment Option modal
+    setShowPaymentDialog(true);
+  };
+
+  const handleConfirmPO = () => {
     if (!selectedMerchant || !selectedPackage) return;
     const totalPrice = selectedPackage.price * paxCount;
-    const newOrderId = `RNG-PO${Math.floor(100 + Math.random() * 900)}`;
+    const isTumpeng = selectedPackage.cat === "Tumpeng";
 
+    let paidAmount = totalPrice;
+    let dpPercent = 100;
+    if (paymentOption === "dp30") {
+      paidAmount = Math.round(totalPrice * 0.3);
+      dpPercent = 30;
+    } else if (paymentOption === "dp50") {
+      paidAmount = Math.round(totalPrice * 0.5);
+      dpPercent = 50;
+    }
+    const sisaAmount = totalPrice - paidAmount;
+
+    if (payMethod === "dompet") {
+      if (dompetBalance < paidAmount) {
+        alert("Saldo Dompet Rangers Anda tidak mencukupi untuk melakukan pembayaran!");
+        return;
+      }
+      // Deduct balance
+      setDompetBalance(prev => prev - paidAmount);
+    }
+
+    const newOrderId = `RNG-PO${Math.floor(100 + Math.random() * 900)}`;
     const newOrder = {
       id: newOrderId,
       type: "Catering",
       icon: Coffee,
       color: "#FF7043",
-      item: `${selectedPackage.name} (${paxCount} Pax)`,
+      item: `${selectedPackage.name} (${paxCount} ${isTumpeng ? 'Unit' : 'Pax'})`,
       detail: selectedMerchant.name,
-      status: "Diproses",
+      status: sisaAmount > 0 ? "Menunggu Pelunasan" : "Diproses",
       statusColor: "orange",
       date: bookingDate,
       total: totalPrice,
+      sisaAmount: sisaAmount,
+      paymentType: sisaAmount > 0 ? "DP" : "Full",
+      paymentHistory: [
+        { 
+          label: sisaAmount > 0 ? `DP ${dpPercent}%` : "Pembayaran Lunas", 
+          amount: paidAmount, 
+          date: "Hari Ini", 
+          method: payMethod === "dompet" ? "Dompet Rangers" : "QRIS" 
+        }
+      ],
       items: [{ id: selectedPackage.id, name: selectedPackage.name, price: selectedPackage.price, quantity: paxCount, img: selectedPackage.img, store: selectedMerchant.name }],
       progressState: 0,
-      payMethod: "Dompet Rangers (Pre-Order)",
+      payMethod: sisaAmount > 0 ? `DP ${dpPercent}% (${payMethod === "dompet" ? "Dompet" : "QRIS"})` : (payMethod === "dompet" ? "Dompet Rangers" : "QRIS"),
       reviewText: "",
       reviewRating: 0,
       address: "Jl. Aster No. 7, Kamojang (Kos Putri Melati)",
@@ -1368,81 +1508,247 @@ function CateringScreen({
 
     setMyOrders(prev => [newOrder, ...prev]);
 
+    // Setup chat room with welcome details
     setCateringStoreName(selectedMerchant.name);
     setCateringChatMessages([
-      { id: "1", sender: "catering", text: `Halo kak Budi! Booking Pre-Order (${newOrderId}) Anda untuk ${selectedPackage.name} sebanyak ${paxCount} Pax pada tanggal ${bookingDate} telah kami terima. Apakah ada request menu khusus?`, time: "Baru saja" }
+      { id: "1", sender: "catering", text: `Halo kak Budi! Booking Pre-Order (${newOrderId}) Anda untuk ${selectedPackage.name} sebanyak ${paxCount} ${isTumpeng ? 'Unit' : 'Pax'} telah kami terima.\n\nStatus Pembayaran: ${sisaAmount > 0 ? `DP ${dpPercent}% Dibayar via ${payMethod === 'dompet' ? 'Dompet' : 'QRIS'} (${rp(paidAmount)}). Sisa Pelunasan: ${rp(sisaAmount)}` : `Lunas via ${payMethod === 'dompet' ? 'Dompet' : 'QRIS'} (${rp(totalPrice)})`}.\n\nTanggal Pengiriman: ${bookingDate}.\n\nApakah ada detail pesanan atau request menu khusus yang ingin disesuaikan?`, time: "Baru saja" }
     ]);
     setUnreadCateringCount(1);
     
-    showToast("Booking Pre-Order Berhasil! Mengalihkan ke Inbox...");
+    showToast(`Booking PO Berhasil! ${sisaAmount > 0 ? "DP Berhasil dibayar." : "Pembayaran Lunas."}`);
+    setShowPaymentDialog(false);
+    setShowQrisSim(false);
     setSelectedMerchant(null);
-    navigate("c_inbox");
+    navigate("c_pesanan");
   };
+
+  // Fuzzy Search & Kategori Filtering
+  const filteredRestaurants = RESTAURANTS.filter(r => {
+    const pkgs = CATERING_PACKAGES[r.id] || [];
+    const matchesCategory = selectedCategory === "Semua" || pkgs.some(p => p.cat === selectedCategory);
+    if (!matchesCategory) return false;
+
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    const nameMatches = r.name.toLowerCase().includes(q);
+    const cuisineMatches = r.cuisine.toLowerCase().includes(q);
+    const tagsMatches = r.tags.some(t => t.toLowerCase().includes(q));
+    const menuMatches = pkgs.some(p => p.name.toLowerCase().includes(q) || p.desc.toLowerCase().includes(q));
+    return nameMatches || cuisineMatches || tagsMatches || menuMatches;
+  });
+
+  // Sorting
+  const sortedRestaurants = [...filteredRestaurants].sort((a, b) => {
+    if (sortOption === "rating") return b.rating - a.rating;
+    if (sortOption === "distance") return a.distance - b.distance;
+    if (sortOption === "price-asc") return a.priceStarts - b.priceStarts;
+    if (sortOption === "price-desc") return b.priceStarts - a.priceStarts;
+    return 0;
+  });
+
+  // Helper text highlighter
+  const highlightText = (text: string, highlight: string) => {
+    if (!highlight.trim()) return <span>{text}</span>;
+    const regex = new RegExp(`(${highlight.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')})`, 'gi');
+    const parts = text.split(regex);
+    return (
+      <span>
+        {parts.map((part, i) => 
+          regex.test(part) ? (
+            <mark key={i} className="bg-amber-100 text-amber-900 font-extrabold rounded px-0.5">{part}</mark>
+          ) : (
+            part
+          )
+        )}
+      </span>
+    );
+  };
+
+  // Mock Reviews
+  const getMockReviews = (merchantName: string) => [
+    { name: "Budi Santoso", initial: "B", rating: 5, date: "2 hari lalu", text: `Pesanan katering di ${merchantName} sangat memuaskan. Rasa nasinya gurih, ayam bakarnya bumbu meresap sampai ke dalam!` },
+    { name: "Rina Wijaya", initial: "R", rating: 4, date: "1 minggu lalu", text: "Porsi katering pas, lauk pauk bervariasi dan bersih. Sangat direkomendasikan untuk katering kantor." },
+    { name: "Agus Setiawan", initial: "A", rating: 5, date: "3 minggu lalu", text: "Admin katering sangat ramah. Pengiriman tepat waktu 30 menit sebelum acara dimulai. Top!" }
+  ];
 
   return (
     <div className="flex flex-col h-full bg-[#F7FAF8] relative">
-      <div className="bg-white shrink-0">
+      {/* Top Header & Search Bar */}
+      <div className="bg-white shrink-0 shadow-sm z-10 pb-3">
         <StatusBar />
         <BackHeader title="Catering" onBack={() => navigate("c_home")} />
-        <div className="mx-4 mb-3 flex items-center gap-2 bg-muted px-4 py-3 rounded-2xl">
+        
+        {/* Search Input */}
+        <div className="mx-4 mt-1 flex items-center gap-2 bg-muted px-4 py-2.5 rounded-2xl border border-transparent focus-within:border-primary/20 transition-all">
           <Search size={15} className="text-muted-foreground shrink-0" />
-          <input placeholder="Cari restoran atau menu..." className="flex-1 bg-transparent text-sm outline-none" />
+          <input 
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            placeholder="Cari catering, paket, atau menu..." 
+            className="flex-1 bg-transparent text-xs outline-none text-foreground font-semibold"
+          />
+          {searchQuery && (
+            <button onClick={() => setSearchQuery("")} className="text-muted-foreground hover:text-foreground">
+              <X size={14} />
+            </button>
+          )}
         </div>
-      </div>
-      
-      {/* promo */}
-      <div className="mx-4 mt-3 rounded-2xl bg-gradient-to-r from-orange-500 to-red-500 p-4 flex items-center gap-4 shrink-0">
-        <div>
-          <p className="text-white font-extrabold text-sm">Sistem Booking & PO Catering</p>
-          <p className="text-orange-100 text-[10px] mt-0.5">Diskusikan dengan Admin, kelola pesanan langsung dari Inbox</p>
+
+        {/* Suggestion Chips */}
+        <div className="flex gap-2 overflow-x-auto px-4 mt-2.5" style={{ scrollbarWidth: "none" }}>
+          {suggestions.map(s => (
+            <button 
+              key={s}
+              onClick={() => setSearchQuery(s)}
+              className="shrink-0 text-[10px] font-bold px-3 py-1 bg-muted hover:bg-primary/5 text-muted-foreground hover:text-primary rounded-full transition-all border border-border/40"
+            >
+              🔍 {s}
+            </button>
+          ))}
         </div>
-        <Coffee size={32} className="text-white/80 shrink-0" />
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 pt-3 pb-4 flex flex-col gap-3" style={{ scrollbarWidth: "none" }}>
-        {RESTAURANTS.map(r => (
-          <div 
-            key={r.id} 
-            onClick={() => handleOpenMerchant(r)}
-            className="bg-white rounded-2xl overflow-hidden shadow-sm border border-black/[0.02] hover:border-orange-500/20 transition-all cursor-pointer"
+      {/* Filter and Sort Horizontal Bar */}
+      <div className="bg-white border-b border-border py-2 px-4 flex gap-2 overflow-x-auto shrink-0 z-10" style={{ scrollbarWidth: "none" }}>
+        {/* Categories */}
+        {["Semua", "Nasi Box", "Tumpeng", "Snack Box", "Bento"].map(cat => (
+          <button
+            key={cat}
+            onClick={() => setSelectedCategory(cat)}
+            className={`shrink-0 text-[10px] font-extrabold px-3 py-1.5 rounded-xl transition-all ${selectedCategory === cat ? "bg-primary text-white shadow-sm" : "bg-muted text-muted-foreground hover:bg-slate-100"}`}
           >
-            <div className="relative h-32">
-              <img src={r.img} alt={r.name} className="w-full h-full object-cover bg-muted" />
-              <span className={`absolute top-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded-full ${r.open ? "bg-green-500 text-white" : "bg-gray-500 text-white"}`}>
-                {r.open ? "● Buka" : "● Tutup"}
-              </span>
-            </div>
-            <div className="p-4">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h4 className="font-bold text-foreground text-sm">{r.name}</h4>
-                  <p className="text-muted-foreground text-xs mt-0.5">{r.cuisine}</p>
-                </div>
-                <Stars rating={r.rating} />
-              </div>
-              <div className="flex items-center gap-2 mt-2 flex-wrap">
-                {r.tags.map(t => <Pill key={t} color="orange">{t}</Pill>)}
-                <Pill color="gray">📍 {r.distance}</Pill>
-                <Pill color="gray">Min {rp(r.minOrder)}</Pill>
-              </div>
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleOpenMerchant(r);
-                }}
-                className={`w-full mt-3 py-2.5 rounded-xl text-sm font-bold cursor-pointer transition-all ${r.open ? "bg-primary text-white hover:bg-primary-dark" : "bg-muted text-muted-foreground cursor-not-allowed"}`}
-              >
-                {r.open ? "Pesan / Booking PO" : "Sedang Tutup"}
-              </button>
-            </div>
-          </div>
+            {cat}
+          </button>
+        ))}
+
+        <div className="w-px bg-border my-1 mx-1 shrink-0" />
+
+        {/* Sorting selection */}
+        {[
+          { label: "📍 Terdekat", val: "distance" },
+          { label: "⭐ Rating Terbaik", val: "rating" },
+          { label: "💸 Termurah", val: "price-asc" },
+          { label: "📈 Termahal", val: "price-desc" }
+        ].map(opt => (
+          <button
+            key={opt.val}
+            onClick={() => setSortOption(sortOption === opt.val ? "default" : opt.val)}
+            className={`shrink-0 text-[10px] font-bold px-3 py-1.5 rounded-xl transition-all border ${sortOption === opt.val ? "bg-primary/10 border-primary text-primary" : "bg-white border-border text-muted-foreground"}`}
+          >
+            {opt.label}
+          </button>
         ))}
       </div>
 
-      {/* Catering Merchant Popup Modal */}
+      {/* List / Skeleton Loading Container */}
+      <div className="flex-1 overflow-y-auto px-4 pt-3 pb-4 flex flex-col gap-3" style={{ scrollbarWidth: "none" }}>
+        
+        {isLoading ? (
+          /* Skeleton Loader layout */
+          Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="bg-white rounded-2xl overflow-hidden shadow-sm border border-border animate-pulse">
+              <div className="h-36 bg-gray-200" />
+              <div className="p-4 flex flex-col gap-2">
+                <div className="h-4 bg-gray-200 rounded w-2/3" />
+                <div className="h-3 bg-gray-200 rounded w-1/2" />
+                <div className="flex gap-2 mt-2">
+                  <div className="h-4 bg-gray-200 rounded w-16" />
+                  <div className="h-4 bg-gray-200 rounded w-16" />
+                </div>
+                <div className="h-9 bg-gray-200 rounded-xl mt-2" />
+              </div>
+            </div>
+          ))
+        ) : sortedRestaurants.length === 0 ? (
+          /* Empty State Gojek/Grab Level */
+          <div className="flex flex-col items-center justify-center text-center py-16 px-6 gap-4">
+            <div className="w-20 h-20 bg-orange-100/50 rounded-full flex items-center justify-center text-orange-500 shadow-inner">
+              <Search size={36} />
+            </div>
+            <div>
+              <h3 className="font-extrabold text-sm text-foreground">Yah, Catering Tidak Ditemukan</h3>
+              <p className="text-xs text-muted-foreground mt-1 max-w-xs leading-relaxed">
+                Kami tidak menemukan catering "{searchQuery}" di wilayah Kamojang. Coba cari dengan kata kunci lain atau gunakan kategori di atas.
+              </p>
+            </div>
+            <button 
+              onClick={() => {
+                setSearchQuery("");
+                setSelectedCategory("Semua");
+                setSortOption("default");
+              }}
+              className="px-5 py-2.5 bg-primary text-white font-bold text-xs rounded-xl shadow-md hover:bg-primary-dark transition-all cursor-pointer"
+            >
+              Reset Pencarian
+            </button>
+          </div>
+        ) : (
+          /* Render sorted & filtered results */
+          sortedRestaurants.map(r => {
+            const hasPromo = r.tags.includes("Promo") || r.tags.includes("Best Seller") || r.id % 3 === 0;
+            return (
+              <div 
+                key={r.id} 
+                onClick={() => handleOpenMerchant(r)}
+                className="bg-white rounded-2xl overflow-hidden shadow-sm border border-black/[0.02] hover:border-primary/20 hover:shadow-md transition-all cursor-pointer"
+              >
+                {/* Image layout 16:9 */}
+                <div className="relative h-36 bg-muted shrink-0">
+                  <img src={r.img} alt={r.name} className="w-full h-full object-cover" />
+                  <span className={`absolute top-3 left-3 text-[9px] font-extrabold px-2.5 py-1 rounded-full shadow-sm text-white ${r.open ? "bg-green-600" : "bg-gray-500"}`}>
+                    {r.open ? "● Buka" : "● Tutup"}
+                  </span>
+                  {hasPromo && (
+                    <span className="absolute top-3 right-3 text-[9px] font-black px-2.5 py-1 rounded-full shadow-sm bg-gradient-to-r from-orange-500 to-red-500 text-white uppercase tracking-wider">
+                      Promo PO 20%
+                    </span>
+                  )}
+                </div>
+                <div className="p-4">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <h4 className="font-extrabold text-foreground text-sm leading-snug">
+                        {highlightText(r.name, searchQuery)}
+                      </h4>
+                      <p className="text-muted-foreground text-xs mt-0.5">{r.cuisine}</p>
+                    </div>
+                    <div className="flex items-center gap-1 bg-amber-50 text-amber-700 border border-amber-200/50 px-2 py-0.5 rounded-lg text-xs font-bold whitespace-nowrap">
+                      ★ {r.rating}
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-2 mt-3 flex-wrap">
+                    {r.tags.map(t => <Pill key={t} color={t === "Promo" ? "orange" : "green"}>{t}</Pill>)}
+                    <Pill color="gray">📍 {r.distance} km</Pill>
+                    <Pill color="gray">Min {rp(r.minOrder)}</Pill>
+                  </div>
+
+                  <div className="flex justify-between items-center mt-4 pt-3 border-t border-border/60">
+                    <div>
+                      <p className="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">Mulai Dari</p>
+                      <p className="text-primary font-black text-sm">{rp(r.priceStarts)} <span className="text-muted-foreground text-[9px] font-medium">/ pax</span></p>
+                    </div>
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpenMerchant(r);
+                      }}
+                      className={`px-4 py-2.5 rounded-xl text-xs font-bold cursor-pointer transition-all shadow-sm ${r.open ? "bg-primary text-white hover:bg-primary-dark" : "bg-muted text-muted-foreground cursor-not-allowed"}`}
+                    >
+                      Pesan Sekarang
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Catering Merchant Popup Modal (Slide Up) */}
       {selectedMerchant && (() => {
         const packages = CATERING_PACKAGES[selectedMerchant.id] || [];
-        const isTumpeng = selectedPackage?.id === 202;
+        const isTumpeng = selectedPackage?.cat === "Tumpeng";
         return (
           <div className="absolute inset-0 bg-black/60 z-50 flex flex-col justify-end">
             <style>{`
@@ -1455,142 +1761,210 @@ function CateringScreen({
               }
             `}</style>
             <div className="flex-1" onClick={() => setSelectedMerchant(null)} />
-            <div className="bg-white rounded-t-[28px] max-h-[85%] flex flex-col overflow-hidden shadow-2xl relative animate-slide-up">
+            <div className="bg-white rounded-t-[28px] max-h-[88%] flex flex-col overflow-hidden shadow-2xl relative animate-slide-up">
               
               {/* Header Modal */}
-              <div className="p-4 border-b border-border flex items-center justify-between shrink-0 bg-white">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">🍱</span>
+              <div className="p-4 border-b border-border flex items-center justify-between shrink-0 bg-white shadow-sm z-10">
+                <div className="flex items-center gap-2.5">
+                  <span className="text-xl">🍱</span>
                   <div>
-                    <h3 className="text-sm font-extrabold text-foreground leading-tight">{selectedMerchant.name}</h3>
-                    <p className="text-[10px] text-muted-foreground font-semibold">Pre-Order & Booking Catering</p>
+                    <h3 className="text-xs font-black text-foreground leading-tight">{selectedMerchant.name}</h3>
+                    <p className="text-[9px] text-muted-foreground font-semibold">Detail PO & Booking Catering</p>
                   </div>
                 </div>
                 <button 
                   onClick={() => setSelectedMerchant(null)} 
-                  className="w-7 h-7 rounded-full bg-muted flex items-center justify-center text-muted-foreground cursor-pointer"
+                  className="w-7 h-7 rounded-full bg-muted flex items-center justify-center text-muted-foreground cursor-pointer hover:bg-gray-200"
                 >
                   <X size={14} />
                 </button>
               </div>
 
+              {/* Tabs selector */}
+              <div className="flex border-b border-border shrink-0 bg-white z-10">
+                {[
+                  { label: "Menu Katering", val: "menu" },
+                  { label: "Ulasan Komunitas", val: "review" },
+                  { label: "Informasi Toko", val: "info" }
+                ].map(t => (
+                  <button
+                    key={t.val}
+                    onClick={() => setActiveTab(t.val as any)}
+                    className={`flex-1 py-3 text-center text-xs font-bold border-b-2 transition-all cursor-pointer ${activeTab === t.val ? "border-primary text-primary font-black" : "border-transparent text-muted-foreground"}`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+
               {/* Scrollable Modal Content */}
               <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4" style={{ scrollbarWidth: "none" }}>
                 
-                {/* Store Profile Intro */}
-                <div className="flex gap-3 items-center bg-slate-50 border border-slate-100 p-3 rounded-2xl">
-                  <img src={selectedMerchant.img} alt={selectedMerchant.name} className="w-12 h-12 rounded-xl object-cover shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-bold text-foreground leading-normal truncate">{selectedMerchant.name}</p>
-                    <p className="text-[9px] text-muted-foreground truncate leading-tight">{selectedMerchant.cuisine} · {selectedMerchant.distance}</p>
-                    <div className="flex items-center gap-1.5 mt-0.5">
-                      <span className="bg-amber-50 text-amber-700 text-[8px] font-black border border-amber-200 px-1 py-0.2 rounded-full whitespace-nowrap">
-                        ★ {selectedMerchant.rating}
-                      </span>
-                      <span className="text-[8px] text-muted-foreground font-semibold">Mitra Resmi Rangers</span>
+                {activeTab === "menu" && (
+                  /* TAB 1: MENU PACKAGES */
+                  <div className="flex flex-col gap-3">
+                    <div className="flex justify-between items-center mb-1">
+                      <h4 className="text-xs font-bold text-foreground">Daftar Paket Menu PO</h4>
+                      <span className="text-[10px] text-muted-foreground font-medium">{packages.length} paket tersedia</span>
                     </div>
-                  </div>
-                </div>
 
-                {/* Section 1: Packages List */}
-                <div className="flex flex-col gap-2">
-                  <h4 className="text-xs font-bold text-foreground">Pilih Paket Catering</h4>
-                  <div className="flex flex-col gap-2">
-                    {packages.map(p => {
-                      const isSelected = selectedPackage?.id === p.id;
-                      return (
-                        <div 
-                          key={p.id}
-                          onClick={() => {
-                            setSelectedPackage(p);
-                            if (p.id === 202) {
-                              setPaxCount(1);
-                            } else {
-                              setPaxCount(10);
-                            }
-                          }}
-                          className={`flex gap-3 p-3 rounded-xl border-2 transition-all cursor-pointer ${isSelected ? "border-primary bg-primary/[0.02]" : "border-border hover:bg-slate-50"}`}
-                        >
-                          <img src={p.img} alt={p.name} className="w-14 h-14 rounded-lg object-cover bg-muted shrink-0" />
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between">
-                              <p className="text-xs font-bold text-foreground leading-tight truncate">{p.name}</p>
-                              {isSelected && <Check size={12} className="text-primary shrink-0 ml-1 mt-0.5" />}
+                    <div className="flex flex-col gap-2.5">
+                      {packages.map(p => {
+                        const isSelected = selectedPackage?.id === p.id;
+                        return (
+                          <div 
+                            key={p.id}
+                            onClick={() => {
+                              setSelectedPackage(p);
+                              if (p.cat === "Tumpeng") {
+                                setPaxCount(1);
+                              } else {
+                                setPaxCount(10);
+                              }
+                            }}
+                            className={`flex gap-3 p-3 rounded-2xl border-2 transition-all cursor-pointer bg-white ${isSelected ? "border-primary shadow-sm ring-1 ring-primary/10" : "border-border hover:bg-slate-50"}`}
+                          >
+                            <img src={p.img} alt={p.name} className="w-16 h-16 rounded-xl object-cover bg-muted shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between gap-1">
+                                <p className="text-xs font-extrabold text-foreground leading-tight truncate">{p.name}</p>
+                                {isSelected && <span className="bg-primary text-white text-[8px] font-black px-1.5 py-0.5 rounded-full shrink-0 uppercase">Pilihan</span>}
+                              </div>
+                              <p className="text-[10px] text-muted-foreground leading-relaxed mt-1 line-clamp-2">{p.desc}</p>
+                              <div className="flex justify-between items-center mt-2">
+                                <span className="text-[8px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full uppercase tracking-wider">{p.cat}</span>
+                                <p className="text-primary font-black text-xs">{rp(p.price)} <span className="text-muted-foreground text-[8px] font-medium">{p.cat === "Tumpeng" ? "/ unit" : "/ pax"}</span></p>
+                              </div>
                             </div>
-                            <p className="text-[10px] text-muted-foreground leading-snug mt-0.5 line-clamp-2">{p.desc}</p>
-                            <p className="text-primary font-extrabold text-xs mt-1.5">{rp(p.price)} <span className="text-muted-foreground text-[9px] font-medium">{p.id === 202 ? "/ unit" : "/ pax"}</span></p>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Pre-Order Configuration Panel inside Modal */}
+                    {selectedPackage && (
+                      <div className="mt-4 bg-slate-50 border border-slate-100 p-4 rounded-2xl flex flex-col gap-4">
+                        <h4 className="text-xs font-black text-foreground border-b border-border pb-2 -mt-1">Kustomisasi Pre-Order (PO)</h4>
+                        
+                        {/* Portion Counter */}
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-xs font-bold text-foreground">{isTumpeng ? "Jumlah Unit" : "Jumlah Pax (Porsi)"}</p>
+                            <p className="text-[9px] text-muted-foreground mt-0.5">{isTumpeng ? "Minimal pemesanan 1 unit" : "Minimal pemesanan katering box 10 porsi"}</p>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <button 
+                              onClick={() => setPaxCount(prev => Math.max(isTumpeng ? 1 : 10, prev - (isTumpeng ? 1 : 5)))}
+                              className="w-8 h-8 rounded-lg bg-white border border-border flex items-center justify-center text-foreground hover:bg-slate-100 cursor-pointer shadow-sm active:scale-95 transition-transform"
+                            >
+                              <Minus size={13} />
+                            </button>
+                            <span className="text-xs font-extrabold text-foreground w-8 text-center">{paxCount}</span>
+                            <button 
+                              onClick={() => setPaxCount(prev => prev + (isTumpeng ? 1 : 5))}
+                              className="w-8 h-8 rounded-lg bg-white border border-border flex items-center justify-center text-foreground hover:bg-slate-100 cursor-pointer shadow-sm active:scale-95 transition-transform"
+                            >
+                              <Plus size={13} />
+                            </button>
                           </div>
                         </div>
-                      );
-                    })}
+
+                        {/* Native date picker with H-1 validation */}
+                        <div className="flex flex-col gap-1.5">
+                          <div className="flex justify-between items-center">
+                            <p className="text-xs font-bold text-foreground">Pilih Hari Pengiriman</p>
+                            <span className="text-[9px] text-red-500 font-bold">*Min. H-1</span>
+                          </div>
+                          <input 
+                            type="date"
+                            min={getTomorrowString()}
+                            value={bookingDate}
+                            onChange={e => setBookingDate(e.target.value)}
+                            className="w-full px-3 py-2.5 bg-white border border-border rounded-xl text-xs outline-none focus:ring-2 focus:ring-primary/20 transition-all font-semibold text-foreground cursor-pointer"
+                          />
+                        </div>
+
+                        {/* Catatan */}
+                        <div className="flex flex-col gap-1.5">
+                          <p className="text-xs font-bold text-foreground">Catatan untuk Penjual</p>
+                          <input 
+                            value={note}
+                            onChange={e => setNote(e.target.value)}
+                            placeholder="Contoh: Minta sendok plastik, sambal dipisah, dll."
+                            className="w-full px-3 py-2.5 bg-white border border-border rounded-xl text-xs outline-none focus:ring-2 focus:ring-primary/20 transition-all font-semibold"
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
-                </div>
+                )}
 
-                {/* Section 2: PO Configuration */}
-                {selectedPackage && (
-                  <div className="flex flex-col gap-3.5 bg-slate-50 border border-slate-100 p-4 rounded-2xl">
-                    <h4 className="text-xs font-bold text-foreground border-b border-border pb-1.5 -mt-1">Pengaturan Pre-Order (PO)</h4>
-                    
-                    {/* Portion Pax Count */}
-                    <div className="flex items-center justify-between">
+                {activeTab === "review" && (
+                  /* TAB 2: REVIEWS */
+                  <div className="flex flex-col gap-3">
+                    <h4 className="text-xs font-bold text-foreground mb-1">Ulasan Pelanggan</h4>
+                    <div className="flex flex-col gap-2.5">
+                      {getMockReviews(selectedMerchant.name).map((rev, idx) => (
+                        <div key={idx} className="bg-slate-50 border border-slate-100 rounded-2xl p-3.5 flex flex-col gap-2 shadow-sm">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <div className="w-6 h-6 rounded-full bg-primary/10 text-primary text-[10px] font-black flex items-center justify-center uppercase">
+                                {rev.initial}
+                              </div>
+                              <span className="text-[11px] font-extrabold text-foreground">{rev.name}</span>
+                            </div>
+                            <span className="text-[9px] text-muted-foreground font-semibold">{rev.date}</span>
+                          </div>
+                          <div className="flex gap-0.5">
+                            {Array.from({ length: rev.rating }).map((_, i) => (
+                              <Star key={i} size={10} className="fill-amber-400 text-amber-400" />
+                            ))}
+                          </div>
+                          <p className="text-[10px] font-medium text-foreground leading-relaxed">"{rev.text}"</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === "info" && (
+                  /* TAB 3: MERCHANT INFO */
+                  <div className="flex flex-col gap-3.5">
+                    <h4 className="text-xs font-bold text-foreground">Informasi Toko</h4>
+                    <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 flex flex-col gap-3">
                       <div>
-                        <p className="text-xs font-bold text-foreground">{isTumpeng ? "Jumlah Unit" : "Jumlah Pax (Porsi)"}</p>
-                        <p className="text-[9px] text-muted-foreground mt-0.5">{isTumpeng ? "Min. order 1 unit" : "Min. order 10 pax untuk katering box"}</p>
+                        <p className="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">Cuisine & Kategori</p>
+                        <p className="text-xs font-bold text-foreground mt-0.5">{selectedMerchant.cuisine}</p>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <button 
-                          onClick={() => setPaxCount(prev => Math.max(isTumpeng ? 1 : 10, prev - (isTumpeng ? 1 : 5)))}
-                          className="w-8 h-8 rounded-lg bg-white border border-border flex items-center justify-center text-foreground hover:bg-slate-100 cursor-pointer shadow-sm"
-                        >
-                          <Minus size={13} />
-                        </button>
-                        <span className="text-xs font-extrabold text-foreground w-8 text-center">{paxCount}</span>
-                        <button 
-                          onClick={() => setPaxCount(prev => prev + (isTumpeng ? 1 : 5))}
-                          className="w-8 h-8 rounded-lg bg-white border border-border flex items-center justify-center text-foreground hover:bg-slate-100 cursor-pointer shadow-sm"
-                        >
-                          <Plus size={13} />
-                        </button>
+                      <div>
+                        <p className="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">Jarak dari Lokasi Anda</p>
+                        <p className="text-xs font-bold text-foreground mt-0.5">📍 {selectedMerchant.distance} km</p>
                       </div>
-                    </div>
-
-                    {/* Delivery Date selection */}
-                    <div className="flex flex-col gap-1.5">
-                      <p className="text-xs font-bold text-foreground">Pilih Hari Pengiriman</p>
-                      <div className="flex gap-2">
-                        {["Besok (H+1)", "Lusa (H+2)", "Minggu Depan (H+7)"].map(d => (
-                          <button 
-                            key={d} 
-                            onClick={() => setBookingDate(d)}
-                            className={`flex-1 py-2 text-[10px] font-bold rounded-xl border transition-all cursor-pointer ${bookingDate === d ? "bg-primary text-white border-primary shadow-sm" : "bg-white text-muted-foreground border-border hover:bg-slate-100"}`}
-                          >
-                            {d}
-                          </button>
-                        ))}
+                      <div>
+                        <p className="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">Minimum Pembelian</p>
+                        <p className="text-xs font-bold text-foreground mt-0.5">{rp(selectedMerchant.minOrder)}</p>
+                      </div>
+                      <div>
+                        <p className="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">Jam Operasional</p>
+                        <p className="text-xs font-bold text-foreground mt-0.5">⏰ 08:00 - 19:00 WIB</p>
+                      </div>
+                      <div>
+                        <p className="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">Deskripsi Layanan</p>
+                        <p className="text-xs font-medium text-foreground leading-relaxed mt-0.5">
+                          Menyediakan aneka sajian katering sehat dan bersih yang diolah secara higienis oleh chef berpengalaman di Kamojang. Cocok untuk hidangan syukuran, rapat kantor, gathering komunitas, maupun konsumsi harian keluarga.
+                        </p>
                       </div>
                     </div>
-
-                    {/* Notes for Merchant */}
-                    <div className="flex flex-col gap-1">
-                      <p className="text-xs font-bold text-foreground">Catatan Tambahan</p>
-                      <input 
-                        value={note}
-                        onChange={e => setNote(e.target.value)}
-                        placeholder="Contoh: Sambal pisah / tambah sendok / jam antar"
-                        className="w-full px-3 py-2 bg-white border border-border rounded-xl text-xs outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium"
-                      />
-                    </div>
-
                   </div>
                 )}
 
               </div>
 
               {/* Modal Sticky Footer */}
-              {selectedPackage && (
-                <div className="p-4 border-t border-border bg-white flex items-center justify-between gap-3 shrink-0 shadow-[0_-4px_16px_rgba(0,0,0,0.03)]">
+              {selectedPackage && activeTab === "menu" && (
+                <div className="p-4 border-t border-border bg-white flex items-center justify-between gap-3 shrink-0 shadow-[0_-4px_16px_rgba(0,0,0,0.03)] z-10">
                   <div>
-                    <p className="text-[8px] text-muted-foreground font-bold uppercase tracking-wider">Estimasi Harga PO</p>
+                    <p className="text-[8px] text-muted-foreground font-bold uppercase tracking-wider">Total Pembayaran PO</p>
                     <p className="text-base font-black text-primary leading-tight mt-0.5">{rp(selectedPackage.price * paxCount)}</p>
                   </div>
                   <div className="flex-1 flex gap-2">
@@ -1602,8 +1976,8 @@ function CateringScreen({
                       <span>Chat Admin</span>
                     </button>
                     <button 
-                      onClick={handlePesanPO}
-                      className="flex-1 py-3 bg-primary hover:bg-primary/95 text-white font-bold text-xs rounded-xl shadow-md cursor-pointer flex items-center justify-center gap-1.5"
+                      onClick={validateAndTriggerPO}
+                      className="flex-1 py-3 bg-primary hover:bg-primary/95 text-white font-bold text-xs rounded-xl shadow-md cursor-pointer flex items-center justify-center gap-1.5 transition-colors"
                     >
                       <span>Pesan Sekarang (PO)</span>
                     </button>
@@ -1612,6 +1986,260 @@ function CateringScreen({
               )}
 
             </div>
+          </div>
+        );
+      })()}
+
+      {/* Down Payment Option Dialog (Popup Modal) */}
+      {showPaymentDialog && selectedMerchant && selectedPackage && (() => {
+        const totalPrice = selectedPackage.price * paxCount;
+        return (
+          <div className="absolute inset-0 bg-black/70 z-50 flex items-center justify-center p-5">
+            <div className="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl border border-border relative flex flex-col max-h-[85%]">
+              
+              <div className="p-4 border-b border-border flex items-center justify-between shrink-0 bg-slate-50">
+                <span className="text-xs font-black text-foreground">Metode Pembayaran PO</span>
+                <button 
+                  onClick={() => setShowPaymentDialog(false)}
+                  className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-muted-foreground cursor-pointer"
+                >
+                  <X size={12} />
+                </button>
+              </div>
+
+              <div className="p-5 overflow-y-auto flex-1 flex flex-col gap-4" style={{ scrollbarWidth: "none" }}>
+                
+                {/* Order Summary box */}
+                <div className="bg-slate-50 border border-slate-100 p-3 rounded-2xl flex flex-col gap-1.5">
+                  <div className="flex justify-between items-center text-[10px] text-muted-foreground font-bold">
+                    <span>Menu Paket PO</span>
+                    <span>Qty / Porsi</span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs text-foreground font-extrabold border-b border-dashed border-border pb-2 mb-1.5">
+                    <span className="truncate pr-4">{selectedPackage.name}</span>
+                    <span className="shrink-0">{paxCount} {selectedPackage.cat === "Tumpeng" ? "Unit" : "Pax"}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs text-foreground font-bold">
+                    <span>Total Harga PO</span>
+                    <span className="text-primary font-black text-sm">{rp(totalPrice)}</span>
+                  </div>
+                </div>
+
+                {/* DP Choices Option */}
+                <div className="flex flex-col gap-2.5">
+                  <p className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wide">Pilih Opsi Pembayaran</p>
+                  
+                  {/* Option 1: Bayar Full */}
+                  <div 
+                    onClick={() => setPaymentOption("full")}
+                    className={`p-3.5 rounded-2xl border-2 transition-all cursor-pointer flex items-center gap-3 bg-white ${paymentOption === "full" ? "border-primary bg-primary/[0.02]" : "border-border hover:bg-slate-50"}`}
+                  >
+                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${paymentOption === "full" ? "border-primary" : "border-gray-300"}`}>
+                      {paymentOption === "full" && <div className="w-2 h-2 rounded-full bg-primary" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-extrabold text-foreground">Bayar Lunas (100%)</p>
+                      <p className="text-[9px] text-muted-foreground mt-0.5">Dapatkan garansi prioritas pengantaran.</p>
+                      <p className="text-primary font-extrabold text-xs mt-1">{rp(totalPrice)}</p>
+                    </div>
+                  </div>
+
+                  {/* Option 2: DP 30% */}
+                  <div 
+                    onClick={() => setPaymentOption("dp30")}
+                    className={`p-3.5 rounded-2xl border-2 transition-all cursor-pointer flex items-center gap-3 bg-white ${paymentOption === "dp30" ? "border-primary bg-primary/[0.02]" : "border-border hover:bg-slate-50"}`}
+                  >
+                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${paymentOption === "dp30" ? "border-primary" : "border-gray-300"}`}>
+                      {paymentOption === "dp30" && <div className="w-2 h-2 rounded-full bg-primary" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-center gap-2">
+                        <p className="text-xs font-extrabold text-foreground">Bayar DP 30%</p>
+                        <span className="bg-amber-100 text-amber-700 text-[8px] font-black px-1.5 py-0.5 rounded-md uppercase">DP</span>
+                      </div>
+                      <p className="text-[9px] text-muted-foreground mt-0.5">Sisa pelunasan dibayar paling lambat H-1.</p>
+                      <div className="flex justify-between items-center mt-1 flex-wrap gap-1">
+                        <p className="text-primary font-extrabold text-xs">DP: {rp(Math.round(totalPrice * 0.3))}</p>
+                        <p className="text-muted-foreground text-[9px] font-semibold">Sisa: {rp(totalPrice - Math.round(totalPrice * 0.3))}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Option 3: DP 50% */}
+                  <div 
+                    onClick={() => setPaymentOption("dp50")}
+                    className={`p-3.5 rounded-2xl border-2 transition-all cursor-pointer flex items-center gap-3 bg-white ${paymentOption === "dp50" ? "border-primary bg-primary/[0.02]" : "border-border hover:bg-slate-50"}`}
+                  >
+                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${paymentOption === "dp50" ? "border-primary" : "border-gray-300"}`}>
+                      {paymentOption === "dp50" && <div className="w-2 h-2 rounded-full bg-primary" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-center gap-2">
+                        <p className="text-xs font-extrabold text-foreground">Bayar DP 50%</p>
+                        <span className="bg-amber-100 text-amber-700 text-[8px] font-black px-1.5 py-0.5 rounded-md uppercase">DP</span>
+                      </div>
+                      <p className="text-[9px] text-muted-foreground mt-0.5">Sisa pelunasan dibayar paling lambat H-1.</p>
+                      <div className="flex justify-between items-center mt-1 flex-wrap gap-1">
+                        <p className="text-primary font-extrabold text-xs">DP: {rp(Math.round(totalPrice * 0.5))}</p>
+                        <p className="text-muted-foreground text-[9px] font-semibold">Sisa: {rp(totalPrice - Math.round(totalPrice * 0.5))}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+
+                {/* Payment Method Selector */}
+                <div className="flex flex-col gap-2 mt-1">
+                  <p className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wide">Pilih Metode Pembayaran</p>
+                  <div className="flex gap-2">
+                    {/* Option Dompet */}
+                    <button 
+                      type="button"
+                      onClick={() => setPayMethod("dompet")}
+                      className={`flex-1 py-2 rounded-xl border flex gap-1.5 items-center justify-center transition-all cursor-pointer ${payMethod === "dompet" ? "border-primary bg-primary/[0.03] text-primary" : "border-border bg-white text-muted-foreground hover:bg-slate-50"}`}
+                    >
+                      <span className="text-xs">🪙</span>
+                      <span className="text-[10px] font-bold">Dompet Rangers</span>
+                    </button>
+                    {/* Option QRIS */}
+                    <button 
+                      type="button"
+                      onClick={() => setPayMethod("qris")}
+                      className={`flex-1 py-2 rounded-xl border flex gap-1.5 items-center justify-center transition-all cursor-pointer ${payMethod === "qris" ? "border-primary bg-primary/[0.03] text-primary" : "border-border bg-white text-muted-foreground hover:bg-slate-50"}`}
+                    >
+                      <span className="text-xs">📱</span>
+                      <span className="text-[10px] font-bold">QRIS Barcode</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Wallet Info conditional on selected method */}
+                {payMethod === "dompet" ? (
+                  <div className="bg-slate-100 border border-slate-200/50 p-3 rounded-2xl flex items-center justify-between mt-1 shrink-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm">🪙</span>
+                      <div className="text-[10px]">
+                        <p className="font-extrabold text-foreground">Dompet Rangers</p>
+                        <p className="text-muted-foreground">Saldo Anda</p>
+                      </div>
+                    </div>
+                    <span className="text-xs font-black text-primary">{rp(dompetBalance)}</span>
+                  </div>
+                ) : (
+                  <div className="bg-slate-50 border border-slate-200/50 p-3 rounded-2xl flex items-center justify-between mt-1 shrink-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm">📱</span>
+                      <div className="text-[10px]">
+                        <p className="font-extrabold text-foreground">QRIS (Rangers Pay)</p>
+                        <p className="text-muted-foreground">Bayar instan via barcode scan</p>
+                      </div>
+                    </div>
+                    <span className="text-[9px] bg-primary text-white px-2 py-0.5 rounded font-black uppercase">Aktif</span>
+                  </div>
+                )}
+
+              </div>
+
+              {/* Action Buttons */}
+              <div className="p-4 border-t border-border bg-white flex gap-2.5 shrink-0 shadow-[0_-4px_16px_rgba(0,0,0,0.02)]">
+                <button 
+                  onClick={() => setShowPaymentDialog(false)}
+                  className="flex-1 py-3 border border-border text-muted-foreground font-bold text-xs rounded-xl cursor-pointer hover:bg-slate-50 text-center"
+                >
+                  Kembali
+                </button>
+                <button 
+                  onClick={() => {
+                    if (payMethod === "qris") {
+                      setShowQrisSim(true);
+                    } else {
+                      handleConfirmPO();
+                    }
+                  }}
+                  className="flex-[2] py-3 bg-primary hover:bg-primary/95 text-white font-extrabold text-xs rounded-xl shadow-md cursor-pointer text-center"
+                >
+                  Bayar & Buat PO
+                </button>
+              </div>
+
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* QRIS Simulation Dialog for PO checkout */}
+      {showQrisSim && selectedMerchant && selectedPackage && (() => {
+        const totalPrice = selectedPackage.price * paxCount;
+        let paidAmount = totalPrice;
+        if (paymentOption === "dp30") {
+          paidAmount = Math.round(totalPrice * 0.3);
+        } else if (paymentOption === "dp50") {
+          paidAmount = Math.round(totalPrice * 0.5);
+        }
+        return (
+          <div className="absolute inset-0 bg-[#1B7A4E] z-50 flex flex-col items-center justify-center p-6 text-white text-center">
+            <h2 className="text-xl font-extrabold mb-1">Pembayaran QRIS PO</h2>
+            <p className="text-green-200 text-xs mb-6">PGE Kamojang Community Payment Gate</p>
+
+            <div className="bg-white rounded-3xl p-6 shadow-xl w-full max-w-xs text-foreground flex flex-col items-center">
+              <div className="flex items-center justify-between w-full mb-3 border-b border-border pb-2">
+                <span className="text-[10px] font-bold text-gray-400 tracking-wider">QRIS STANDAR NASIONAL</span>
+                <span className="text-[10px] font-bold text-primary">RANGERS APP</span>
+              </div>
+              
+              <div className="text-xs text-muted-foreground mb-1">Jumlah Tagihan PO</div>
+              <div className="text-xl font-extrabold text-foreground mb-4">{rp(paidAmount)}</div>
+              
+              <div className="w-48 h-48 border-4 border-gray-100 p-2 rounded-2xl flex items-center justify-center relative mb-4">
+                <svg viewBox="0 0 100 100" className="w-full h-full text-foreground fill-current">
+                  <rect x="0" y="0" width="25" height="25" fill="#000" />
+                  <rect x="5" y="5" width="15" height="15" fill="#fff" />
+                  <rect x="9" y="9" width="7" height="7" fill="#000" />
+                  
+                  <rect x="75" y="0" width="25" height="25" fill="#000" />
+                  <rect x="75" y="5" width="15" height="15" fill="#fff" />
+                  <rect x="79" y="9" width="7" height="7" fill="#000" />
+
+                  <rect x="0" y="75" width="25" height="25" fill="#000" />
+                  <rect x="5" y="75" width="15" height="15" fill="#fff" />
+                  <rect x="9" y="79" width="7" height="7" fill="#000" />
+
+                  <rect x="35" y="10" width="10" height="20" />
+                  <rect x="55" y="5" width="15" height="10" />
+                  <rect x="40" y="40" width="20" height="20" />
+                  <rect x="10" y="45" width="15" height="15" />
+                  <rect x="70" y="40" width="15" height="15" />
+                  <rect x="30" y="70" width="20" height="15" />
+                  <rect x="65" y="70" width="15" height="20" />
+                  <rect x="45" y="85" width="15" height="10" />
+                  
+                  <circle cx="50" cy="50" r="12" fill="#fff" />
+                  <circle cx="50" cy="50" r="9" fill="#1B7A4E" />
+                  <path d="M47 52 L50 47 L53 52" fill="#fff" />
+                </svg>
+                <div className="absolute inset-0 bg-black/5 rounded-2xl flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                  <span className="bg-white px-2 py-1 rounded text-[9px] font-bold shadow">Simulasi QRIS PO</span>
+                </div>
+              </div>
+
+              <p className="text-[10px] text-muted-foreground text-center">
+                Pindai QR di atas menggunakan aplikasi perbankan atau e-wallet Anda untuk menyelesaikan pembayaran PO
+              </p>
+            </div>
+
+            <button 
+              onClick={handleConfirmPO}
+              className="w-full max-w-xs mt-8 py-3.5 bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-extrabold rounded-2xl text-sm transition-all shadow-md cursor-pointer"
+            >
+              ✅ Simulasikan Bayar PO Sukses
+            </button>
+
+            <button 
+              onClick={() => setShowQrisSim(false)}
+              className="text-xs text-green-200 mt-4 hover:underline cursor-pointer"
+            >
+              Kembali
+            </button>
           </div>
         );
       })()}
@@ -3045,18 +3673,65 @@ const statusColor: Record<string, string> = {
 function PesananScreen({ 
   navigate, 
   myOrders, 
-  setActiveTrackingOrderId 
+  setMyOrders,
+  setActiveTrackingOrderId,
+  dompetBalance,
+  setDompetBalance,
+  showToast
 }: Nav & { 
   myOrders: any[]; 
+  setMyOrders: React.Dispatch<React.SetStateAction<any[]>>;
   setActiveTrackingOrderId: (id: string | null) => void; 
+  dompetBalance: number;
+  setDompetBalance: React.Dispatch<React.SetStateAction<number>>;
+  showToast: (m: string) => void;
 }) {
   const [tab, setTab] = useState(0);
+  const [activeLunasiOrder, setActiveLunasiOrder] = useState<any | null>(null);
+  const [lunasiMethod, setLunasiMethod] = useState<"dompet" | "qris">("dompet");
+  const [showLunasiQris, setShowLunasiQris] = useState(false);
+
   const tabs = ["Aktif", "Selesai", "Dibatalkan"];
   const filtered = [
-    myOrders.filter(o => o.status === "Dikirim" || o.status === "Diproses" || o.status === "Aktif"),
+    myOrders.filter(o => o.status === "Dikirim" || o.status === "Diproses" || o.status === "Aktif" || o.status === "Menunggu Pelunasan"),
     myOrders.filter(o => o.status === "Selesai"),
     [],
   ][tab];
+
+  const handleLunasi = (order: any, methodOverride?: "dompet" | "qris") => {
+    const sisa = order.sisaAmount;
+    const method = methodOverride || lunasiMethod;
+
+    if (method === "dompet") {
+      if (dompetBalance < sisa) {
+        showToast("Saldo Dompet Rangers tidak mencukupi untuk pelunasan!");
+        return;
+      }
+      setDompetBalance(prev => prev - sisa);
+    }
+
+    setMyOrders(prev => prev.map(o => {
+      if (o.id === order.id) {
+        return {
+          ...o,
+          status: "Diproses",
+          statusColor: "orange",
+          sisaAmount: 0,
+          paymentType: "Full",
+          paymentHistory: [
+            ...(o.paymentHistory || []),
+            { label: "Pelunasan PO", amount: sisa, date: "Hari Ini", method: method === "dompet" ? "Dompet Rangers" : "QRIS" }
+          ]
+        };
+      }
+      return o;
+    }));
+
+    showToast(`Pelunasan PO sebesar ${rp(sisa)} via ${method === "dompet" ? "Dompet" : "QRIS"} berhasil!`);
+    setActiveLunasiOrder(null);
+    setShowLunasiQris(false);
+  };
+
   return (
     <div className="flex flex-col h-full bg-[#F7FAF8]">
       <div className="bg-white shrink-0">
@@ -3099,6 +3774,46 @@ function PesananScreen({
                       <p className="text-muted-foreground text-xs">{o.detail}</p>
                     </div>
                   </div>
+
+                  {/* Payment History and Installment timeline */}
+                  {o.paymentHistory && o.paymentHistory.length > 0 && (
+                    <div className="mt-3 bg-slate-50 rounded-xl p-3 border border-slate-100 flex flex-col gap-1.5">
+                      <p className="text-[9px] font-extrabold text-muted-foreground uppercase tracking-wide">Riwayat Pembayaran PO</p>
+                      {o.paymentHistory.map((h: any, idx: number) => (
+                        <div key={idx} className="flex justify-between items-center text-[10px] text-foreground font-semibold">
+                          <span className="text-muted-foreground">✓ {h.label} ({h.method})</span>
+                          <span className="text-primary font-bold">{rp(h.amount)}</span>
+                        </div>
+                      ))}
+                      {o.sisaAmount > 0 && (
+                        <div 
+                          onClick={() => setActiveLunasiOrder(o)}
+                          className="flex justify-between items-center text-[10px] text-amber-700 font-bold border-t border-dashed border-border pt-1.5 mt-1 cursor-pointer hover:underline"
+                          title="Klik untuk melunasi sisa pembayaran"
+                        >
+                          <span>○ Sisa Pembayaran PO (Klik untuk lunasi)</span>
+                          <span className="bg-amber-100 px-2 py-0.5 rounded text-amber-900">{rp(o.sisaAmount)}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Down Payment (DP) warning banner & payment trigger */}
+                  {o.status === "Menunggu Pelunasan" && (
+                    <div className="mt-3 bg-amber-50 border border-amber-200 rounded-xl p-3 flex flex-col gap-2">
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-amber-800 font-bold">⚠️ Menunggu Pelunasan PO</span>
+                        <span className="text-amber-900 font-extrabold">{rp(o.sisaAmount)}</span>
+                      </div>
+                      <button 
+                        onClick={() => setActiveLunasiOrder(o)}
+                        className="w-full py-2 bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-xs rounded-xl shadow-md cursor-pointer text-center"
+                      >
+                        Lunasi Sekarang
+                      </button>
+                    </div>
+                  )}
+
                   <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
                     <div>
                       <p className="text-[10px] text-muted-foreground">{o.date}</p>
@@ -3141,6 +3856,172 @@ function PesananScreen({
           </div>
         )}
       </div>
+
+      {/* Pelunasan Payment Option Dialog (Popup Modal) */}
+      {activeLunasiOrder && !showLunasiQris && (() => {
+        const sisa = activeLunasiOrder.sisaAmount;
+        return (
+          <div className="absolute inset-0 bg-black/70 z-50 flex items-center justify-center p-5">
+            <div className="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl border border-border relative flex flex-col max-h-[85%]">
+              
+              <div className="p-4 border-b border-border flex items-center justify-between shrink-0 bg-slate-50">
+                <span className="text-xs font-black text-foreground">Metode Pelunasan PO</span>
+                <button 
+                  onClick={() => setActiveLunasiOrder(null)}
+                  className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-muted-foreground cursor-pointer"
+                >
+                  <X size={12} />
+                </button>
+              </div>
+
+              <div className="p-5 overflow-y-auto flex-1 flex flex-col gap-4" style={{ scrollbarWidth: "none" }}>
+                
+                {/* Order Summary box */}
+                <div className="bg-slate-50 border border-slate-100 p-3.5 rounded-2xl flex flex-col gap-1">
+                  <div className="text-[10px] text-muted-foreground font-bold">Katering PO</div>
+                  <div className="text-xs text-foreground font-extrabold truncate">{activeLunasiOrder.item}</div>
+                  <div className="text-[10px] text-muted-foreground font-semibold mt-1">{activeLunasiOrder.detail}</div>
+                  <div className="flex justify-between items-center text-xs text-foreground font-bold border-t border-dashed border-border pt-2 mt-2">
+                    <span>Sisa Pelunasan</span>
+                    <span className="text-primary font-black text-sm">{rp(sisa)}</span>
+                  </div>
+                </div>
+
+                {/* Choices Selector */}
+                <div className="flex flex-col gap-2.5">
+                  <p className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wide">Pilih Metode Pelunasan</p>
+                  
+                  {/* Option 1: Dompet Rangers */}
+                  <div 
+                    onClick={() => setLunasiMethod("dompet")}
+                    className={`p-3.5 rounded-2xl border-2 transition-all cursor-pointer flex items-center gap-3 bg-white ${lunasiMethod === "dompet" ? "border-primary bg-primary/[0.02]" : "border-border hover:bg-slate-50"}`}
+                  >
+                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${lunasiMethod === "dompet" ? "border-primary" : "border-gray-300"}`}>
+                      {lunasiMethod === "dompet" && <div className="w-2 h-2 rounded-full bg-primary" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-extrabold text-foreground">Dompet Rangers</p>
+                      <p className="text-[9px] text-muted-foreground mt-0.5">Potong langsung dari saldo Anda.</p>
+                      <p className="text-primary font-bold text-xs mt-1">Saldo: {rp(dompetBalance)}</p>
+                    </div>
+                  </div>
+
+                  {/* Option 2: QRIS */}
+                  <div 
+                    onClick={() => setLunasiMethod("qris")}
+                    className={`p-3.5 rounded-2xl border-2 transition-all cursor-pointer flex items-center gap-3 bg-white ${lunasiMethod === "qris" ? "border-primary bg-primary/[0.02]" : "border-border hover:bg-slate-50"}`}
+                  >
+                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${lunasiMethod === "qris" ? "border-primary" : "border-gray-300"}`}>
+                      {lunasiMethod === "qris" && <div className="w-2 h-2 rounded-full bg-primary" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-extrabold text-foreground">QRIS Barcode Scan</p>
+                      <p className="text-[9px] text-muted-foreground mt-0.5">Scan & bayar instan dari aplikasi e-wallet Anda.</p>
+                    </div>
+                  </div>
+
+                </div>
+
+              </div>
+
+              {/* Action Buttons */}
+              <div className="p-4 border-t border-border bg-white flex gap-2.5 shrink-0 shadow-[0_-4px_16px_rgba(0,0,0,0.02)]">
+                <button 
+                  onClick={() => setActiveLunasiOrder(null)}
+                  className="flex-1 py-3 border border-border text-muted-foreground font-bold text-xs rounded-xl cursor-pointer hover:bg-slate-50 text-center"
+                >
+                  Batal
+                </button>
+                <button 
+                  onClick={() => {
+                    if (lunasiMethod === "qris") {
+                      setShowLunasiQris(true);
+                    } else {
+                      handleLunasi(activeLunasiOrder);
+                    }
+                  }}
+                  className="flex-[2] py-3 bg-primary hover:bg-primary/95 text-white font-extrabold text-xs rounded-xl shadow-md cursor-pointer text-center"
+                >
+                  Bayar Pelunasan
+                </button>
+              </div>
+
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Pelunasan QRIS Simulation Dialog */}
+      {showLunasiQris && activeLunasiOrder && (() => {
+        const sisa = activeLunasiOrder.sisaAmount;
+        return (
+          <div className="absolute inset-0 bg-[#1B7A4E] z-50 flex flex-col items-center justify-center p-6 text-white text-center">
+            <h2 className="text-xl font-extrabold mb-1">Pelunasan QRIS</h2>
+            <p className="text-green-200 text-xs mb-6">PGE Kamojang Community Payment Gate</p>
+
+            <div className="bg-white rounded-3xl p-6 shadow-xl w-full max-w-xs text-foreground flex flex-col items-center">
+              <div className="flex items-center justify-between w-full mb-3 border-b border-border pb-2">
+                <span className="text-[10px] font-bold text-gray-400 tracking-wider">QRIS STANDAR NASIONAL</span>
+                <span className="text-[10px] font-bold text-primary">RANGERS APP</span>
+              </div>
+              
+              <div className="text-xs text-muted-foreground mb-1">Jumlah Pelunasan PO</div>
+              <div className="text-xl font-extrabold text-foreground mb-4">{rp(sisa)}</div>
+              
+              <div className="w-48 h-48 border-4 border-gray-100 p-2 rounded-2xl flex items-center justify-center relative mb-4">
+                <svg viewBox="0 0 100 100" className="w-full h-full text-foreground fill-current">
+                  <rect x="0" y="0" width="25" height="25" fill="#000" />
+                  <rect x="5" y="5" width="15" height="15" fill="#fff" />
+                  <rect x="9" y="9" width="7" height="7" fill="#000" />
+                  
+                  <rect x="75" y="0" width="25" height="25" fill="#000" />
+                  <rect x="75" y="5" width="15" height="15" fill="#fff" />
+                  <rect x="79" y="9" width="7" height="7" fill="#000" />
+
+                  <rect x="0" y="75" width="25" height="25" fill="#000" />
+                  <rect x="5" y="75" width="15" height="15" fill="#fff" />
+                  <rect x="9" y="79" width="7" height="7" fill="#000" />
+
+                  <rect x="35" y="10" width="10" height="20" />
+                  <rect x="55" y="5" width="15" height="10" />
+                  <rect x="40" y="40" width="20" height="20" />
+                  <rect x="10" y="45" width="15" height="15" />
+                  <rect x="70" y="40" width="15" height="15" />
+                  <rect x="30" y="70" width="20" height="15" />
+                  <rect x="65" y="70" width="15" height="20" />
+                  <rect x="45" y="85" width="15" height="10" />
+                  
+                  <circle cx="50" cy="50" r="12" fill="#fff" />
+                  <circle cx="50" cy="50" r="9" fill="#1B7A4E" />
+                  <path d="M47 52 L50 47 L53 52" fill="#fff" />
+                </svg>
+                <div className="absolute inset-0 bg-black/5 rounded-2xl flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                  <span className="bg-white px-2 py-1 rounded text-[9px] font-bold shadow">Simulasi QRIS Pelunasan</span>
+                </div>
+              </div>
+
+              <p className="text-[10px] text-muted-foreground text-center">
+                Pindai QR di atas menggunakan aplikasi perbankan atau e-wallet Anda untuk menyelesaikan pelunasan
+              </p>
+            </div>
+
+            <button 
+              onClick={() => handleLunasi(activeLunasiOrder, "qris")}
+              className="w-full max-w-xs mt-8 py-3.5 bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-extrabold rounded-2xl text-sm transition-all shadow-md cursor-pointer"
+            >
+              ✅ Simulasikan Bayar Pelunasan Sukses
+            </button>
+
+            <button 
+              onClick={() => setShowLunasiQris(false)}
+              className="text-xs text-green-200 mt-4 hover:underline cursor-pointer"
+            >
+              Kembali
+            </button>
+          </div>
+        );
+      })()}
+
     </div>
   );
 }
@@ -3916,7 +4797,9 @@ function TrackingScreen({
   setMyOrders,
   showToast,
   unreadChatCount,
-  addDriverMessage
+  addDriverMessage,
+  dompetBalance,
+  setDompetBalance
 }: {
   navigate: (s: Screen) => void;
   activeTrackingOrderId: string | null;
@@ -3925,10 +4808,50 @@ function TrackingScreen({
   showToast: (m: string) => void;
   unreadChatCount: number;
   addDriverMessage: (text: string) => void;
+  dompetBalance: number;
+  setDompetBalance: React.Dispatch<React.SetStateAction<number>>;
 }) {
   const order = myOrders.find(o => o.id === activeTrackingOrderId);
   const [phase, setPhase] = useState(0); 
   const [tick, setTick] = useState(0);
+
+  const [activeLunasiOrder, setActiveLunasiOrder] = useState<any | null>(null);
+  const [lunasiMethod, setLunasiMethod] = useState<"dompet" | "qris">("dompet");
+  const [showLunasiQris, setShowLunasiQris] = useState(false);
+
+  const handleLunasi = (targetOrder: any, methodOverride?: "dompet" | "qris") => {
+    const sisa = targetOrder.sisaAmount;
+    const method = methodOverride || lunasiMethod;
+
+    if (method === "dompet") {
+      if (dompetBalance < sisa) {
+        showToast("Saldo Dompet Rangers tidak mencukupi untuk pelunasan!");
+        return;
+      }
+      setDompetBalance(prev => prev - sisa);
+    }
+
+    setMyOrders(prev => prev.map(o => {
+      if (o.id === targetOrder.id) {
+        return {
+          ...o,
+          status: "Diproses",
+          statusColor: "orange",
+          sisaAmount: 0,
+          paymentType: "Full",
+          paymentHistory: [
+            ...(o.paymentHistory || []),
+            { label: "Pelunasan PO", amount: sisa, date: "Hari Ini", method: method === "dompet" ? "Dompet Rangers" : "QRIS" }
+          ]
+        };
+      }
+      return o;
+    }));
+
+    showToast(`Pelunasan PO sebesar ${rp(sisa)} via ${method === "dompet" ? "Dompet" : "QRIS"} berhasil!`);
+    setActiveLunasiOrder(null);
+    setShowLunasiQris(false);
+  };
 
   const triggerDriverMessage = (nextPhase: number) => {
     let msg = "";
@@ -4217,6 +5140,45 @@ function TrackingScreen({
           </div>
         </div>
 
+        {/* Catering PO Payment History and Installment timeline inside Tracking Screen */}
+        {order.type === "Catering" && order.paymentHistory && order.paymentHistory.length > 0 && (
+          <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 shadow-sm flex flex-col gap-2">
+            <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Riwayat Pembayaran PO</h4>
+            {order.paymentHistory.map((h: any, idx: number) => (
+              <div key={idx} className="flex justify-between items-center text-xs font-semibold text-foreground">
+                <span className="text-muted-foreground">✓ {h.label} ({h.method})</span>
+                <span className="text-primary font-bold">{rp(h.amount)}</span>
+              </div>
+            ))}
+            {order.sisaAmount > 0 && (
+              <div 
+                onClick={() => setActiveLunasiOrder(order)}
+                className="flex justify-between items-center text-[11px] text-amber-700 font-bold border-t border-dashed border-border pt-2 mt-1.5 cursor-pointer hover:underline"
+                title="Klik untuk melunasi sisa pembayaran"
+              >
+                <span>○ Sisa Pembayaran PO (Klik untuk lunasi)</span>
+                <span className="bg-amber-100 px-2 py-0.5 rounded text-amber-900">{rp(order.sisaAmount)}</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Down Payment (DP) warning banner & payment trigger in Tracking Screen */}
+        {order.type === "Catering" && order.status === "Menunggu Pelunasan" && (
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 shadow-sm flex flex-col gap-2">
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-amber-800 font-bold">⚠️ Menunggu Pelunasan PO</span>
+              <span className="text-amber-900 font-extrabold">{rp(order.sisaAmount)}</span>
+            </div>
+            <button 
+              onClick={() => setActiveLunasiOrder(order)}
+              className="w-full py-2 bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-xs rounded-xl shadow-md cursor-pointer text-center active:scale-95 transition-all"
+            >
+              Lunasi Sekarang
+            </button>
+          </div>
+        )}
+
         {/* Payment Detail breakdown or Invoice Receipt */}
         {phase === 4 ? (
           /* Gojek-style Paper Invoice Receipt */
@@ -4353,6 +5315,172 @@ function TrackingScreen({
           )}
         </div>
       </div>
+
+      {/* Pelunasan Payment Option Dialog in Tracking (Popup Modal) */}
+      {activeLunasiOrder && !showLunasiQris && (() => {
+        const sisa = activeLunasiOrder.sisaAmount;
+        return (
+          <div className="absolute inset-0 bg-black/70 z-50 flex items-center justify-center p-5 text-foreground">
+            <div className="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl border border-border relative flex flex-col max-h-[85%]">
+              
+              <div className="p-4 border-b border-border flex items-center justify-between shrink-0 bg-slate-50">
+                <span className="text-xs font-black text-foreground">Metode Pelunasan PO</span>
+                <button 
+                  onClick={() => setActiveLunasiOrder(null)}
+                  className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-muted-foreground cursor-pointer"
+                >
+                  <X size={12} />
+                </button>
+              </div>
+
+              <div className="p-5 overflow-y-auto flex-1 flex flex-col gap-4" style={{ scrollbarWidth: "none" }}>
+                
+                {/* Order Summary box */}
+                <div className="bg-slate-50 border border-slate-100 p-3.5 rounded-2xl flex flex-col gap-1">
+                  <div className="text-[10px] text-muted-foreground font-bold">Katering PO</div>
+                  <div className="text-xs text-foreground font-extrabold truncate">{activeLunasiOrder.item}</div>
+                  <div className="text-[10px] text-muted-foreground font-semibold mt-1">{activeLunasiOrder.detail}</div>
+                  <div className="flex justify-between items-center text-xs text-foreground font-bold border-t border-dashed border-border pt-2 mt-2">
+                    <span>Sisa Pelunasan</span>
+                    <span className="text-primary font-black text-sm">{rp(sisa)}</span>
+                  </div>
+                </div>
+
+                {/* Choices Selector */}
+                <div className="flex flex-col gap-2.5">
+                  <p className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wide">Pilih Metode Pelunasan</p>
+                  
+                  {/* Option 1: Dompet Rangers */}
+                  <div 
+                    onClick={() => setLunasiMethod("dompet")}
+                    className={`p-3.5 rounded-2xl border-2 transition-all cursor-pointer flex items-center gap-3 bg-white ${lunasiMethod === "dompet" ? "border-primary bg-primary/[0.02]" : "border-border hover:bg-slate-50"}`}
+                  >
+                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${lunasiMethod === "dompet" ? "border-primary" : "border-gray-300"}`}>
+                      {lunasiMethod === "dompet" && <div className="w-2 h-2 rounded-full bg-primary" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-extrabold text-foreground">Dompet Rangers</p>
+                      <p className="text-[9px] text-muted-foreground mt-0.5">Potong langsung dari saldo Anda.</p>
+                      <p className="text-primary font-bold text-xs mt-1">Saldo: {rp(dompetBalance)}</p>
+                    </div>
+                  </div>
+
+                  {/* Option 2: QRIS */}
+                  <div 
+                    onClick={() => setLunasiMethod("qris")}
+                    className={`p-3.5 rounded-2xl border-2 transition-all cursor-pointer flex items-center gap-3 bg-white ${lunasiMethod === "qris" ? "border-primary bg-primary/[0.02]" : "border-border hover:bg-slate-50"}`}
+                  >
+                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${lunasiMethod === "qris" ? "border-primary" : "border-gray-300"}`}>
+                      {lunasiMethod === "qris" && <div className="w-2 h-2 rounded-full bg-primary" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-extrabold text-foreground">QRIS Barcode Scan</p>
+                      <p className="text-[9px] text-muted-foreground mt-0.5">Scan & bayar instan dari aplikasi e-wallet Anda.</p>
+                    </div>
+                  </div>
+
+                </div>
+
+              </div>
+
+              {/* Action Buttons */}
+              <div className="p-4 border-t border-border bg-white flex gap-2.5 shrink-0 shadow-[0_-4px_16px_rgba(0,0,0,0.02)]">
+                <button 
+                  onClick={() => setActiveLunasiOrder(null)}
+                  className="flex-1 py-3 border border-border text-muted-foreground font-bold text-xs rounded-xl cursor-pointer hover:bg-slate-50 text-center"
+                >
+                  Batal
+                </button>
+                <button 
+                  onClick={() => {
+                    if (lunasiMethod === "qris") {
+                      setShowLunasiQris(true);
+                    } else {
+                      handleLunasi(activeLunasiOrder);
+                    }
+                  }}
+                  className="flex-[2] py-3 bg-primary hover:bg-primary/95 text-white font-extrabold text-xs rounded-xl shadow-md cursor-pointer text-center"
+                >
+                  Bayar Pelunasan
+                </button>
+              </div>
+
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Pelunasan QRIS Simulation Dialog in Tracking */}
+      {showLunasiQris && activeLunasiOrder && (() => {
+        const sisa = activeLunasiOrder.sisaAmount;
+        return (
+          <div className="absolute inset-0 bg-[#1B7A4E] z-50 flex flex-col items-center justify-center p-6 text-white text-center">
+            <h2 className="text-xl font-extrabold mb-1">Pelunasan QRIS</h2>
+            <p className="text-green-200 text-xs mb-6">PGE Kamojang Community Payment Gate</p>
+
+            <div className="bg-white rounded-3xl p-6 shadow-xl w-full max-w-xs text-foreground flex flex-col items-center">
+              <div className="flex items-center justify-between w-full mb-3 border-b border-border pb-2">
+                <span className="text-[10px] font-bold text-gray-400 tracking-wider">QRIS STANDAR NASIONAL</span>
+                <span className="text-[10px] font-bold text-primary">RANGERS APP</span>
+              </div>
+              
+              <div className="text-xs text-muted-foreground mb-1">Jumlah Pelunasan PO</div>
+              <div className="text-xl font-extrabold text-foreground mb-4">{rp(sisa)}</div>
+              
+              <div className="w-48 h-48 border-4 border-gray-100 p-2 rounded-2xl flex items-center justify-center relative mb-4">
+                <svg viewBox="0 0 100 100" className="w-full h-full text-foreground fill-current">
+                  <rect x="0" y="0" width="25" height="25" fill="#000" />
+                  <rect x="5" y="5" width="15" height="15" fill="#fff" />
+                  <rect x="9" y="9" width="7" height="7" fill="#000" />
+                  
+                  <rect x="75" y="0" width="25" height="25" fill="#000" />
+                  <rect x="75" y="5" width="15" height="15" fill="#fff" />
+                  <rect x="79" y="9" width="7" height="7" fill="#000" />
+
+                  <rect x="0" y="75" width="25" height="25" fill="#000" />
+                  <rect x="5" y="75" width="15" height="15" fill="#fff" />
+                  <rect x="9" y="79" width="7" height="7" fill="#000" />
+
+                  <rect x="35" y="10" width="10" height="20" />
+                  <rect x="55" y="5" width="15" height="10" />
+                  <rect x="40" y="40" width="20" height="20" />
+                  <rect x="10" y="45" width="15" height="15" />
+                  <rect x="70" y="40" width="15" height="15" />
+                  <rect x="30" y="70" width="20" height="15" />
+                  <rect x="65" y="70" width="15" height="20" />
+                  <rect x="45" y="85" width="15" height="10" />
+                  
+                  <circle cx="50" cy="50" r="12" fill="#fff" />
+                  <circle cx="50" cy="50" r="9" fill="#1B7A4E" />
+                  <path d="M47 52 L50 47 L53 52" fill="#fff" />
+                </svg>
+                <div className="absolute inset-0 bg-black/5 rounded-2xl flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                  <span className="bg-white px-2 py-1 rounded text-[9px] font-bold shadow">Simulasi QRIS Pelunasan</span>
+                </div>
+              </div>
+
+              <p className="text-[10px] text-muted-foreground text-center">
+                Pindai QR di atas menggunakan aplikasi perbankan atau e-wallet Anda untuk menyelesaikan pelunasan
+              </p>
+            </div>
+
+            <button 
+              onClick={() => handleLunasi(activeLunasiOrder, "qris")}
+              className="w-full max-w-xs mt-8 py-3.5 bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-extrabold rounded-2xl text-sm transition-all shadow-md cursor-pointer"
+            >
+              ✅ Simulasikan Bayar Pelunasan Sukses
+            </button>
+
+            <button 
+              onClick={() => setShowLunasiQris(false)}
+              className="text-xs text-green-200 mt-4 hover:underline cursor-pointer"
+            >
+              Kembali
+            </button>
+          </div>
+        );
+      })()}
+
     </div>
   );
 }
@@ -4863,7 +5991,8 @@ function MitraRegistrationScreen({ navigate, setActiveMitraRoles }: Nav & { setA
     { id: "driver", title: "Kurir / Driver", icon: Bike, color: "text-orange-500", bg: "bg-orange-100" },
     { id: "kos", title: "Pemilik Kos", icon: Building2, color: "text-purple-500", bg: "bg-purple-100" },
     { id: "laundry", title: "Pemilik Laundry", icon: Wind, color: "text-blue-500", bg: "bg-blue-100" },
-    { id: "catering", title: "Pemilik Catering", icon: Coffee, color: "text-yellow-600", bg: "bg-yellow-100" }
+    { id: "catering", title: "Pemilik Catering", icon: Coffee, color: "text-yellow-600", bg: "bg-yellow-100" },
+    { id: "marketplace", title: "Pemilik Marketplace", icon: Store, color: "text-emerald-600", bg: "bg-emerald-100" }
   ];
 
   const handleNext = () => {
@@ -4972,29 +6101,99 @@ function MitraRegistrationScreen({ navigate, setActiveMitraRoles }: Nav & { setA
 
         {step === 3 && (
           <div className="p-6">
-            <h3 className="text-xl font-black text-gray-900 mb-2">Detail Usaha / Kendaraan</h3>
-            <p className="text-sm text-gray-500 mb-6">Lengkapi informasi spesifik untuk peran yang Anda pilih.</p>
+            <h3 className="text-xl font-black text-gray-900 mb-2">Detail Usaha & Legalitas</h3>
+            <p className="text-sm text-gray-500 mb-6">Lengkapi informasi spesifik untuk verifikasi pendaftaran peran Anda.</p>
             
             <div className="flex flex-col gap-6">
               {roles.includes("driver") && (
                 <div className="p-4 border border-gray-100 rounded-2xl bg-gray-50">
-                  <h4 className="font-bold text-sm text-primary flex items-center gap-2 mb-3"><Bike size={16} /> Data Kendaraan (Driver)</h4>
+                  <h4 className="font-bold text-sm text-primary flex items-center gap-2 mb-3"><Bike size={16} /> Data Kendaraan & SIM (Driver)</h4>
                   <div className="flex flex-col gap-3">
-                    <input type="text" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm" placeholder="Plat Nomor Kendaraan (Cth: D 1234 ABC)" />
-                    <input type="text" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm" placeholder="Tipe Kendaraan (Cth: Honda Beat)" />
-                    <div className="w-full h-24 border border-dashed border-gray-300 rounded-xl flex items-center justify-center bg-white text-gray-400">
-                      <span className="text-xs font-medium">+ Upload Foto SIM C</span>
+                    <input type="text" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary" placeholder="Plat Nomor Kendaraan (Cth: D 1234 ABC)" />
+                    <input type="text" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary" placeholder="Tipe Kendaraan (Cth: Honda Beat)" />
+                    <input type="text" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary" placeholder="Nomor SIM C (12 Digit)" />
+                    <input type="text" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary" placeholder="Nomor STNK Kendaraan" />
+                    
+                    <div className="grid grid-cols-2 gap-2 mt-1">
+                      <div className="h-24 border border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center bg-white text-gray-400">
+                        <Camera size={18} className="mb-1" />
+                        <span className="text-[9px] font-medium text-center px-1">Upload SIM C</span>
+                      </div>
+                      <div className="h-24 border border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center bg-white text-gray-400">
+                        <Camera size={18} className="mb-1" />
+                        <span className="text-[9px] font-medium text-center px-1">Upload STNK / Plat</span>
+                      </div>
                     </div>
                   </div>
                 </div>
               )}
 
-              {(roles.includes("kos") || roles.includes("laundry") || roles.includes("catering")) && (
+              {roles.includes("marketplace") && (
                 <div className="p-4 border border-gray-100 rounded-2xl bg-gray-50">
-                  <h4 className="font-bold text-sm text-primary flex items-center gap-2 mb-3"><Store size={16} /> Data Usaha</h4>
+                  <h4 className="font-bold text-sm text-primary flex items-center gap-2 mb-3"><Store size={16} /> Data Toko & Izin Usaha (Marketplace)</h4>
                   <div className="flex flex-col gap-3">
-                    <input type="text" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm" placeholder="Nama Usaha (Cth: Kos Putri Melati)" />
-                    <textarea className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm h-24 resize-none" placeholder="Alamat Lengkap Usaha..." />
+                    <input type="text" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary" placeholder="Nama Toko / Outlet" />
+                    <select className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700 focus:outline-none focus:border-primary">
+                      <option value="">Pilih Kategori Bisnis</option>
+                      <option value="makanan">Makanan & Minuman</option>
+                      <option value="fashion">Pakaian & Fashion</option>
+                      <option value="kesehatan">Kesehatan & Kecantikan</option>
+                      <option value="lainnya">Kerajinan & Lainnya</option>
+                    </select>
+                    <input type="text" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary" placeholder="Nomor Induk Berusaha (NIB)" />
+                    <input type="text" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary" placeholder="Nomor NPWP Pemilik Usaha" />
+                    <textarea className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm h-16 resize-none focus:outline-none focus:border-primary" placeholder="Alamat Lengkap Toko & GPS Koordinat..." />
+                    
+                    <div className="grid grid-cols-2 gap-2 mt-1">
+                      <div className="h-24 border border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center bg-white text-gray-400">
+                        <Camera size={18} className="mb-1" />
+                        <span className="text-[9px] font-medium text-center px-1">Upload KTP Pemilik</span>
+                      </div>
+                      <div className="h-24 border border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center bg-white text-gray-400">
+                        <Camera size={18} className="mb-1" />
+                        <span className="text-[9px] font-medium text-center px-1">Upload Foto Toko</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {roles.includes("catering") && (
+                <div className="p-4 border border-gray-100 rounded-2xl bg-gray-50">
+                  <h4 className="font-bold text-sm text-primary flex items-center gap-2 mb-3"><Coffee size={16} /> Data Dapur & Sertifikasi (Catering)</h4>
+                  <div className="flex flex-col gap-3">
+                    <input type="text" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary" placeholder="Nama Dapur Catering" />
+                    <select className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700 focus:outline-none focus:border-primary">
+                      <option value="">Pilih Jenis Layanan Utama</option>
+                      <option value="nasibox">Prasmanan & Nasi Box</option>
+                      <option value="tumpeng">Nasi Tumpeng Event</option>
+                      <option value="bento">Bento Kidz Special</option>
+                      <option value="snackbox">Snack Box & Coffee Break</option>
+                    </select>
+                    <input type="number" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary" placeholder="Kapasitas Dapur Harian (Pax / Hari)" />
+                    <input type="text" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary" placeholder="Nomor Sertifikat Halal (Bila Ada)" />
+                    <input type="text" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary" placeholder="No. Sertifikat Higiene Sanitasi Dinas Kesehatan" />
+                    
+                    <div className="grid grid-cols-2 gap-2 mt-1">
+                      <div className="h-24 border border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center bg-white text-gray-400">
+                        <Camera size={18} className="mb-1" />
+                        <span className="text-[9px] font-medium text-center px-1">Upload KTP PJ Dapur</span>
+                      </div>
+                      <div className="h-24 border border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center bg-white text-gray-400">
+                        <Camera size={18} className="mb-1" />
+                        <span className="text-[9px] font-medium text-center px-1">Upload Foto Dapur</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {(roles.includes("kos") || roles.includes("laundry")) && (
+                <div className="p-4 border border-gray-100 rounded-2xl bg-gray-50">
+                  <h4 className="font-bold text-sm text-primary flex items-center gap-2 mb-3"><Building2 size={16} /> Data Properti & Lokasi Usaha</h4>
+                  <div className="flex flex-col gap-3">
+                    <input type="text" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary" placeholder="Nama Usaha (Cth: Kos Putri Melati)" />
+                    <textarea className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm h-20 resize-none focus:outline-none focus:border-primary" placeholder="Alamat Lengkap Usaha..." />
                   </div>
                 </div>
               )}
@@ -5040,12 +6239,106 @@ const MOCK_LAUNDRY_ORDERS = [
   { id: "#LND-922", name: "Dewi Lestari", phone: "0812 5678 9012", address: "Jl. Raya Kamojang No. 20", service: "Cuci Komplit", notes: "Baju kerja & pakaian harian", status: "menunggu_harga", pricePerKg: 6000, weight: 4.5, total: 0, date: "16 Jul 2026, 15:00", userAvatar: "https://i.pravatar.cc/150?img=9" }
 ];
 
-function DriverHome({ navigate, activeMitraRoles }: Nav & { activeMitraRoles: string[] }) {
+function DriverHome({ navigate, activeMitraRoles, showToast }: Nav & { activeMitraRoles: string[]; showToast: (m: string) => void }) {
   const [online, setOnline] = useState(false);
   const [dashboardMode, setDashboardMode] = useState<"driver"|"mitra">(activeMitraRoles.includes("driver") ? "driver" : "mitra");
   
+  const [storeOpen, setStoreOpen] = useState(true);
+  const [mktOrderStatus, setMktOrderStatus] = useState<"new" | "preparing" | "searching" | "otw">("new");
+  const [menuStatusList, setMenuStatusList] = useState({ 1: true, 2: true, 3: false });
+
+  const [showMktHistory, setShowMktHistory] = useState(false);
+  const [showMktPromo, setShowMktPromo] = useState(false);
+  const [showMktSettings, setShowMktSettings] = useState(false);
+
+  const [promoList, setPromoList] = useState([
+    { id: 1, type: "Diskon Ongkir", name: "Subsidi Ongkir Kamojang", value: 5000, active: true },
+    { id: 2, type: "Coret Harga", name: "Diskon Sore Nasi Timbel", value: 3000, active: false }
+  ]);
+
+  const [mktStoreInfo, setMktStoreInfo] = useState({
+    name: "Warung Bu Siti Khas Kamojang",
+    hours: "08:00 - 20:00",
+    address: "Jl. Aster No. 7, Kamojang, Kab. Garut",
+    phone: "0812-3456-7890"
+  });
+
+  const mktHistoryData = [
+    { id: "MKT-799", customer: "Asep Sunandar", items: "1x Nasi Timbel, 1x Es Jeruk", total: 33000, date: "Hari Ini, 10:20", status: "Selesai" },
+    { id: "MKT-798", customer: "Neng Lilis", items: "2x Ayam Bakar Madu", total: 56000, date: "Kemarin, 19:40", status: "Selesai" },
+    { id: "MKT-797", customer: "Kang Emil", items: "3x Nasi Timbel Komplit", total: 75000, date: "13 Jan 2024, 12:15", status: "Selesai" }
+  ];
+
+  const [showMktFinance, setShowMktFinance] = useState(false);
+  const [showMktHours, setShowMktHours] = useState(false);
+  const [showMktReviews, setShowMktReviews] = useState(false);
+
+  const [mktFinanceData, setMktFinanceData] = useState({
+    totalOmzet: 3240000,
+    withdrawn: 2000000,
+    available: 1240000
+  });
+
+  const [mktScheduleHours, setMktScheduleHours] = useState([
+    { day: "Senin - Jumat", open: "08:00", close: "20:00", active: true },
+    { day: "Sabtu - Minggu", open: "09:00", close: "22:00", active: true }
+  ]);
+
+  const [mktReviews, setMktReviews] = useState([
+    { id: 1, customer: "Asep Sunandar", rating: 5, date: "14 Jul 2026", comment: "Nasi timbelnya enak banget, sambalnya pedas mantap!", reply: "" },
+    { id: 2, customer: "Neng Lilis", rating: 4, date: "13 Jul 2026", comment: "Ayam bakar madunya manis gurih, tapi jeruknya agak asem.", reply: "Terima kasih Neng Lilis atas masukannya!" }
+  ]);
+
+  const [kitchenOpen, setKitchenOpen] = useState(true);
+  const [catOrderStatus, setCatOrderStatus] = useState<"pending" | "cooking" | "ready" | "delivered">("pending");
+  const [showCatPackages, setShowCatPackages] = useState(false);
+  const [showCatSchedule, setShowCatSchedule] = useState(false);
+  const [showCatSettings, setShowCatSettings] = useState(false);
+  const [minPoDays, setMinPoDays] = useState(1);
+  const [minPax, setMinPax] = useState(10);
+
+  const [catPackages, setCatPackages] = useState([
+    { id: 1, name: "Paket Nasi Tumpeng Mini", price: 25000, minPax: 10, active: true },
+    { id: 2, name: "Paket Nasi Box Ayam Bakar", price: 22000, minPax: 15, active: true },
+    { id: 3, name: "Paket Bento Kidz Special", price: 27500, minPax: 10, active: false }
+  ]);
+
+  const catScheduleData = [
+    { id: "PO-481", customer: "Rizky Pangestu", package: "Nasi Tumpeng (20 Pax)", date: "Besok, 12:00 WIB", status: "Bumbu & Bahan Siap" },
+    { id: "PO-482", customer: "Ibu Amanda", package: "Nasi Box Ayam Bakar (50 Pax)", date: "17 Juli 2026, 10:00 WIB", status: "Menunggu Bahan" }
+  ];
+
+  const [showCatFinance, setShowCatFinance] = useState(false);
+  const [showCatHolidays, setShowCatHolidays] = useState(false);
+  const [showCatInvoice, setShowCatInvoice] = useState(false);
+
+  const [catFinanceData, setCatFinanceData] = useState({
+    totalOmzet: 1850000,
+    dpSettled: 1500000,
+    pendingPelunasan: 350000,
+    withdrawn: 1000000
+  });
+
+  const [catHolidays, setCatHolidays] = useState([
+    { id: 1, name: "Tahun Baru Islam", date: "19 Juli 2026", active: true },
+    { id: 2, name: "Libur Dapur Bersama", date: "25 Juli 2026", active: false }
+  ]);
+
+  const catInvoiceData = {
+    poId: "PO-481",
+    customer: "Rizky Pangestu",
+    phone: "0812-9876-5432",
+    package: "Paket Nasi Tumpeng Mini (20 Pax)",
+    deliveryTime: "Besok, 12:00 WIB",
+    address: "Kost Orange Room 3, Gg. Barokah, Kamojang",
+    totalPrice: 500000,
+    dpPaid: 150000,
+    remaining: 350000,
+    paymentMethod: "Dompet Rangers"
+  };
+
   const hasDriver = activeMitraRoles.includes("driver");
-  const businessRoles = activeMitraRoles.filter(r => ["kos", "laundry", "catering"].includes(r));
+  const businessRoles = activeMitraRoles.filter(r => ["kos", "laundry", "catering", "marketplace"].includes(r));
   const hasBusiness = businessRoles.length > 0;
   const [activeBusinessTab, setActiveBusinessTab] = useState<string>(businessRoles[0] || "");
 
@@ -5153,7 +6446,7 @@ function DriverHome({ navigate, activeMitraRoles }: Nav & { activeMitraRoles: st
     <div className="flex flex-col h-full bg-[#F7FAF8]">
       {activeLaundryScreen === "dashboard" ? (
         <>
-          <div className={`shrink-0 transition-colors duration-500 ${online ? "bg-gradient-to-b from-[#0D5C36] to-[#1B7A4E]" : "bg-gradient-to-b from-gray-700 to-gray-600"}`}>
+          <div className={`shrink-0 transition-colors duration-500 ${(online || dashboardMode === "mitra") ? "bg-gradient-to-b from-[#0D5C36] to-[#1B7A4E]" : "bg-gradient-to-b from-gray-700 to-gray-600"}`}>
             <StatusBar light />
         <div className="px-5 pb-5">
           <div className="flex items-center justify-between">
@@ -5316,6 +6609,14 @@ function DriverHome({ navigate, activeMitraRoles }: Nav & { activeMitraRoles: st
                     className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-colors border ${activeBusinessTab === "catering" ? "bg-yellow-600 border-yellow-600 text-white shadow-md shadow-yellow-600/20" : "bg-white text-gray-500 border-gray-200"}`}
                   >
                     <Coffee size={14} /> Pemilik Catering
+                  </button>
+                )}
+                {businessRoles.includes("marketplace") && (
+                  <button 
+                    onClick={() => setActiveBusinessTab("marketplace")}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-colors border ${activeBusinessTab === "marketplace" ? "bg-emerald-600 border-emerald-600 text-white shadow-md shadow-emerald-600/20" : "bg-white text-gray-500 border-gray-200"}`}
+                  >
+                    <Store size={14} /> Pemilik Marketplace
                   </button>
                 )}
               </div>
@@ -5618,17 +6919,1265 @@ function DriverHome({ navigate, activeMitraRoles }: Nav & { activeMitraRoles: st
 
             {/* --- CATERING DASHBOARD --- */}
             {activeBusinessTab === "catering" && (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <div className="w-16 h-16 bg-yellow-50 text-yellow-600 rounded-full flex items-center justify-center mb-4">
-                  <Coffee size={32} />
+              <div className="flex flex-col gap-4">
+                {/* Kitchen Status Banner for Catering */}
+                <div className="bg-amber-950 text-white rounded-[24px] p-4 flex flex-col gap-3.5 shadow-md relative overflow-hidden">
+                  <div className="absolute right-[-20px] top-[-20px] w-24 h-24 bg-amber-800/20 rounded-full" />
+                  <div className="flex items-center justify-between relative z-10">
+                    <div>
+                      <h4 className="text-[10px] font-black text-amber-300 uppercase tracking-widest">Status Dapur Katering</h4>
+                      <p className="text-sm font-extrabold mt-0.5">{kitchenOpen ? "🟢 Dapur Aktif (Menerima PO)" : "🔴 Dapur Sibuk (PO Dijeda)"}</p>
+                    </div>
+                    <button 
+                      onClick={() => {
+                        setKitchenOpen(!kitchenOpen);
+                        showToast(kitchenOpen ? "Status dapur diubah menjadi SIBUK (PO Dijeda)" : "Status dapur diubah menjadi AKTIF (Menerima PO)");
+                      }}
+                      className={`px-3 py-1.5 rounded-xl font-bold text-xs cursor-pointer shadow transition-all ${kitchenOpen ? "bg-red-500 text-white hover:bg-red-600" : "bg-amber-500 text-white hover:bg-amber-600"}`}
+                    >
+                      {kitchenOpen ? "Set Sibuk" : "Set Aktif"}
+                    </button>
+                  </div>
+                  <div className="border-t border-amber-800/50 pt-3 grid grid-cols-3 gap-2 text-center text-[10px] relative z-10">
+                    <div>
+                      <span className="text-amber-300 block">Rating Rasa</span>
+                      <span className="font-bold text-sm">4.9 ★</span>
+                    </div>
+                    <div>
+                      <span className="text-amber-300 block">Tepat Waktu</span>
+                      <span className="font-bold text-sm">100%</span>
+                    </div>
+                    <div>
+                      <span className="text-amber-300 block">Kapasitas Dapur</span>
+                      <span className="font-bold text-sm">85/100 pax</span>
+                    </div>
+                  </div>
                 </div>
-                <h3 className="font-bold text-gray-900 mb-1">Dasbor Catering</h3>
-                <p className="text-sm text-gray-500">Fitur manajemen catering akan segera hadir.</p>
+
+                {/* Catering Hub */}
+                <div className="mb-2">
+                  <h3 className="font-bold text-sm text-gray-900 mb-3">Pusat Kelola Katering (Catering Hub)</h3>
+                  <div className="grid grid-cols-3 gap-2.5">
+                    <button 
+                      onClick={() => setShowCatSchedule(true)}
+                      className="bg-white border border-gray-100 hover:border-amber-200 p-3.5 rounded-2xl shadow-sm flex flex-col items-center gap-2 cursor-pointer transition-all active:scale-95 group"
+                    >
+                      <div className="w-10 h-10 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center group-hover:bg-amber-100 transition-colors">
+                        <Clock size={18} />
+                      </div>
+                      <span className="text-[10px] font-black text-gray-700 text-center leading-tight">Jadwal Kirim PO</span>
+                    </button>
+                    <button 
+                      onClick={() => setShowCatPackages(true)}
+                      className="bg-white border border-gray-100 hover:border-amber-200 p-3.5 rounded-2xl shadow-sm flex flex-col items-center gap-2 cursor-pointer transition-all active:scale-95 group"
+                    >
+                      <div className="w-10 h-10 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center group-hover:bg-amber-100 transition-colors">
+                        <Utensils size={18} />
+                      </div>
+                      <span className="text-[10px] font-black text-gray-700 text-center leading-tight">Daftar Paket</span>
+                    </button>
+                    <button 
+                      onClick={() => setShowCatSettings(true)}
+                      className="bg-white border border-gray-100 hover:border-amber-200 p-3.5 rounded-2xl shadow-sm flex flex-col items-center gap-2 cursor-pointer transition-all active:scale-95 group"
+                    >
+                      <div className="w-10 h-10 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center group-hover:bg-amber-100 transition-colors">
+                        <SlidersHorizontal size={18} />
+                      </div>
+                      <span className="text-[10px] font-black text-gray-700 text-center leading-tight">Aturan PO</span>
+                    </button>
+
+                    <button 
+                      onClick={() => setShowCatFinance(true)}
+                      className="bg-white border border-gray-100 hover:border-amber-200 p-3.5 rounded-2xl shadow-sm flex flex-col items-center gap-2 cursor-pointer transition-all active:scale-95 group"
+                    >
+                      <div className="w-10 h-10 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center group-hover:bg-amber-100 transition-colors">
+                        <Wallet size={18} />
+                      </div>
+                      <span className="text-[10px] font-black text-gray-700 text-center leading-tight">Ringkasan Uang</span>
+                    </button>
+                    <button 
+                      onClick={() => setShowCatHolidays(true)}
+                      className="bg-white border border-gray-100 hover:border-amber-200 p-3.5 rounded-2xl shadow-sm flex flex-col items-center gap-2 cursor-pointer transition-all active:scale-95 group"
+                    >
+                      <div className="w-10 h-10 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center group-hover:bg-amber-100 transition-colors">
+                        <AlertCircle size={18} />
+                      </div>
+                      <span className="text-[10px] font-black text-gray-700 text-center leading-tight">Hari Libur</span>
+                    </button>
+                    <button 
+                      onClick={() => setShowCatInvoice(true)}
+                      className="bg-white border border-gray-100 hover:border-amber-200 p-3.5 rounded-2xl shadow-sm flex flex-col items-center gap-2 cursor-pointer transition-all active:scale-95 group"
+                    >
+                      <div className="w-10 h-10 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center group-hover:bg-amber-100 transition-colors">
+                        <Package size={18} />
+                      </div>
+                      <span className="text-[10px] font-black text-gray-700 text-center leading-tight">Nota & Surat Jalan</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Catering PO Orders */}
+                <div className="mb-6">
+                  <div className="flex items-center justify-between mb-3 mt-2">
+                    <h3 className="font-bold text-sm text-gray-900">Pesanan Catering PO Masuk</h3>
+                    {catOrderStatus === "pending" && <Pill color="yellow">1 pending</Pill>}
+                    {catOrderStatus === "cooking" && <Pill color="orange">Sedang dimasak</Pill>}
+                    {catOrderStatus === "ready" && <Pill color="green">Siap kirim</Pill>}
+                    {catOrderStatus === "delivered" && <Pill color="blue">Telah dikirim</Pill>}
+                  </div>
+                  
+                  <div className="bg-white rounded-[20px] p-4 border border-gray-100 shadow-sm relative overflow-hidden transition-all duration-300">
+                    <div className={`absolute top-0 left-0 w-1.5 h-full transition-colors ${catOrderStatus === 'pending' ? 'bg-yellow-500' : catOrderStatus === 'cooking' ? 'bg-orange-500' : catOrderStatus === 'ready' ? 'bg-green-500' : 'bg-blue-500'}`} />
+                    
+                    <div className="flex justify-between items-center mb-3 border-b border-dashed border-gray-100 pb-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-full bg-yellow-50 text-yellow-600 flex items-center justify-center">
+                          <Coffee size={14} />
+                        </div>
+                        <div>
+                          <p className="font-extrabold text-[13px] text-gray-900">PO #CAT-481</p>
+                          <p className="text-[10px] text-gray-500">Rizky Pangestu · Nasi Tumpeng (20 Pax)</p>
+                        </div>
+                      </div>
+                      <span className="bg-amber-100 text-amber-800 text-[9px] font-bold px-2 py-0.5 rounded">DP 30% Lunas</span>
+                    </div>
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <p className="text-[9px] text-gray-400">Tanggal Pengiriman</p>
+                        <p className="font-extrabold text-[11px] text-gray-800">Besok, 12:00 WIB</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[9px] text-gray-400">Sisa Pelunasan</p>
+                        <p className="font-extrabold text-[12px] text-amber-700">{rp(350000)}</p>
+                      </div>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <p className="text-[10px] text-gray-400">Total Nilai PO</p>
+                        <p className="font-black text-[14px] text-gray-900">{rp(500000)}</p>
+                      </div>
+                      <div className="flex gap-2">
+                        {catOrderStatus === "pending" && (
+                          <button 
+                            onClick={() => {
+                              setCatOrderStatus("cooking");
+                              showToast("Pesanan PO diterima! Memulai proses masak.");
+                            }}
+                            className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow shadow-amber-500/20"
+                          >
+                            🍳 Terima & Masak
+                          </button>
+                        )}
+                        {catOrderStatus === "cooking" && (
+                          <button 
+                            onClick={() => {
+                              setCatOrderStatus("ready");
+                              showToast("Proses masak selesai! Makanan siap kirim.");
+                            }}
+                            className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow shadow-orange-500/20"
+                          >
+                            🍲 Siap Kirim
+                          </button>
+                        )}
+                        {catOrderStatus === "ready" && (
+                          <button 
+                            onClick={() => {
+                              setCatOrderStatus("delivered");
+                              showToast("Pesanan PO diserahkan ke kurir pengiriman.");
+                            }}
+                            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow shadow-green-600/20"
+                          >
+                            🚚 Kirim Sekarang
+                          </button>
+                        )}
+                        {catOrderStatus === "delivered" && (
+                          <span className="text-xs font-bold text-green-600 bg-green-50 px-3 py-2 rounded-xl flex items-center gap-1">
+                            ✓ Pesanan Selesai
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            )}
+
+            {/* --- MARKETPLACE DASHBOARD --- */}
+            {activeBusinessTab === "marketplace" && (
+              <div className="flex flex-col gap-4">
+                {/* Outlet Status Banner for Marketplace */}
+                <div className="bg-emerald-950 text-white rounded-[24px] p-4 flex flex-col gap-3.5 shadow-md relative overflow-hidden">
+                  <div className="absolute right-[-20px] top-[-20px] w-24 h-24 bg-emerald-800/20 rounded-full" />
+                  <div className="flex items-center justify-between relative z-10">
+                    <div>
+                      <h4 className="text-[10px] font-black text-emerald-300 uppercase tracking-widest">Status Outlet Anda</h4>
+                      <p className="text-sm font-extrabold mt-0.5">{storeOpen ? "🟢 Toko Buka (Menerima Order)" : "🔴 Toko Tutup (Offline)"}</p>
+                    </div>
+                    <button 
+                      onClick={() => {
+                        setStoreOpen(!storeOpen);
+                        showToast(storeOpen ? "Status outlet diubah menjadi TUTUP" : "Status outlet diubah menjadi BUKA");
+                      }}
+                      className={`px-3 py-1.5 rounded-xl font-bold text-xs cursor-pointer shadow transition-all ${storeOpen ? "bg-red-500 text-white hover:bg-red-600" : "bg-emerald-500 text-white hover:bg-emerald-600"}`}
+                    >
+                      {storeOpen ? "Tutup Outlet" : "Buka Outlet"}
+                    </button>
+                  </div>
+                  <div className="border-t border-emerald-800/50 pt-3 grid grid-cols-3 gap-2 text-center text-[10px] relative z-10">
+                    <div>
+                      <span className="text-emerald-300 block">Rating Toko</span>
+                      <span className="font-bold text-sm">4.9 ★</span>
+                    </div>
+                    <div>
+                      <span className="text-emerald-300 block">Penyelesaian</span>
+                      <span className="font-bold text-sm">99.4%</span>
+                    </div>
+                    <div>
+                      <span className="text-emerald-300 block">Kecepatan</span>
+                      <span className="font-bold text-sm">11 mnt</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* GoBiz Hub for Marketplace */}
+                <div className="mb-2">
+                  <h3 className="font-bold text-sm text-gray-900 mb-3">Pusat Kelola Outlet (GoBiz Hub)</h3>
+                  <div className="grid grid-cols-3 gap-2.5">
+                    <button 
+                      onClick={() => setShowMktHistory(true)}
+                      className="bg-white border border-gray-100 hover:border-emerald-200 p-3.5 rounded-2xl shadow-sm flex flex-col items-center gap-2 cursor-pointer transition-all active:scale-95 group"
+                    >
+                      <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:bg-emerald-100 transition-colors">
+                        <BarChart2 size={18} />
+                      </div>
+                      <span className="text-[10px] font-black text-gray-700 text-center leading-tight">Riwayat Transaksi</span>
+                    </button>
+                    <button 
+                      onClick={() => setShowMktPromo(true)}
+                      className="bg-white border border-gray-100 hover:border-emerald-200 p-3.5 rounded-2xl shadow-sm flex flex-col items-center gap-2 cursor-pointer transition-all active:scale-95 group"
+                    >
+                      <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:bg-emerald-100 transition-colors">
+                        <Percent size={18} />
+                      </div>
+                      <span className="text-[10px] font-black text-gray-700 text-center leading-tight">Kelola Promo</span>
+                    </button>
+                    <button 
+                      onClick={() => setShowMktSettings(true)}
+                      className="bg-white border border-gray-100 hover:border-emerald-200 p-3.5 rounded-2xl shadow-sm flex flex-col items-center gap-2 cursor-pointer transition-all active:scale-95 group"
+                    >
+                      <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:bg-emerald-100 transition-colors">
+                        <Settings size={18} />
+                      </div>
+                      <span className="text-[10px] font-black text-gray-700 text-center leading-tight">Pengaturan Toko</span>
+                    </button>
+
+                    <button 
+                      onClick={() => setShowMktFinance(true)}
+                      className="bg-white border border-gray-100 hover:border-emerald-200 p-3.5 rounded-2xl shadow-sm flex flex-col items-center gap-2 cursor-pointer transition-all active:scale-95 group"
+                    >
+                      <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:bg-emerald-100 transition-colors">
+                        <Wallet size={18} />
+                      </div>
+                      <span className="text-[10px] font-black text-gray-700 text-center leading-tight">Tarik Saldo</span>
+                    </button>
+                    <button 
+                      onClick={() => setShowMktHours(true)}
+                      className="bg-white border border-gray-100 hover:border-emerald-200 p-3.5 rounded-2xl shadow-sm flex flex-col items-center gap-2 cursor-pointer transition-all active:scale-95 group"
+                    >
+                      <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:bg-emerald-100 transition-colors">
+                        <Clock size={18} />
+                      </div>
+                      <span className="text-[10px] font-black text-gray-700 text-center leading-tight">Jam Operasional</span>
+                    </button>
+                    <button 
+                      onClick={() => setShowMktReviews(true)}
+                      className="bg-white border border-gray-100 hover:border-emerald-200 p-3.5 rounded-2xl shadow-sm flex flex-col items-center gap-2 cursor-pointer transition-all active:scale-95 group"
+                    >
+                      <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:bg-emerald-100 transition-colors">
+                        <MessageSquare size={18} />
+                      </div>
+                      <span className="text-[10px] font-black text-gray-700 text-center leading-tight">Ulasan Toko</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Marketplace/Toko Orders */}
+                <div className="mb-6">
+                  <div className="flex items-center justify-between mb-3 mt-2">
+                    <h3 className="font-bold text-sm text-gray-900">Pesanan Toko Aktif (GoBiz Style)</h3>
+                    {mktOrderStatus === "new" && <Pill color="green">1 baru</Pill>}
+                    {mktOrderStatus === "preparing" && <Pill color="orange">Sedang disiapkan</Pill>}
+                    {mktOrderStatus === "searching" && <Pill color="blue">Mencari kurir</Pill>}
+                    {mktOrderStatus === "otw" && <Pill color="purple">Kurir otw</Pill>}
+                  </div>
+                  
+                  <div className="bg-white rounded-[20px] p-4 border border-gray-100 shadow-sm relative overflow-hidden transition-all duration-300">
+                    <div className={`absolute top-0 left-0 w-1.5 h-full transition-colors ${mktOrderStatus === 'new' ? 'bg-green-500' : mktOrderStatus === 'preparing' ? 'bg-orange-500' : mktOrderStatus === 'searching' ? 'bg-blue-500' : 'bg-purple-500'}`} />
+                    
+                    <div className="flex justify-between items-center mb-3 border-b border-dashed border-gray-100 pb-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                          <Store size={14} />
+                        </div>
+                        <div>
+                          <p className="font-extrabold text-[13px] text-gray-900">Order #MKT-802</p>
+                          <p className="text-[10px] text-gray-500">Bambang Wijaya · Nasi Timbel Komplit (2x)</p>
+                        </div>
+                      </div>
+                      <span className="bg-green-100 text-green-700 text-[9px] font-bold px-2 py-0.5 rounded">Bayar Lunas</span>
+                    </div>
+
+                    {/* Dynamic Workflow Info */}
+                    {mktOrderStatus === "new" && (
+                      <div className="flex justify-between items-center mt-3">
+                        <div>
+                          <p className="text-[10px] text-gray-400">Total Transaksi</p>
+                          <p className="font-black text-[14px] text-gray-900">{rp(50000)}</p>
+                        </div>
+                        <button 
+                          onClick={() => {
+                            setMktOrderStatus("preparing");
+                            showToast("Pesanan diproses: Mulai menyiapkan makanan!");
+                          }}
+                          className="px-3.5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all active:scale-95 cursor-pointer shadow-md"
+                        >
+                          Terima & Siapkan Makanan
+                        </button>
+                      </div>
+                    )}
+
+                    {mktOrderStatus === "preparing" && (
+                      <div className="flex flex-col gap-2 mt-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs text-muted-foreground">Persiapan Makanan</span>
+                          <span className="text-xs font-bold text-orange-600 animate-pulse">Menyiapkan...</span>
+                        </div>
+                        <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                          <div className="h-full bg-orange-500 rounded-full animate-[shimmer_2s_infinite]" style={{ width: "65%" }} />
+                        </div>
+                        <button 
+                          onClick={() => {
+                            setMktOrderStatus("searching");
+                            showToast("Makanan selesai! Mencari kurir terdekat...");
+                          }}
+                          className="w-full mt-2 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold transition-all cursor-pointer text-center"
+                        >
+                          Selesai Siapkan & Panggil Kurir
+                        </button>
+                      </div>
+                    )}
+
+                    {mktOrderStatus === "searching" && (
+                      <div className="flex flex-col gap-3 mt-2">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-muted-foreground flex items-center gap-1.5">
+                            <RefreshCw size={12} className="animate-spin text-blue-500" />
+                            Mencari Rangers Driver terdekat...
+                          </span>
+                        </div>
+                        <button 
+                          onClick={() => {
+                            setMktOrderStatus("otw");
+                            showToast("Kurir ditemukan! Pak Rahman sedang menuju ke toko Anda.");
+                          }}
+                          className="w-full py-2 rounded-xl bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold transition-all cursor-pointer text-center"
+                        >
+                          Hubungkan dengan Kurir (Simulasi)
+                        </button>
+                      </div>
+                    )}
+
+                    {mktOrderStatus === "otw" && (
+                      <div className="flex flex-col gap-3 mt-2 bg-slate-50 p-2.5 rounded-xl border border-dashed border-slate-200">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-sm shrink-0">🏍️</div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-bold text-gray-900">Pak Rahman (Driver)</p>
+                            <p className="text-[10px] text-muted-foreground">Supra H 4251 AA · Menuju Toko</p>
+                          </div>
+                        </div>
+                        <button 
+                          onClick={() => {
+                            setMktOrderStatus("new");
+                            showToast("Serah terima makanan selesai! Pesanan diambil oleh kurir.");
+                          }}
+                          className="w-full py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition-all cursor-pointer text-center"
+                        >
+                          Serahkan Makanan ke Kurir
+                        </button>
+                      </div>
+                    )}
+
+                  </div>
+                </div>
+
+                {/* GoFood-style Menu Management */}
+                <div className="mb-6">
+                  <div className="flex items-center justify-between mb-3 mt-2">
+                    <h3 className="font-bold text-sm text-gray-900">Kelola Menu Outlet (GoBiz)</h3>
+                    <span className="text-[10px] font-bold text-primary">Live Sync</span>
+                  </div>
+                  <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-4 flex flex-col gap-3">
+                    {[
+                      { id: 1, name: "Nasi Timbel Komplit", price: 25000, desc: "Nasi timbel, ayam goreng, tahu, tempe, lalap, sambal" },
+                      { id: 2, name: "Ayam Bakar Madu", price: 28000, desc: "Ayam bakar bumbu madu khas Kamojang" },
+                      { id: 3, name: "Es Jeruk Peras", price: 8000, desc: "Es jeruk segar dari jeruk asli diperas langsung" }
+                    ].map(menu => {
+                      const isAvailable = (menuStatusList as any)[menu.id] ?? true;
+                      return (
+                        <div key={menu.id} className="flex justify-between items-center gap-3 pb-3 border-b border-gray-50 last:border-b-0 last:pb-0">
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-bold text-xs text-gray-900">{menu.name}</h4>
+                            <p className="text-[10px] text-gray-500 mt-0.5 truncate">{menu.desc}</p>
+                            <p className="text-[11px] font-extrabold text-primary mt-1">{rp(menu.price)}</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${isAvailable ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                              {isAvailable ? "Tersedia" : "Habis"}
+                            </span>
+                            <button 
+                              onClick={() => {
+                                setMenuStatusList(prev => ({ ...prev, [menu.id]: !isAvailable }));
+                                showToast(`${menu.name} diatur menjadi ${!isAvailable ? 'Tersedia' : 'Habis'}`);
+                              }}
+                              className={`w-10 h-6 rounded-full relative transition-colors duration-200 cursor-pointer ${isAvailable ? "bg-primary" : "bg-gray-300"}`}
+                            >
+                              <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${isAvailable ? "translate-x-4.5" : "translate-x-0.5"}`} />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
               </div>
             )}
           </div>
         )}
       </div>
+      {/* Riwayat Transaksi Toko (GoBiz style) */}
+      {showMktHistory && (
+        <div className="absolute inset-0 bg-[#F7FAF8] z-50 flex flex-col text-foreground">
+          <div className="bg-[#1B7A4E] text-white shrink-0">
+            <StatusBar light />
+            <div className="px-5 pb-4 pt-2 flex items-center gap-3">
+              <button 
+                onClick={() => setShowMktHistory(false)}
+                className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white cursor-pointer active:scale-90 transition-transform"
+              >
+                <ArrowLeft size={16} />
+              </button>
+              <div>
+                <h3 className="font-extrabold text-sm">Riwayat Transaksi</h3>
+                <p className="text-[10px] text-green-200">Log order selesai - Live data</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3" style={{ scrollbarWidth: "none" }}>
+            {mktHistoryData.map(h => (
+              <div key={h.id} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex flex-col gap-2 relative overflow-hidden">
+                <div className="flex justify-between items-center text-[10px] text-muted-foreground">
+                  <span>ID: #{h.id} · {h.date}</span>
+                  <span className="bg-green-50 text-green-700 font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider">Selesai</span>
+                </div>
+                <div className="border-t border-dashed border-gray-100 my-1" />
+                <div className="text-xs font-bold text-gray-800">{h.customer}</div>
+                <div className="text-[11px] text-muted-foreground">{h.items}</div>
+                <div className="flex justify-between items-center mt-2.5 pt-2 border-t border-gray-50">
+                  <span className="text-[10px] text-gray-400">Total Penjualan</span>
+                  <span className="text-sm font-black text-primary">{rp(h.total)}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Kelola Promo Outlet (GoBiz style) */}
+      {showMktPromo && (
+        <div className="absolute inset-0 bg-[#F7FAF8] z-50 flex flex-col text-foreground">
+          <div className="bg-[#1B7A4E] text-white shrink-0">
+            <StatusBar light />
+            <div className="px-5 pb-4 pt-2 flex items-center gap-3">
+              <button 
+                onClick={() => setShowMktPromo(false)}
+                className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white cursor-pointer active:scale-90 transition-transform"
+              >
+                <ArrowLeft size={16} />
+              </button>
+              <div>
+                <h3 className="font-extrabold text-sm">Kelola Promo Outlet</h3>
+                <p className="text-[10px] text-green-200">Buat diskon & voucher mandiri</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4" style={{ scrollbarWidth: "none" }}>
+            
+            {/* Promo Header banner */}
+            <div className="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-3xl p-5 text-white flex flex-col gap-2 relative overflow-hidden shadow">
+              <div className="absolute right-[-10px] top-[-10px] w-20 h-20 bg-white/10 rounded-full" />
+              <div className="text-[10px] font-black uppercase tracking-widest text-emerald-200">PROMO MERDEKA UMKM</div>
+              <h4 className="text-base font-extrabold">Naikkan Penjualan Toko!</h4>
+              <p className="text-[10px] leading-relaxed text-emerald-100">Aktifkan promo voucher agar produk Anda muncul di halaman rekomendasi utama.</p>
+            </div>
+
+            {/* List of active promos */}
+            <div className="flex flex-col gap-3">
+              <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Daftar Promo</h4>
+              {promoList.map(p => (
+                <div key={p.id} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex justify-between items-center gap-3">
+                  <div className="flex-1">
+                    <span className="bg-primary/10 text-primary text-[8px] font-extrabold px-1.5 py-0.5 rounded-full uppercase tracking-wider">{p.type}</span>
+                    <h5 className="font-bold text-xs text-gray-800 mt-1.5">{p.name}</h5>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">Potongan: {rp(p.value)}</p>
+                  </div>
+                  <button 
+                    onClick={() => {
+                      setPromoList(prev => prev.map(x => x.id === p.id ? { ...x, active: !x.active } : x));
+                      showToast(`Promo ${p.name} ${!p.active ? 'diaktifkan' : 'dinonaktifkan'}`);
+                    }}
+                    className={`w-12 h-6.5 rounded-full relative transition-colors duration-200 cursor-pointer ${p.active ? "bg-primary" : "bg-gray-300"}`}
+                  >
+                    <div className={`absolute top-0.5 w-5.5 h-5.5 bg-white rounded-full shadow transition-transform duration-200 ${p.active ? "translate-x-6" : "translate-x-0.5"}`} />
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            {/* Add new promo action */}
+            <button 
+              onClick={() => showToast("Fitur integrasi kustom promo akan tersedia di rilis beta berikutnya!")}
+              className="w-full py-4 bg-primary text-white font-extrabold rounded-2xl shadow-md cursor-pointer hover:bg-primary-dark transition-colors flex items-center justify-center gap-2 mt-4 text-xs"
+            >
+              ➕ Buat Promo Baru
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Pengaturan Profil Toko (GoBiz style) */}
+      {showMktSettings && (
+        <div className="absolute inset-0 bg-[#F7FAF8] z-50 flex flex-col text-foreground">
+          <div className="bg-[#1B7A4E] text-white shrink-0">
+            <StatusBar light />
+            <div className="px-5 pb-4 pt-2 flex items-center gap-3">
+              <button 
+                onClick={() => setShowMktSettings(false)}
+                className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white cursor-pointer active:scale-90 transition-transform"
+              >
+                <ArrowLeft size={16} />
+              </button>
+              <div>
+                <h3 className="font-extrabold text-sm">Pengaturan Profil Toko</h3>
+                <p className="text-[10px] text-green-200">Konfigurasi outlet & jam buka</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-4" style={{ scrollbarWidth: "none" }}>
+            
+            <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex flex-col gap-3">
+              <div>
+                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">Nama Toko Outlet</label>
+                <input 
+                  type="text" 
+                  value={mktStoreInfo.name} 
+                  onChange={(e) => setMktStoreInfo(prev => ({ ...prev, name: e.target.value }))}
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs text-foreground focus:outline-none focus:border-primary font-semibold"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">Jam Operasional</label>
+                <input 
+                  type="text" 
+                  value={mktStoreInfo.hours} 
+                  onChange={(e) => setMktStoreInfo(prev => ({ ...prev, hours: e.target.value }))}
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs text-foreground focus:outline-none focus:border-primary font-semibold"
+                  placeholder="Contoh: 08:00 - 20:00"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">Nomor Telepon Outlet</label>
+                <input 
+                  type="text" 
+                  value={mktStoreInfo.phone} 
+                  onChange={(e) => setMktStoreInfo(prev => ({ ...prev, phone: e.target.value }))}
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs text-foreground focus:outline-none focus:border-primary font-semibold"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">Alamat Outlet</label>
+                <textarea 
+                  value={mktStoreInfo.address} 
+                  onChange={(e) => setMktStoreInfo(prev => ({ ...prev, address: e.target.value }))}
+                  rows={3}
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3.5 text-xs text-foreground focus:outline-none focus:border-primary font-semibold resize-none"
+                />
+              </div>
+            </div>
+
+            <button 
+              onClick={() => {
+                setShowMktSettings(false);
+                showToast("Perubahan profil outlet berhasil disimpan!");
+              }}
+              className="w-full py-3.5 bg-primary text-white font-extrabold rounded-2xl shadow-md cursor-pointer hover:bg-primary-dark transition-colors text-center text-xs"
+            >
+              Simpan Perubahan
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Keuangan & Payout Toko (GoBiz style) */}
+      {showMktFinance && (
+        <div className="absolute inset-0 bg-[#F7FAF8] z-50 flex flex-col text-foreground">
+          <div className="bg-[#1B7A4E] text-white shrink-0">
+            <StatusBar light />
+            <div className="px-5 pb-4 pt-2 flex items-center gap-3">
+              <button 
+                onClick={() => setShowMktFinance(false)}
+                className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white cursor-pointer active:scale-90 transition-transform"
+              >
+                <ArrowLeft size={16} />
+              </button>
+              <div>
+                <h3 className="font-extrabold text-sm">Ringkasan Uang & Payout</h3>
+                <p className="text-[10px] text-green-200">Pantau omzet outlet & pencairan dana</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4" style={{ scrollbarWidth: "none" }}>
+            
+            {/* Financial Overview Cards */}
+            <div className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 flex flex-col gap-4">
+              <div className="flex justify-between items-center">
+                <div>
+                  <span className="text-[10px] text-gray-400 block uppercase font-bold tracking-wider">Total Pendapatan Toko</span>
+                  <span className="text-xl font-black text-gray-900">{rp(mktFinanceData.totalOmzet)}</span>
+                </div>
+                <span className="text-xs bg-emerald-100 text-emerald-800 font-bold px-2 py-1 rounded-lg">Toko</span>
+              </div>
+              <div className="border-t border-dashed border-gray-100 pt-3 grid grid-cols-2 gap-3">
+                <div>
+                  <span className="text-[9px] text-gray-400 block uppercase font-bold tracking-wider">Telah Dicairkan</span>
+                  <span className="text-sm font-extrabold text-gray-500">{rp(mktFinanceData.withdrawn)}</span>
+                </div>
+                <div>
+                  <span className="text-[9px] text-gray-400 block uppercase font-bold tracking-wider">Belum Dicairkan</span>
+                  <span className="text-sm font-extrabold text-emerald-600">{rp(mktFinanceData.available)}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Account Balance Card */}
+            <div className="bg-gradient-to-br from-emerald-600 to-teal-600 rounded-3xl p-5 text-white shadow flex flex-col gap-3 relative overflow-hidden">
+              <div className="absolute right-[-15px] bottom-[-15px] w-24 h-24 bg-white/10 rounded-full" />
+              <div>
+                <span className="text-[10px] font-black text-emerald-200 uppercase tracking-wider">Saldo Yang Bisa Ditarik</span>
+                <h4 className="text-2xl font-black mt-0.5">{rp(mktFinanceData.available)}</h4>
+              </div>
+              <button 
+                onClick={() => {
+                  if (mktFinanceData.available <= 0) {
+                    showToast("Saldo Anda tidak mencukupi untuk penarikan!");
+                  } else {
+                    setMktFinanceData(prev => ({ ...prev, withdrawn: prev.withdrawn + prev.available, available: 0 }));
+                    showToast("Penarikan saldo toko berhasil dikirim ke rekening bank terdaftar!");
+                  }
+                }}
+                className="w-full py-2.5 bg-white text-emerald-600 font-extrabold rounded-xl text-xs hover:bg-emerald-50 transition-colors shadow"
+              >
+                💸 Tarik Saldo Toko
+              </button>
+            </div>
+
+            {/* Transaction Log */}
+            <div className="flex flex-col gap-3">
+              <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Riwayat Mutasi Saldo</h4>
+              <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex flex-col gap-3">
+                <div className="flex justify-between items-center text-xs">
+                  <div>
+                    <p className="font-bold text-gray-800">Order #MKT-802 Selesai</p>
+                    <p className="text-[10px] text-gray-400">Hari Ini, 14:20</p>
+                  </div>
+                  <span className="font-extrabold text-emerald-600">+{rp(50000)}</span>
+                </div>
+                <div className="border-t border-gray-50 pt-3 flex justify-between items-center text-xs">
+                  <div>
+                    <p className="font-bold text-gray-800">Penarikan Saldo Sukses</p>
+                    <p className="text-[10px] text-gray-400">Kemarin, 11:30</p>
+                  </div>
+                  <span className="font-extrabold text-red-500">-{rp(1000000)}</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* Jam Operasional Toko (GoBiz style) */}
+      {showMktHours && (
+        <div className="absolute inset-0 bg-[#F7FAF8] z-50 flex flex-col text-foreground">
+          <div className="bg-[#1B7A4E] text-white shrink-0">
+            <StatusBar light />
+            <div className="px-5 pb-4 pt-2 flex items-center gap-3">
+              <button 
+                onClick={() => setShowMktHours(false)}
+                className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white cursor-pointer active:scale-90 transition-transform"
+              >
+                <ArrowLeft size={16} />
+              </button>
+              <div>
+                <h3 className="font-extrabold text-sm">Jam Operasional</h3>
+                <p className="text-[10px] text-green-200">Atur jadwal buka tutup otomatis outlet</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4" style={{ scrollbarWidth: "none" }}>
+            
+            <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 text-emerald-800 text-[11px] leading-relaxed">
+              💡 **Tips**: Dengan mengatur jam operasional otomatis, outlet Anda akan otomatis berstatus "Tutup" di luar jam kerja yang telah ditentukan.
+            </div>
+
+            <div className="flex flex-col gap-3">
+              <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Jadwal Operasional</h4>
+              {mktScheduleHours.map((sched, idx) => (
+                <div key={idx} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex flex-col gap-3">
+                  <div className="flex justify-between items-center">
+                    <span className="font-bold text-xs text-gray-800">{sched.day}</span>
+                    <button 
+                      onClick={() => {
+                        setMktScheduleHours(prev => prev.map((s, i) => i === idx ? { ...s, active: !sched.active } : s));
+                        showToast(`Jadwal ${sched.day} ${!sched.active ? 'diaktifkan' : 'dinonaktifkan'}`);
+                      }}
+                      className={`w-10 h-6 rounded-full relative transition-colors duration-200 cursor-pointer ${sched.active ? "bg-primary" : "bg-gray-300"}`}
+                    >
+                      <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${sched.active ? "translate-x-4.5" : "translate-x-0.5"}`} />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 pt-2 border-t border-gray-50">
+                    <div>
+                      <span className="text-[9px] text-gray-400 block font-bold uppercase tracking-wider">Jam Buka</span>
+                      <input 
+                        type="text" 
+                        value={sched.open}
+                        onChange={(e) => setMktScheduleHours(prev => prev.map((s, i) => i === idx ? { ...s, open: e.target.value } : s))}
+                        className="w-full bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <span className="text-[9px] text-gray-400 block font-bold uppercase tracking-wider">Jam Tutup</span>
+                      <input 
+                        type="text" 
+                        value={sched.close}
+                        onChange={(e) => setMktScheduleHours(prev => prev.map((s, i) => i === idx ? { ...s, close: e.target.value } : s))}
+                        className="w-full bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <button 
+              onClick={() => {
+                setShowMktHours(false);
+                showToast("Pengaturan jam operasional otomatis berhasil disimpan!");
+              }}
+              className="w-full py-3.5 bg-primary text-white font-extrabold rounded-2xl shadow-md cursor-pointer hover:bg-primary-dark transition-colors text-center text-xs mt-2"
+            >
+              Simpan Jadwal Operasional
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Ulasan & Rating Toko (GoBiz style) */}
+      {showMktReviews && (
+        <div className="absolute inset-0 bg-[#F7FAF8] z-50 flex flex-col text-foreground">
+          <div className="bg-[#1B7A4E] text-white shrink-0">
+            <StatusBar light />
+            <div className="px-5 pb-4 pt-2 flex items-center gap-3">
+              <button 
+                onClick={() => setShowMktReviews(false)}
+                className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white cursor-pointer active:scale-90 transition-transform"
+              >
+                <ArrowLeft size={16} />
+              </button>
+              <div>
+                <h3 className="font-extrabold text-sm">Ulasan & Rating Toko</h3>
+                <p className="text-[10px] text-green-200">Komentar & masukan dari pelanggan Anda</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3" style={{ scrollbarWidth: "none" }}>
+            {mktReviews.map(r => (
+              <div key={r.id} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex flex-col gap-2">
+                <div className="flex justify-between items-center">
+                  <span className="font-bold text-xs text-gray-800">{r.customer}</span>
+                  <span className="text-[10px] text-gray-400">{r.date}</span>
+                </div>
+                <div className="flex items-center gap-1 text-[10px] text-amber-500 font-bold">
+                  {"★".repeat(r.rating)} <span className="text-gray-500 font-normal">({r.rating}.0)</span>
+                </div>
+                <p className="text-xs text-gray-600 mt-1 italic">"{r.comment}"</p>
+                
+                {r.reply ? (
+                  <div className="bg-emerald-50 rounded-xl p-2.5 border border-emerald-100 mt-2 text-[11px] text-emerald-800">
+                    <span className="font-bold block text-[10px] text-emerald-700 uppercase tracking-wider mb-0.5">Balasan Anda:</span>
+                    "{r.reply}"
+                  </div>
+                ) : (
+                  <div className="mt-2 flex gap-2">
+                    <input 
+                      type="text" 
+                      placeholder="Balas ulasan ini..." 
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          const val = (e.target as HTMLInputElement).value;
+                          if (!val) return;
+                          setMktReviews(prev => prev.map(x => x.id === r.id ? { ...x, reply: val } : x));
+                          showToast("Balasan ulasan berhasil dikirim!");
+                          (e.target as HTMLInputElement).value = "";
+                        }
+                      }}
+                      className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none"
+                    />
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Jadwal Pengiriman PO (GoBiz style) */}
+      {showCatSchedule && (
+        <div className="absolute inset-0 bg-[#F7FAF8] z-50 flex flex-col text-foreground">
+          <div className="bg-[#FF7043] text-white shrink-0">
+            <StatusBar light />
+            <div className="px-5 pb-4 pt-2 flex items-center gap-3">
+              <button 
+                onClick={() => setShowCatSchedule(false)}
+                className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white cursor-pointer active:scale-90 transition-transform"
+              >
+                <ArrowLeft size={16} />
+              </button>
+              <div>
+                <h3 className="font-extrabold text-sm">Jadwal Pengiriman PO</h3>
+                <p className="text-[10px] text-orange-100">Kalender persiapan dapur katering</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3" style={{ scrollbarWidth: "none" }}>
+            {catScheduleData.map(s => (
+              <div key={s.id} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex flex-col gap-2 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-1.5 h-full bg-orange-400" />
+                <div className="flex justify-between items-center text-[10px] text-muted-foreground">
+                  <span className="font-bold text-gray-800">ID: #{s.id}</span>
+                  <span className="bg-orange-50 text-orange-700 font-extrabold px-2 py-0.5 rounded-full text-[9px] uppercase tracking-wider">{s.status}</span>
+                </div>
+                <div className="border-t border-dashed border-gray-100 my-1" />
+                <div className="text-xs font-bold text-gray-800">{s.customer}</div>
+                <div className="text-[11px] text-muted-foreground">{s.package}</div>
+                <div className="flex justify-between items-center mt-2 pt-2 border-t border-gray-50 text-[10px]">
+                  <span className="text-gray-400">Rencana Pengiriman</span>
+                  <span className="font-bold text-primary">{s.date}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Kelola Daftar Paket Catering (GoBiz style) */}
+      {showCatPackages && (
+        <div className="absolute inset-0 bg-[#F7FAF8] z-50 flex flex-col text-foreground">
+          <div className="bg-[#FF7043] text-white shrink-0">
+            <StatusBar light />
+            <div className="px-5 pb-4 pt-2 flex items-center gap-3">
+              <button 
+                onClick={() => setShowCatPackages(false)}
+                className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white cursor-pointer active:scale-90 transition-transform"
+              >
+                <ArrowLeft size={16} />
+              </button>
+              <div>
+                <h3 className="font-extrabold text-sm">Kelola Paket Katering</h3>
+                <p className="text-[10px] text-orange-100">Live menu paket katering Anda</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3" style={{ scrollbarWidth: "none" }}>
+            {catPackages.map(pkg => (
+              <div key={pkg.id} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex justify-between items-center gap-3">
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-bold text-xs text-gray-900">{pkg.name}</h4>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">Min. Order: {pkg.minPax} Pax</p>
+                  <p className="text-sm font-black text-primary mt-1">{rp(pkg.price)}<span className="text-[9px] font-normal text-muted-foreground">/Pax</span></p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${pkg.active ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                    {pkg.active ? "Aktif" : "Nonaktif"}
+                  </span>
+                  <button 
+                    onClick={() => {
+                      setCatPackages(prev => prev.map(x => x.id === pkg.id ? { ...x, active: !pkg.active } : x));
+                      showToast(`${pkg.name} ${!pkg.active ? 'diaktifkan' : 'dinonaktifkan'}`);
+                    }}
+                    className={`w-10 h-6 rounded-full relative transition-colors duration-200 cursor-pointer ${pkg.active ? "bg-primary" : "bg-gray-300"}`}
+                  >
+                    <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${pkg.active ? "translate-x-4.5" : "translate-x-0.5"}`} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Pengaturan Aturan Pre-Order (GoBiz style) */}
+      {showCatSettings && (
+        <div className="absolute inset-0 bg-[#F7FAF8] z-50 flex flex-col text-foreground">
+          <div className="bg-[#FF7043] text-white shrink-0">
+            <StatusBar light />
+            <div className="px-5 pb-4 pt-2 flex items-center gap-3">
+              <button 
+                onClick={() => setShowCatSettings(false)}
+                className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white cursor-pointer active:scale-90 transition-transform"
+              >
+                <ArrowLeft size={16} />
+              </button>
+              <div>
+                <h3 className="font-extrabold text-sm">Pengaturan Aturan PO</h3>
+                <p className="text-[10px] text-orange-100">Konfigurasi batas waktu & minimum order</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-4" style={{ scrollbarWidth: "none" }}>
+            
+            <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex flex-col gap-4">
+              <div>
+                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">Batas Waktu Pre-Order Minimum</label>
+                <div className="flex items-center gap-3 bg-gray-50 rounded-xl p-1 border border-gray-200">
+                  <button 
+                    onClick={() => setMinPoDays(prev => Math.max(1, prev - 1))}
+                    className="w-8 h-8 rounded-lg bg-white flex items-center justify-center font-bold text-sm shadow-sm cursor-pointer"
+                  >
+                    -
+                  </button>
+                  <span className="flex-1 text-center font-extrabold text-xs text-gray-800">H - {minPoDays} Hari</span>
+                  <button 
+                    onClick={() => setMinPoDays(prev => Math.min(7, prev + 1))}
+                    className="w-8 h-8 rounded-lg bg-white flex items-center justify-center font-bold text-sm shadow-sm cursor-pointer"
+                  >
+                    +
+                  </button>
+                </div>
+                <p className="text-[9px] text-gray-400 mt-1">Batas minimal hari bagi pelanggan sebelum memesan makanan katering Anda.</p>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">Jumlah Minimum Pax per PO</label>
+                <div className="flex items-center gap-3 bg-gray-50 rounded-xl p-1 border border-gray-200">
+                  <button 
+                    onClick={() => setMinPax(prev => Math.max(5, prev - 5))}
+                    className="w-8 h-8 rounded-lg bg-white flex items-center justify-center font-bold text-sm shadow-sm cursor-pointer"
+                  >
+                    -
+                  </button>
+                  <span className="flex-1 text-center font-extrabold text-xs text-gray-800">{minPax} Pax</span>
+                  <button 
+                    onClick={() => setMinPax(prev => Math.min(100, prev + 5))}
+                    className="w-8 h-8 rounded-lg bg-white flex items-center justify-center font-bold text-sm shadow-sm cursor-pointer"
+                  >
+                    +
+                  </button>
+                </div>
+                <p className="text-[9px] text-gray-400 mt-1">Jumlah minimum porsi / pax untuk satu kali order Pre-Order katering.</p>
+              </div>
+            </div>
+
+            <button 
+              onClick={() => {
+                setShowCatSettings(false);
+                showToast("Aturan Pre-Order katering berhasil disimpan!");
+              }}
+              className="w-full py-3.5 bg-primary text-white font-extrabold rounded-2xl shadow-md cursor-pointer hover:bg-primary-dark transition-colors text-center text-xs"
+            >
+              Simpan Aturan PO
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Keuangan & Payout Katering (GoBiz style) */}
+      {showCatFinance && (
+        <div className="absolute inset-0 bg-[#F7FAF8] z-50 flex flex-col text-foreground">
+          <div className="bg-[#FF7043] text-white shrink-0">
+            <StatusBar light />
+            <div className="px-5 pb-4 pt-2 flex items-center gap-3">
+              <button 
+                onClick={() => setShowCatFinance(false)}
+                className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white cursor-pointer active:scale-90 transition-transform"
+              >
+                <ArrowLeft size={16} />
+              </button>
+              <div>
+                <h3 className="font-extrabold text-sm">Ringkasan Uang & Payout</h3>
+                <p className="text-[10px] text-orange-100">Pantau omzet DP & pelunasan Anda</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4" style={{ scrollbarWidth: "none" }}>
+            
+            {/* Financial Overview Cards */}
+            <div className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 flex flex-col gap-4">
+              <div className="flex justify-between items-center">
+                <div>
+                  <span className="text-[10px] text-gray-400 block uppercase font-bold tracking-wider">Total Omzet PO</span>
+                  <span className="text-xl font-black text-gray-900">{rp(catFinanceData.totalOmzet)}</span>
+                </div>
+                <span className="text-xs bg-amber-100 text-amber-800 font-bold px-2 py-1 rounded-lg">Catering</span>
+              </div>
+              <div className="border-t border-dashed border-gray-100 pt-3 grid grid-cols-2 gap-3">
+                <div>
+                  <span className="text-[9px] text-gray-400 block uppercase font-bold tracking-wider">DP Cair (30%/50%)</span>
+                  <span className="text-sm font-extrabold text-emerald-600">{rp(catFinanceData.dpSettled)}</span>
+                </div>
+                <div>
+                  <span className="text-[9px] text-gray-400 block uppercase font-bold tracking-wider">Pending Pelunasan</span>
+                  <span className="text-sm font-extrabold text-amber-600">{rp(catFinanceData.pendingPelunasan)}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Account Balance Card */}
+            <div className="bg-gradient-to-br from-amber-600 to-orange-600 rounded-3xl p-5 text-white shadow flex flex-col gap-3 relative overflow-hidden">
+              <div className="absolute right-[-15px] bottom-[-15px] w-24 h-24 bg-white/10 rounded-full" />
+              <div>
+                <span className="text-[10px] font-black text-orange-200 uppercase tracking-wider">Saldo Yang Bisa Ditarik</span>
+                <h4 className="text-2xl font-black mt-0.5">{rp(catFinanceData.dpSettled - catFinanceData.withdrawn)}</h4>
+              </div>
+              <button 
+                onClick={() => {
+                  if (catFinanceData.dpSettled - catFinanceData.withdrawn <= 0) {
+                    showToast("Saldo Anda tidak mencukupi untuk penarikan!");
+                  } else {
+                    setCatFinanceData(prev => ({ ...prev, withdrawn: prev.dpSettled }));
+                    showToast("Penarikan saldo berhasil dikirim ke rekening terdaftar!");
+                  }
+                }}
+                className="w-full py-2.5 bg-white text-orange-600 font-extrabold rounded-xl text-xs hover:bg-orange-50 transition-colors shadow"
+              >
+                💸 Tarik Saldo ke Rekening Bank
+              </button>
+            </div>
+
+            {/* Transaction Log */}
+            <div className="flex flex-col gap-3">
+              <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Riwayat Mutasi Saldo</h4>
+              <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex flex-col gap-3">
+                <div className="flex justify-between items-center text-xs">
+                  <div>
+                    <p className="font-bold text-gray-800">DP PO #CAT-481 Cair</p>
+                    <p className="text-[10px] text-gray-400">14 Jul 2026, 12:45</p>
+                  </div>
+                  <span className="font-extrabold text-emerald-600">+{rp(150000)}</span>
+                </div>
+                <div className="border-t border-gray-50 pt-3 flex justify-between items-center text-xs">
+                  <div>
+                    <p className="font-bold text-gray-800">Penarikan Saldo Sukses</p>
+                    <p className="text-[10px] text-gray-400">12 Jul 2026, 09:00</p>
+                  </div>
+                  <span className="font-extrabold text-red-500">-{rp(1000000)}</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* Kalender Hari Libur Dapur (GoBiz style) */}
+      {showCatHolidays && (
+        <div className="absolute inset-0 bg-[#F7FAF8] z-50 flex flex-col text-foreground">
+          <div className="bg-[#FF7043] text-white shrink-0">
+            <StatusBar light />
+            <div className="px-5 pb-4 pt-2 flex items-center gap-3">
+              <button 
+                onClick={() => setShowCatHolidays(false)}
+                className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white cursor-pointer active:scale-90 transition-transform"
+              >
+                <ArrowLeft size={16} />
+              </button>
+              <div>
+                <h3 className="font-extrabold text-sm">Kalender Hari Libur</h3>
+                <p className="text-[10px] text-orange-100">Atur hari libur operasional dapur katering</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4" style={{ scrollbarWidth: "none" }}>
+            
+            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-amber-800 text-[11px] leading-relaxed">
+              ⚠️ **Perhatian**: Menghidupkan hari libur akan menolak pesanan masuk otomatis pada tanggal tersebut. Pastikan Anda menyelesaikan PO aktif sebelum tanggal libur yang diatur.
+            </div>
+
+            <div className="flex flex-col gap-3">
+              <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Tanggal Libur Terjadwal</h4>
+              {catHolidays.map(h => (
+                <div key={h.id} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex justify-between items-center gap-3">
+                  <div>
+                    <h5 className="font-bold text-xs text-gray-800">{h.name}</h5>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">{h.date}</p>
+                  </div>
+                  <button 
+                    onClick={() => {
+                      setCatHolidays(prev => prev.map(x => x.id === h.id ? { ...x, active: !h.active } : x));
+                      showToast(`Status libur ${h.name} ${!h.active ? 'diaktifkan' : 'dinonaktifkan'}`);
+                    }}
+                    className={`w-12 h-6.5 rounded-full relative transition-colors duration-200 cursor-pointer ${h.active ? "bg-primary" : "bg-gray-300"}`}
+                  >
+                    <div className={`absolute top-0.5 w-5.5 h-5.5 bg-white rounded-full shadow transition-transform duration-200 ${h.active ? "translate-x-6" : "translate-x-0.5"}`} />
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <button 
+              onClick={() => showToast("Fitur tambah hari libur kustom akan tersedia di rilis beta berikutnya!")}
+              className="w-full py-3.5 bg-primary text-white font-extrabold rounded-2xl shadow-md cursor-pointer hover:bg-primary-dark transition-colors text-center text-xs mt-4"
+            >
+              ➕ Tambah Hari Libur Baru
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Cetak Surat Jalan & Nota Pesanan (GoBiz style) */}
+      {showCatInvoice && (
+        <div className="absolute inset-0 bg-[#F7FAF8] z-50 flex flex-col text-foreground">
+          <div className="bg-[#FF7043] text-white shrink-0">
+            <StatusBar light />
+            <div className="px-5 pb-4 pt-2 flex items-center gap-3">
+              <button 
+                onClick={() => setShowCatInvoice(false)}
+                className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white cursor-pointer active:scale-90 transition-transform"
+              >
+                <ArrowLeft size={16} />
+              </button>
+              <div>
+                <h3 className="font-extrabold text-sm">Nota Pesanan / Surat Jalan</h3>
+                <p className="text-[10px] text-orange-100">Pratinjau label pengiriman kotak katering</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4" style={{ scrollbarWidth: "none" }}>
+            
+            {/* Nota Printable Container */}
+            <div className="bg-white rounded-3xl p-5 shadow-sm border border-gray-200 flex flex-col gap-4 text-xs font-mono relative overflow-hidden">
+              {/* Decorative top border */}
+              <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-amber-500 to-orange-500" />
+              
+              <div className="text-center pb-2 border-b border-dashed border-gray-200">
+                <h4 className="font-bold text-sm text-gray-800">RANGERS CATERING</h4>
+                <p className="text-[10px] text-gray-400">Garut, Jawa Barat</p>
+              </div>
+
+              <div className="flex flex-col gap-1.5 text-[11px] text-gray-700">
+                <div className="flex justify-between">
+                  <span>ID PO:</span>
+                  <span className="font-bold">#{catInvoiceData.poId}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Pelanggan:</span>
+                  <span className="font-bold">{catInvoiceData.customer}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Kontak:</span>
+                  <span>{catInvoiceData.phone}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Pengiriman:</span>
+                  <span className="font-bold">{catInvoiceData.deliveryTime}</span>
+                </div>
+              </div>
+
+              <div className="border-t border-dashed border-gray-200 my-1" />
+
+              <div>
+                <div className="font-bold mb-1 text-[11px] text-gray-800">Detail Paket:</div>
+                <div className="flex justify-between text-gray-700 text-[11px]">
+                  <span>{catInvoiceData.package}</span>
+                  <span className="font-bold">{rp(catInvoiceData.totalPrice)}</span>
+                </div>
+              </div>
+
+              <div className="border-t border-dashed border-gray-200 my-1" />
+
+              <div className="flex flex-col gap-1 text-[11px] text-gray-700">
+                <div className="flex justify-between">
+                  <span>DP Lunas (30%):</span>
+                  <span className="text-emerald-600 font-bold">-{rp(catInvoiceData.dpPaid)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Sisa Pelunasan:</span>
+                  <span className="text-amber-600 font-bold">{rp(catInvoiceData.remaining)}</span>
+                </div>
+                <div className="flex justify-between text-xs pt-1 border-t border-dashed border-gray-200 font-bold text-gray-900">
+                  <span>Total Tagihan:</span>
+                  <span>{rp(catInvoiceData.totalPrice)}</span>
+                </div>
+              </div>
+
+              <div className="border-t border-dashed border-gray-200 my-1" />
+
+              <div className="text-[10px] text-gray-500">
+                <div className="font-bold text-gray-700 mb-0.5">Alamat Pengiriman:</div>
+                <p className="leading-relaxed">{catInvoiceData.address}</p>
+              </div>
+
+              <div className="text-center pt-2 text-[9px] text-gray-400 italic">
+                *Tempelkan nota ini pada kemasan katering utama sebagai surat jalan kurir.*
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-2">
+              <button 
+                onClick={() => showToast("Nota berhasil disimpan ke folder download!")}
+                className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-extrabold rounded-2xl text-xs cursor-pointer transition-colors text-center border border-gray-200"
+              >
+                💾 Simpan PDF
+              </button>
+              <button 
+                onClick={() => showToast("Nota berhasil dikirim ke printer bluetooth!")}
+                className="flex-1 py-3 bg-primary text-white font-extrabold rounded-2xl text-xs cursor-pointer hover:bg-primary-dark transition-colors text-center shadow-md"
+              >
+                🖨️ Cetak Nota
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </>
       ) : activeLaundryScreen === "manajemen_order" ? (
         <>
@@ -7799,6 +10348,8 @@ export default function App() {
         myOrders={myOrders}
         setMyOrders={setMyOrders}
         showToast={showToast}
+        dompetBalance={dompetBalance}
+        setDompetBalance={setDompetBalance}
       />
     );
     if (screen === "c_laundry") return <LaundryScreen navigate={navigate} />;
@@ -7845,6 +10396,8 @@ export default function App() {
         showToast={showToast}
         unreadChatCount={unreadChatCount}
         addDriverMessage={addDriverMessage}
+        dompetBalance={dompetBalance}
+        setDompetBalance={setDompetBalance}
       />
     );
     
@@ -7888,7 +10441,17 @@ export default function App() {
     // Customer tabs
     if (screen === "c_home") return <CustomerHome navigate={navigate} dompetBalance={dompetBalance} addToCart={addToCart} setMarketplaceSearch={setMarketplaceSearch} />;
     if (screen === "c_jelajah") return <JelajahScreen navigate={navigate} />;
-    if (screen === "c_pesanan") return <PesananScreen navigate={navigate} myOrders={myOrders} setActiveTrackingOrderId={setActiveTrackingOrderId} />;
+    if (screen === "c_pesanan") return (
+      <PesananScreen 
+        navigate={navigate} 
+        myOrders={myOrders} 
+        setMyOrders={setMyOrders}
+        setActiveTrackingOrderId={setActiveTrackingOrderId}
+        dompetBalance={dompetBalance}
+        setDompetBalance={setDompetBalance}
+        showToast={showToast}
+      />
+    );
     if (screen === "c_inbox") return (
       <InboxScreen 
         navigate={navigate} 
@@ -7908,7 +10471,7 @@ export default function App() {
 
     // Driver tabs
     if (screen === "mitra_reg") return <MitraRegistrationScreen navigate={navigate} setActiveMitraRoles={setActiveMitraRoles} />;
-    if (screen === "d_home") return <DriverHome navigate={navigate} activeMitraRoles={activeMitraRoles} />;
+    if (screen === "d_home") return <DriverHome navigate={navigate} activeMitraRoles={activeMitraRoles} showToast={showToast} />;
     if (screen === "d_order") return <DriverOrder navigate={navigate} />;
     if (screen === "d_riwayat") return <DriverRiwayat navigate={navigate} />;
     if (screen === "d_pendapatan") return <DriverPendapatan navigate={navigate} />;
