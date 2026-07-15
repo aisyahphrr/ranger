@@ -1,0 +1,6 @@
+node_modules/
+dist/
+node_modules_backup/
+.env
+.env.local
+.DS_Store
