@@ -6262,6 +6262,26 @@ function DriverHome({ navigate, activeMitraRoles, showToast }: Nav & { activeMit
     { id: "MKT-797", customer: "Kang Emil", items: "3x Nasi Timbel Komplit", total: 75000, date: "13 Jan 2024, 12:15", status: "Selesai" }
   ];
 
+  const [showMktFinance, setShowMktFinance] = useState(false);
+  const [showMktHours, setShowMktHours] = useState(false);
+  const [showMktReviews, setShowMktReviews] = useState(false);
+
+  const [mktFinanceData, setMktFinanceData] = useState({
+    totalOmzet: 3240000,
+    withdrawn: 2000000,
+    available: 1240000
+  });
+
+  const [mktScheduleHours, setMktScheduleHours] = useState([
+    { day: "Senin - Jumat", open: "08:00", close: "20:00", active: true },
+    { day: "Sabtu - Minggu", open: "09:00", close: "22:00", active: true }
+  ]);
+
+  const [mktReviews, setMktReviews] = useState([
+    { id: 1, customer: "Asep Sunandar", rating: 5, date: "14 Jul 2026", comment: "Nasi timbelnya enak banget, sambalnya pedas mantap!", reply: "" },
+    { id: 2, customer: "Neng Lilis", rating: 4, date: "13 Jul 2026", comment: "Ayam bakar madunya manis gurih, tapi jeruknya agak asem.", reply: "Terima kasih Neng Lilis atas masukannya!" }
+  ]);
+
   const [kitchenOpen, setKitchenOpen] = useState(true);
   const [catOrderStatus, setCatOrderStatus] = useState<"pending" | "cooking" | "ready" | "delivered">("pending");
   const [showCatPackages, setShowCatPackages] = useState(false);
@@ -6667,7 +6687,35 @@ function DriverHome({ navigate, activeMitraRoles, showToast }: Nav & { activeMit
                     <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:bg-emerald-100 transition-colors">
                       <Settings size={18} />
                     </div>
-                    <span className="text-[10px] font-black text-gray-700 text-center leading-tight">Pengaturan Outlet</span>
+                    <span className="text-[10px] font-black text-gray-700 text-center leading-tight">Pengaturan Toko</span>
+                  </button>
+
+                  <button 
+                    onClick={() => setShowMktFinance(true)}
+                    className="bg-white border border-gray-100 hover:border-emerald-200 p-3.5 rounded-2xl shadow-sm flex flex-col items-center gap-2 cursor-pointer transition-all active:scale-95 group"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:bg-emerald-100 transition-colors">
+                      <Wallet size={18} />
+                    </div>
+                    <span className="text-[10px] font-black text-gray-700 text-center leading-tight">Tarik Saldo</span>
+                  </button>
+                  <button 
+                    onClick={() => setShowMktHours(true)}
+                    className="bg-white border border-gray-100 hover:border-emerald-200 p-3.5 rounded-2xl shadow-sm flex flex-col items-center gap-2 cursor-pointer transition-all active:scale-95 group"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:bg-emerald-100 transition-colors">
+                      <Clock size={18} />
+                    </div>
+                    <span className="text-[10px] font-black text-gray-700 text-center leading-tight">Jam Operasional</span>
+                  </button>
+                  <button 
+                    onClick={() => setShowMktReviews(true)}
+                    className="bg-white border border-gray-100 hover:border-emerald-200 p-3.5 rounded-2xl shadow-sm flex flex-col items-center gap-2 cursor-pointer transition-all active:scale-95 group"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:bg-emerald-100 transition-colors">
+                      <MessageSquare size={18} />
+                    </div>
+                    <span className="text-[10px] font-black text-gray-700 text-center leading-tight">Ulasan Toko</span>
                   </button>
                 </div>
               </div>
@@ -7182,6 +7230,233 @@ function DriverHome({ navigate, activeMitraRoles, showToast }: Nav & { activeMit
             >
               Simpan Perubahan
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Keuangan & Payout Toko (GoBiz style) */}
+      {showMktFinance && (
+        <div className="absolute inset-0 bg-[#F7FAF8] z-50 flex flex-col text-foreground">
+          <div className="bg-[#1B7A4E] text-white shrink-0">
+            <StatusBar light />
+            <div className="px-5 pb-4 pt-2 flex items-center gap-3">
+              <button 
+                onClick={() => setShowMktFinance(false)}
+                className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white cursor-pointer active:scale-90 transition-transform"
+              >
+                <ArrowLeft size={16} />
+              </button>
+              <div>
+                <h3 className="font-extrabold text-sm">Ringkasan Uang & Payout</h3>
+                <p className="text-[10px] text-green-200">Pantau omzet outlet & pencairan dana</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4" style={{ scrollbarWidth: "none" }}>
+            
+            {/* Financial Overview Cards */}
+            <div className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 flex flex-col gap-4">
+              <div className="flex justify-between items-center">
+                <div>
+                  <span className="text-[10px] text-gray-400 block uppercase font-bold tracking-wider">Total Pendapatan Toko</span>
+                  <span className="text-xl font-black text-gray-900">{rp(mktFinanceData.totalOmzet)}</span>
+                </div>
+                <span className="text-xs bg-emerald-100 text-emerald-800 font-bold px-2 py-1 rounded-lg">Toko</span>
+              </div>
+              <div className="border-t border-dashed border-gray-100 pt-3 grid grid-cols-2 gap-3">
+                <div>
+                  <span className="text-[9px] text-gray-400 block uppercase font-bold tracking-wider">Telah Dicairkan</span>
+                  <span className="text-sm font-extrabold text-gray-500">{rp(mktFinanceData.withdrawn)}</span>
+                </div>
+                <div>
+                  <span className="text-[9px] text-gray-400 block uppercase font-bold tracking-wider">Belum Dicairkan</span>
+                  <span className="text-sm font-extrabold text-emerald-600">{rp(mktFinanceData.available)}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Account Balance Card */}
+            <div className="bg-gradient-to-br from-emerald-600 to-teal-600 rounded-3xl p-5 text-white shadow flex flex-col gap-3 relative overflow-hidden">
+              <div className="absolute right-[-15px] bottom-[-15px] w-24 h-24 bg-white/10 rounded-full" />
+              <div>
+                <span className="text-[10px] font-black text-emerald-200 uppercase tracking-wider">Saldo Yang Bisa Ditarik</span>
+                <h4 className="text-2xl font-black mt-0.5">{rp(mktFinanceData.available)}</h4>
+              </div>
+              <button 
+                onClick={() => {
+                  if (mktFinanceData.available <= 0) {
+                    showToast("Saldo Anda tidak mencukupi untuk penarikan!");
+                  } else {
+                    setMktFinanceData(prev => ({ ...prev, withdrawn: prev.withdrawn + prev.available, available: 0 }));
+                    showToast("Penarikan saldo toko berhasil dikirim ke rekening bank terdaftar!");
+                  }
+                }}
+                className="w-full py-2.5 bg-white text-emerald-600 font-extrabold rounded-xl text-xs hover:bg-emerald-50 transition-colors shadow"
+              >
+                💸 Tarik Saldo Toko
+              </button>
+            </div>
+
+            {/* Transaction Log */}
+            <div className="flex flex-col gap-3">
+              <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Riwayat Mutasi Saldo</h4>
+              <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex flex-col gap-3">
+                <div className="flex justify-between items-center text-xs">
+                  <div>
+                    <p className="font-bold text-gray-800">Order #MKT-802 Selesai</p>
+                    <p className="text-[10px] text-gray-400">Hari Ini, 14:20</p>
+                  </div>
+                  <span className="font-extrabold text-emerald-600">+{rp(50000)}</span>
+                </div>
+                <div className="border-t border-gray-50 pt-3 flex justify-between items-center text-xs">
+                  <div>
+                    <p className="font-bold text-gray-800">Penarikan Saldo Sukses</p>
+                    <p className="text-[10px] text-gray-400">Kemarin, 11:30</p>
+                  </div>
+                  <span className="font-extrabold text-red-500">-{rp(1000000)}</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* Jam Operasional Toko (GoBiz style) */}
+      {showMktHours && (
+        <div className="absolute inset-0 bg-[#F7FAF8] z-50 flex flex-col text-foreground">
+          <div className="bg-[#1B7A4E] text-white shrink-0">
+            <StatusBar light />
+            <div className="px-5 pb-4 pt-2 flex items-center gap-3">
+              <button 
+                onClick={() => setShowMktHours(false)}
+                className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white cursor-pointer active:scale-90 transition-transform"
+              >
+                <ArrowLeft size={16} />
+              </button>
+              <div>
+                <h3 className="font-extrabold text-sm">Jam Operasional</h3>
+                <p className="text-[10px] text-green-200">Atur jadwal buka tutup otomatis outlet</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4" style={{ scrollbarWidth: "none" }}>
+            
+            <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 text-emerald-800 text-[11px] leading-relaxed">
+              💡 **Tips**: Dengan mengatur jam operasional otomatis, outlet Anda akan otomatis berstatus "Tutup" di luar jam kerja yang telah ditentukan.
+            </div>
+
+            <div className="flex flex-col gap-3">
+              <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Jadwal Operasional</h4>
+              {mktScheduleHours.map((sched, idx) => (
+                <div key={idx} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex flex-col gap-3">
+                  <div className="flex justify-between items-center">
+                    <span className="font-bold text-xs text-gray-800">{sched.day}</span>
+                    <button 
+                      onClick={() => {
+                        setMktScheduleHours(prev => prev.map((s, i) => i === idx ? { ...s, active: !sched.active } : s));
+                        showToast(`Jadwal ${sched.day} ${!sched.active ? 'diaktifkan' : 'dinonaktifkan'}`);
+                      }}
+                      className={`w-10 h-6 rounded-full relative transition-colors duration-200 cursor-pointer ${sched.active ? "bg-primary" : "bg-gray-300"}`}
+                    >
+                      <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${sched.active ? "translate-x-4.5" : "translate-x-0.5"}`} />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 pt-2 border-t border-gray-50">
+                    <div>
+                      <span className="text-[9px] text-gray-400 block font-bold uppercase tracking-wider">Jam Buka</span>
+                      <input 
+                        type="text" 
+                        value={sched.open}
+                        onChange={(e) => setMktScheduleHours(prev => prev.map((s, i) => i === idx ? { ...s, open: e.target.value } : s))}
+                        className="w-full bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <span className="text-[9px] text-gray-400 block font-bold uppercase tracking-wider">Jam Tutup</span>
+                      <input 
+                        type="text" 
+                        value={sched.close}
+                        onChange={(e) => setMktScheduleHours(prev => prev.map((s, i) => i === idx ? { ...s, close: e.target.value } : s))}
+                        className="w-full bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <button 
+              onClick={() => {
+                setShowMktHours(false);
+                showToast("Pengaturan jam operasional otomatis berhasil disimpan!");
+              }}
+              className="w-full py-3.5 bg-primary text-white font-extrabold rounded-2xl shadow-md cursor-pointer hover:bg-primary-dark transition-colors text-center text-xs mt-2"
+            >
+              Simpan Jadwal Operasional
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Ulasan & Rating Toko (GoBiz style) */}
+      {showMktReviews && (
+        <div className="absolute inset-0 bg-[#F7FAF8] z-50 flex flex-col text-foreground">
+          <div className="bg-[#1B7A4E] text-white shrink-0">
+            <StatusBar light />
+            <div className="px-5 pb-4 pt-2 flex items-center gap-3">
+              <button 
+                onClick={() => setShowMktReviews(false)}
+                className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white cursor-pointer active:scale-90 transition-transform"
+              >
+                <ArrowLeft size={16} />
+              </button>
+              <div>
+                <h3 className="font-extrabold text-sm">Ulasan & Rating Toko</h3>
+                <p className="text-[10px] text-green-200">Komentar & masukan dari pelanggan Anda</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3" style={{ scrollbarWidth: "none" }}>
+            {mktReviews.map(r => (
+              <div key={r.id} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex flex-col gap-2">
+                <div className="flex justify-between items-center">
+                  <span className="font-bold text-xs text-gray-800">{r.customer}</span>
+                  <span className="text-[10px] text-gray-400">{r.date}</span>
+                </div>
+                <div className="flex items-center gap-1 text-[10px] text-amber-500 font-bold">
+                  {"★".repeat(r.rating)} <span className="text-gray-500 font-normal">({r.rating}.0)</span>
+                </div>
+                <p className="text-xs text-gray-600 mt-1 italic">"{r.comment}"</p>
+                
+                {r.reply ? (
+                  <div className="bg-emerald-50 rounded-xl p-2.5 border border-emerald-100 mt-2 text-[11px] text-emerald-800">
+                    <span className="font-bold block text-[10px] text-emerald-700 uppercase tracking-wider mb-0.5">Balasan Anda:</span>
+                    "{r.reply}"
+                  </div>
+                ) : (
+                  <div className="mt-2 flex gap-2">
+                    <input 
+                      type="text" 
+                      placeholder="Balas ulasan ini..." 
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          const val = (e.target as HTMLInputElement).value;
+                          if (!val) return;
+                          setMktReviews(prev => prev.map(x => x.id === r.id ? { ...x, reply: val } : x));
+                          showToast("Balasan ulasan berhasil dikirim!");
+                          (e.target as HTMLInputElement).value = "";
+                        }
+                      }}
+                      className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none"
+                    />
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         </div>
       )}
