@@ -10,6 +10,7 @@ enum AppScreen {
   login,
   otp,
   role,
+  mitraRole,
   cHome,
   cJelajah,
   cPesanan,
@@ -38,6 +39,7 @@ class AppProvider with ChangeNotifier {
   bool _isDriverOnline = true;
 
   int _walletBalance = 150000;
+  int _gopayBalance = 100000;
   final int _rangerPoints = 1250;
 
   final List<Product> _cartItems = [];
@@ -50,6 +52,7 @@ class AppProvider with ChangeNotifier {
   int get driverTabIndex => _driverTabIndex;
   bool get isDriverOnline => _isDriverOnline;
   int get walletBalance => _walletBalance;
+  int get gopayBalance => _gopayBalance;
   int get rangerPoints => _rangerPoints;
 
   List<Product> get products => _products;
@@ -141,6 +144,11 @@ class AppProvider with ChangeNotifier {
 
   void deductWallet(int amount) {
     _walletBalance -= amount;
+    notifyListeners();
+  }
+
+  void deductGoPay(int amount) {
+    _gopayBalance -= amount;
     notifyListeners();
   }
 

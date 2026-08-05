@@ -5,6 +5,7 @@ import '../../core/theme/app_theme.dart';
 import '../../models/models.dart';
 import '../../providers/app_provider.dart';
 import 'cart_view.dart';
+import 'merchant_view.dart';
 
 class ProductDetailView extends StatefulWidget {
   final Product product;
@@ -245,7 +246,12 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                         ),
                       ),
                       OutlinedButton(
-                        onPressed: () {},
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => MerchantView(storeName: widget.product.store)),
+                          );
+                        },
                         style: OutlinedButton.styleFrom(
                           side: const BorderSide(color: AppColors.primary),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),

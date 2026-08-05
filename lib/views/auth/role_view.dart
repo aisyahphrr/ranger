@@ -93,7 +93,7 @@ class RoleView extends StatelessWidget {
                             iconBg: Colors.orange.shade50,
                             borderColor: AppColors.accent.withValues(alpha: 0.4),
                             glowColor: AppColors.accent.withValues(alpha: 0.1),
-                            onTap: () => provider.setRole(UserRole.driver),
+                            onTap: () => provider.navigate(AppScreen.mitraRole),
                           ),
                           
                           const SizedBox(height: 32),

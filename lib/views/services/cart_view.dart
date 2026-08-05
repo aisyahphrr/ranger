@@ -15,7 +15,7 @@ class CartView extends StatefulWidget {
 }
 
 class _CartViewState extends State<CartView> {
-  String _paymentMethod = "Dompet"; // 'Dompet' or 'COD'
+  String _paymentMethod = "Dompet"; // 'Dompet', 'GoPay', 'QRIS', or 'COD'
   final int _deliveryFee = 5000;
   final int _serviceFee = 2000;
 
@@ -24,6 +24,7 @@ class _CartViewState extends State<CartView> {
     final appState = Provider.of<AppProvider>(context);
     final cart = appState.cartItems;
     final wallet = appState.walletBalance;
+    final gopay = appState.gopayBalance;
 
     // Group cart items by store name
     final Map<String, List<Product>> groupedItems = {};
@@ -33,8 +34,10 @@ class _CartViewState extends State<CartView> {
 
     final subtotal = appState.cartTotalPrice;
     final grandTotal = cart.isEmpty ? 0 : subtotal + _deliveryFee + _serviceFee;
-    final hasEnoughBalance = wallet >= grandTotal;
-    final showBalanceWarning = _paymentMethod == "Dompet" && !hasEnoughBalance && cart.isNotEmpty;
+    final hasEnoughWallet = wallet >= grandTotal;
+    final hasEnoughGoPay = gopay >= grandTotal;
+    final needsBalanceWarning = cart.isNotEmpty &&
+        ((_paymentMethod == "Dompet" && !hasEnoughWallet) || (_paymentMethod == "GoPay" && !hasEnoughGoPay));
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -66,7 +69,7 @@ class _CartViewState extends State<CartView> {
                           const SizedBox(height: 16),
 
                           // 3. Payment Method Card
-                          _buildPaymentMethodSection(wallet, grandTotal),
+                                          _buildPaymentMethodSection(wallet, gopay, grandTotal),
                           const SizedBox(height: 16),
 
                           // 4. Order Billing Summary
@@ -79,7 +82,7 @@ class _CartViewState extends State<CartView> {
                 ),
 
                 // Sticky Bottom Checkout Actions
-                _buildStickyBottomCheckout(context, appState, grandTotal, showBalanceWarning),
+                _buildStickyBottomCheckout(context, appState, grandTotal, needsBalanceWarning),
               ],
             ),
     );
@@ -323,7 +326,7 @@ class _CartViewState extends State<CartView> {
     );
   }
 
-  Widget _buildPaymentMethodSection(int wallet, int grandTotal) {
+  Widget _buildPaymentMethodSection(int wallet, int gopay, int grandTotal) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -357,7 +360,7 @@ class _CartViewState extends State<CartView> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                          const Text(
                         "Dompet Rangers",
                         style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                       ),
@@ -377,7 +380,77 @@ class _CartViewState extends State<CartView> {
           ),
           const Divider(height: 16),
 
-          // Payment option 2: COD
+          // Payment option 2: GoPay
+          InkWell(
+            onTap: () => setState(() => _paymentMethod = "GoPay"),
+            child: Row(
+              children: [
+                Radio<String>(
+                  value: "GoPay",
+                  groupValue: _paymentMethod,
+                  onChanged: (val) => setState(() => _paymentMethod = val!),
+                  activeColor: AppColors.primary,
+                ),
+                const Icon(LucideIcons.smartphone, color: Colors.blue, size: 20),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "GoPay",
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      ),
+                      Text(
+                        "Saldo: Rp ${gopay.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}",
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: gopay >= grandTotal ? Colors.green.shade700 : Colors.red.shade700,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 16),
+
+          // Payment option 3: QRIS
+          InkWell(
+            onTap: () => setState(() => _paymentMethod = "QRIS"),
+            child: Row(
+              children: [
+                Radio<String>(
+                  value: "QRIS",
+                  groupValue: _paymentMethod,
+                  onChanged: (val) => setState(() => _paymentMethod = val!),
+                  activeColor: AppColors.primary,
+                ),
+                const Icon(LucideIcons.qrCode, color: Colors.indigo, size: 20),
+                const SizedBox(width: 10),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "QRIS",
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      ),
+                      Text(
+                        "Bayar cepat dengan QR code saat checkout",
+                        style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 16),
+
+          // Payment option 4: COD
           InkWell(
             onTap: () => setState(() => _paymentMethod = "COD"),
             child: Row(
@@ -466,7 +539,7 @@ class _CartViewState extends State<CartView> {
     );
   }
 
-  Widget _buildStickyBottomCheckout(BuildContext context, AppProvider appState, int grandTotal, bool showBalanceWarning) {
+  Widget _buildStickyBottomCheckout(BuildContext context, AppProvider appState, int grandTotal, bool needsBalanceWarning) {
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
@@ -482,7 +555,7 @@ class _CartViewState extends State<CartView> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (showBalanceWarning) ...[
+          if (needsBalanceWarning) ...[
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               margin: const EdgeInsets.only(bottom: 12),
@@ -526,13 +599,13 @@ class _CartViewState extends State<CartView> {
               ),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: showBalanceWarning ? Colors.grey : AppColors.primary,
+                  backgroundColor: needsBalanceWarning ? Colors.grey : AppColors.primary,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   elevation: 0,
                 ),
-                onPressed: showBalanceWarning
+                onPressed: needsBalanceWarning
                     ? null
                     : () => _handleCheckout(context, appState, grandTotal),
                 child: const Row(
@@ -568,6 +641,8 @@ class _CartViewState extends State<CartView> {
     // Deduct wallet if using wallet payment
     if (_paymentMethod == "Dompet") {
       appState.deductWallet(grandTotal);
+    } else if (_paymentMethod == "GoPay") {
+      appState.deductGoPay(grandTotal);
     }
 
     // Place new order

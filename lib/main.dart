@@ -7,6 +7,7 @@ import 'views/onboarding/onboarding_view.dart';
 import 'views/auth/login_view.dart';
 import 'views/auth/otp_view.dart';
 import 'views/auth/role_view.dart';
+import 'views/auth/mitra_role_view.dart';
 import 'views/customer_main_layout.dart';
 import 'views/driver/driver_home_view.dart';
 import 'views/services/marketplace_view.dart';
@@ -64,6 +65,9 @@ class MainAppRouter extends StatelessWidget {
       case AppScreen.role:
         currentWidget = const RoleView();
         break;
+      case AppScreen.mitraRole:
+        currentWidget = const MitraRoleView();
+        break;
       case AppScreen.cMarketplace:
         currentWidget = const MarketplaceView();
         break;
@@ -87,7 +91,8 @@ class MainAppRouter extends StatelessWidget {
         appState.currentScreen == AppScreen.onboarding ||
         appState.currentScreen == AppScreen.login ||
         appState.currentScreen == AppScreen.otp ||
-        appState.currentScreen == AppScreen.role;
+        appState.currentScreen == AppScreen.role ||
+        appState.currentScreen == AppScreen.mitraRole;
 
     return Scaffold(
       body: currentWidget,

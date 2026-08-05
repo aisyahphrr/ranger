@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/constants/mock_data.dart';
+import '../../models/models.dart';
 import '../services/product_detail_view.dart';
 
 class CustomerExploreView extends StatefulWidget {
@@ -13,13 +14,20 @@ class CustomerExploreView extends StatefulWidget {
 
 class _CustomerExploreViewState extends State<CustomerExploreView> {
   String _selectedCat = "Semua";
+  String _searchQuery = "";
   final List<String> _categories = ["Semua", "Makanan", "Fashion", "Minuman", "Kesehatan", "Kerajinan"];
+
+  List<Product> get _filteredProducts {
+    return MockData.products.where((p) {
+      final matchesCategory = _selectedCat == "Semua" || p.cat == _selectedCat;
+      final matchesQuery = _searchQuery.isEmpty || p.name.toLowerCase().contains(_searchQuery.toLowerCase()) || p.store.toLowerCase().contains(_searchQuery.toLowerCase()) || p.cat.toLowerCase().contains(_searchQuery.toLowerCase());
+      return matchesCategory && matchesQuery;
+    }).toList();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final filtered = _selectedCat == "Semua"
-        ? MockData.products
-        : MockData.products.where((p) => p.cat == _selectedCat).toList();
+    final filtered = _filteredProducts;
 
     return Scaffold(
       appBar: AppBar(
@@ -31,11 +39,18 @@ class _CustomerExploreViewState extends State<CustomerExploreView> {
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: TextField(
+              onChanged: (value) => setState(() => _searchQuery = value),
               decoration: InputDecoration(
                 hintText: "Cari keripik, batik, kopi...",
                 prefixIcon: const Icon(LucideIcons.search, color: AppColors.textMuted),
                 filled: true,
                 fillColor: Colors.white,
+                suffixIcon: _searchQuery.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.close, size: 20, color: AppColors.textMuted),
+                        onPressed: () => setState(() => _searchQuery = ""),
+                      )
+                    : null,
                 contentPadding: const EdgeInsets.symmetric(vertical: 12),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
@@ -76,20 +91,42 @@ class _CustomerExploreViewState extends State<CustomerExploreView> {
           ),
           const SizedBox(height: 12),
 
-          // Grid View
-          Expanded(
-            child: GridView.builder(
-              padding: const EdgeInsets.all(16),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                childAspectRatio: 0.75,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
+          if (filtered.isEmpty)
+            Expanded(
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: const [
+                    Icon(LucideIcons.search, size: 48, color: AppColors.textMuted),
+                    SizedBox(height: 16),
+                    Text(
+                      "Produk tidak ditemukan",
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      "Coba kata kunci lain atau pilih kategori berbeda.",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                    ),
+                  ],
+                ),
               ),
-              itemCount: filtered.length,
-              itemBuilder: (context, index) {
-                final p = filtered[index];
-                return GestureDetector(
+            )
+          else
+            Expanded(
+              child: GridView.builder(
+                padding: const EdgeInsets.all(16),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  childAspectRatio: 0.75,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                ),
+                itemCount: filtered.length,
+                itemBuilder: (context, index) {
+                  final p = filtered[index];
+                  return GestureDetector(
                   onTap: () {
                     Navigator.push(
                       context,
