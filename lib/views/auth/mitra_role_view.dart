@@ -57,7 +57,7 @@ class _MitraRoleViewState extends State<MitraRoleView> {
       icon: LucideIcons.store,
       iconColor: Colors.green.shade700,
       iconBg: Colors.green.shade50,
-      screen: AppScreen.cMarketplace,
+      screen: AppScreen.mitraMarketplaceRegistration,
       roleType: _MitraRoleType.marketplace,
     ),
   ];

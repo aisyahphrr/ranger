@@ -29,6 +29,9 @@ enum AppScreen {
   dRiwayat,
   dPendapatan,
   dProfil,
+  mitraMarketplaceRegistration,
+  mitraMarketplaceSuccess,
+  mitraMarketplaceDashboard,
 }
 
 class AppProvider with ChangeNotifier {

@@ -8,6 +8,9 @@ import 'views/auth/login_view.dart';
 import 'views/auth/otp_view.dart';
 import 'views/auth/role_view.dart';
 import 'views/auth/mitra_role_view.dart';
+import 'views/auth/pemilik_marketplace/mitra_marketplace_registration_view.dart';
+import 'views/auth/pemilik_marketplace/mitra_marketplace_success_view.dart';
+import 'views/auth/pemilik_marketplace/mitra_marketplace_dashboard_view.dart';
 import 'views/customer_main_layout.dart';
 import 'views/driver/driver_home_view.dart';
 import 'views/services/marketplace_view.dart';
@@ -68,6 +71,15 @@ class MainAppRouter extends StatelessWidget {
       case AppScreen.mitraRole:
         currentWidget = const MitraRoleView();
         break;
+      case AppScreen.mitraMarketplaceRegistration:
+        currentWidget = const MitraMarketplaceRegistrationView();
+        break;
+      case AppScreen.mitraMarketplaceSuccess:
+        currentWidget = const MitraMarketplaceSuccessView();
+        break;
+      case AppScreen.mitraMarketplaceDashboard:
+        currentWidget = const MitraMarketplaceDashboardView();
+        break;
       case AppScreen.cMarketplace:
         currentWidget = const MarketplaceView();
         break;
@@ -92,38 +104,39 @@ class MainAppRouter extends StatelessWidget {
         appState.currentScreen == AppScreen.login ||
         appState.currentScreen == AppScreen.otp ||
         appState.currentScreen == AppScreen.role ||
-        appState.currentScreen == AppScreen.mitraRole;
+        appState.currentScreen == AppScreen.mitraRole ||
+        appState.currentScreen == AppScreen.mitraMarketplaceRegistration ||
+        appState.currentScreen == AppScreen.mitraMarketplaceSuccess ||
+        appState.currentScreen == AppScreen.mitraMarketplaceDashboard;
 
     return Scaffold(
       body: currentWidget,
-      floatingActionButton: isAuthOrSplash
-          ? null
-          : FloatingActionButton.extended(
-              backgroundColor: Colors.black87,
-              foregroundColor: Colors.white,
-              onPressed: () {
-                final nextRole = appState.role == UserRole.customer
-                    ? UserRole.driver
-                    : UserRole.customer;
-                appState.setRole(nextRole);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      "Mode diganti ke: ${nextRole == UserRole.customer ? 'Pelanggan' : 'Driver'}",
-                    ),
-                    duration: const Duration(seconds: 1),
-                  ),
-                );
-              },
-              icon: Icon(
-                appState.role == UserRole.customer ? LucideIcons.bike : LucideIcons.user,
-                size: 18,
+      floatingActionButton: isAuthOrSplash ? null : FloatingActionButton.extended(
+          backgroundColor: Colors.black87,
+          foregroundColor: Colors.white,
+          onPressed: () {
+            final nextRole = appState.role == UserRole.customer
+                ? UserRole.driver
+                : UserRole.customer;
+            appState.setRole(nextRole);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  "Mode diganti ke: ${nextRole == UserRole.customer ? 'Pelanggan' : 'Driver'}",
+                ),
+                duration: const Duration(seconds: 1),
               ),
-              label: Text(
-                appState.role == UserRole.customer ? "Mode Driver" : "Mode Pelanggan",
-                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-              ),
-            ),
+            );
+          },
+          icon: Icon(
+            appState.role == UserRole.customer ? LucideIcons.bike : LucideIcons.user,
+            size: 18,
+          ),
+          label: Text(
+            appState.role == UserRole.customer ? "Mode Driver" : "Mode Pelanggan",
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+          ),
+        ),
     );
   }
 }
