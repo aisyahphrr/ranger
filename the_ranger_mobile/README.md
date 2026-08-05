@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # the_ranger_mobile
 
 A new Flutter project.
@@ -16,16 +15,3 @@ A few resources to get you started if this is your first Flutter project:
 For help getting started with Flutter development, view the
 [online documentation](https://docs.flutter.dev/), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
-=======
-
-  # Design The Rangers App 2.0
-
-  This is a code bundle for Design The Rangers App 2.0. The original project is available at https://www.figma.com/design/T6bLUWRDvr3ApJVv4NfEOz/Design-The-Rangers-App-2.0.
-
-  ## Running the code
-
-  Run `npm i` to install the dependencies.
-
-  Run `npm run dev` to start the development server.
-  
->>>>>>> 30937b3d1a82de6265a810aac376f3f0551454de
