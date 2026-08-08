@@ -59,9 +59,13 @@ class MitraMarketplaceSuccessView extends StatelessWidget {
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
-                  child: const Text('Masuk Dashboard', style: TextStyle(fontWeight: FontWeight.bold)),
+                  child: const Text(
+                    'BUKA BERANDA',
+                    style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+                  ),
                 ),
               ),
             ],

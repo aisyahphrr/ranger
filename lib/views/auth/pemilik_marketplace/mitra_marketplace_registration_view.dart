@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../core/theme/app_theme.dart';
@@ -16,6 +17,8 @@ class _MitraMarketplaceRegistrationViewState extends State<MitraMarketplaceRegis
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _nikController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _storeNameController = TextEditingController();
   final TextEditingController _businessCategoryController = TextEditingController();
   final TextEditingController _nibController = TextEditingController();
@@ -30,6 +33,8 @@ class _MitraMarketplaceRegistrationViewState extends State<MitraMarketplaceRegis
   void dispose() {
     _nameController.dispose();
     _nikController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
     _storeNameController.dispose();
     _businessCategoryController.dispose();
     _nibController.dispose();
@@ -38,22 +43,37 @@ class _MitraMarketplaceRegistrationViewState extends State<MitraMarketplaceRegis
     super.dispose();
   }
 
-  void _nextStep() {
+  Future<void> _nextStep() async {
     if (_currentStep == 0) {
       if (_formKey.currentState?.validate() ?? false) {
         setState(() => _currentStep = 1);
       }
     } else {
       if (_formKey.currentState?.validate() ?? false) {
-        Provider.of<AppProvider>(context, listen: false)
-            .navigate(AppScreen.mitraMarketplaceSuccess);
+        final provider = Provider.of<AppProvider>(context, listen: false);
+        await provider.saveMarketplaceRegistration(
+          ownerName: _nameController.text.trim(),
+          storeName: _storeNameController.text.trim(),
+          phone: 'Belum diisi',
+          address: _addressController.text.trim(),
+          email: _emailController.text.trim(),
+          password: _passwordController.text.trim(),
+        );
+        if (mounted) provider.navigate(AppScreen.mitraMarketplaceSuccess);
       }
     }
   }
 
-  void _pickFile(String field) {
+  Future<void> _pickFile(String field) async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: const ['jpg', 'jpeg', 'png'],
+    );
+
+    if (result == null || result.files.single.name.isEmpty || !mounted) return;
+
     setState(() {
-      final fileName = '${field.toUpperCase()}_${DateTime.now().millisecondsSinceEpoch % 1000}.jpg';
+      final fileName = result.files.single.name;
       switch (field) {
         case 'ktp':
           _ktpFileName = fileName;
@@ -104,7 +124,7 @@ class _MitraMarketplaceRegistrationViewState extends State<MitraMarketplaceRegis
                     children: [
                       if (_currentStep == 0) ...[
                         _buildSectionCard(
-                          title: 'Data Diri & NIK',
+                          title: 'Data Diri & Akun',
                           subtitle: 'Pastikan data sesuai dengan kartu identitas Anda yang berlaku.',
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -122,6 +142,30 @@ class _MitraMarketplaceRegistrationViewState extends State<MitraMarketplaceRegis
                                 hintText: '320xxxxxxxxxxxxx',
                                 keyboardType: TextInputType.number,
                                 validator: (value) => value == null || value.isEmpty ? 'Harus diisi' : null,
+                              ),
+                              const SizedBox(height: 16),
+                              _buildTextField(
+                                label: 'Alamat Email',
+                                controller: _emailController,
+                                hintText: 'nama@domain.com',
+                                keyboardType: TextInputType.emailAddress,
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) return 'Harus diisi';
+                                  if (!value.contains('@')) return 'Format email tidak valid';
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 16),
+                              _buildTextField(
+                                label: 'Password Akun Mitra',
+                                controller: _passwordController,
+                                hintText: 'Minimal 6 karakter',
+                                obscureText: true,
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) return 'Harus diisi';
+                                  if (value.length < 6) return 'Password minimal 6 karakter';
+                                  return null;
+                                },
                               ),
                               const SizedBox(height: 20),
                               _buildUploadBox(
@@ -257,7 +301,7 @@ class _MitraMarketplaceRegistrationViewState extends State<MitraMarketplaceRegis
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          _currentStep == 0 ? 'Data Diri & NIK' : 'Detail Usaha & Legalitas',
+          _currentStep == 0 ? 'Data Diri & Akun' : 'Detail Usaha & Legalitas',
           style: const TextStyle(
             fontSize: 26,
             fontWeight: FontWeight.w900,
@@ -323,6 +367,7 @@ class _MitraMarketplaceRegistrationViewState extends State<MitraMarketplaceRegis
     String? hintText,
     TextInputType keyboardType = TextInputType.text,
     int maxLines = 1,
+    bool obscureText = false,
     String? Function(String?)? validator,
   }) {
     return Column(
@@ -336,7 +381,8 @@ class _MitraMarketplaceRegistrationViewState extends State<MitraMarketplaceRegis
         TextFormField(
           controller: controller,
           keyboardType: keyboardType,
-          maxLines: maxLines,
+          maxLines: obscureText ? 1 : maxLines,
+          obscureText: obscureText,
           validator: validator,
           decoration: InputDecoration(
             hintText: hintText,
@@ -489,19 +535,26 @@ class _MitraMarketplaceRegistrationViewState extends State<MitraMarketplaceRegis
   }
 
   Widget _buildActionButton() {
-    final buttonText = _currentStep == 0 ? 'Lanjutkan' : 'Kirim Pendaftaran';
+    final buttonText = _currentStep == 0
+        ? 'LANJUTKAN PENDAFTARAN'
+        : 'KIRIM PENDAFTARAN';
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
         onPressed: _nextStep,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 16),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         ),
         child: Text(
           buttonText,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+            color: Colors.white,
+          ),
         ),
       ),
     );

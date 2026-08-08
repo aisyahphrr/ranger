@@ -24,7 +24,7 @@ class _MarketplaceViewState extends State<MarketplaceView> {
     final productsList = appState.products.where((p) {
       final matchesCategory = _selectedCategory == "Semua" || p.cat == _selectedCategory;
       final matchesQuery = _searchQuery.isEmpty || p.name.toLowerCase().contains(_searchQuery.toLowerCase()) || p.store.toLowerCase().contains(_searchQuery.toLowerCase());
-      return matchesCategory && matchesQuery;
+      return p.isAvailable && matchesCategory && matchesQuery;
     }).toList();
 
     return Scaffold(
@@ -146,19 +146,16 @@ class _MarketplaceViewState extends State<MarketplaceView> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(
-                          child: Image.network(
-                            p.img,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                color: Colors.grey.shade200,
-                                child: const Center(
-                                  child: Icon(LucideIcons.store, color: Colors.grey),
-                                ),
-                              );
-                            },
-                          ),
+                          child: p.imageBytes != null
+                              ? Image.memory(p.imageBytes!, width: double.infinity, fit: BoxFit.cover)
+                              : p.img.startsWith('http')
+                              ? Image.network(
+                                  p.img,
+                                  width: double.infinity,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) => _imageFallback(),
+                                )
+                              : _imageFallback(),
                         ),
                         Padding(
                           padding: const EdgeInsets.all(12),
@@ -275,3 +272,8 @@ class _MarketplaceViewState extends State<MarketplaceView> {
     );
   }
 }
+
+Widget _imageFallback() => Container(
+      color: Colors.grey.shade200,
+      child: const Center(child: Icon(LucideIcons.store, color: Colors.grey)),
+    );

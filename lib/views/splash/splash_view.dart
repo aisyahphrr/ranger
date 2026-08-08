@@ -19,7 +19,7 @@ class _SplashViewState extends State<SplashView> {
       if (mounted) {
         final provider = Provider.of<AppProvider>(context, listen: false);
         if (provider.currentScreen == AppScreen.splash) {
-          provider.navigate(AppScreen.onboarding);
+          provider.navigate(provider.isMarketplaceRegistered ? AppScreen.mitraMarketplaceDashboard : AppScreen.onboarding);
         }
       }
     });

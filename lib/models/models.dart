@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:intl/intl.dart';
 
 class Product {
@@ -10,6 +12,10 @@ class Product {
   final String img;
   bool liked;
   final String cat;
+  final String description;
+  final int stock;
+  final bool isActive;
+  final Uint8List? imageBytes;
 
   Product({
     required this.id,
@@ -21,7 +27,41 @@ class Product {
     required this.img,
     this.liked = false,
     required this.cat,
+    this.description = '',
+    this.stock = 10,
+    this.isActive = true,
+    this.imageBytes,
   });
+
+  bool get isAvailable => isActive && stock > 0;
+
+  Product copyWith({
+    String? name,
+    String? store,
+    int? price,
+    String? img,
+    String? cat,
+    String? description,
+    int? stock,
+    bool? isActive,
+    Uint8List? imageBytes,
+  }) {
+    return Product(
+      id: id,
+      name: name ?? this.name,
+      store: store ?? this.store,
+      price: price ?? this.price,
+      rating: rating,
+      sold: sold,
+      img: img ?? this.img,
+      liked: liked,
+      cat: cat ?? this.cat,
+      description: description ?? this.description,
+      stock: stock ?? this.stock,
+      isActive: isActive ?? this.isActive,
+      imageBytes: imageBytes ?? this.imageBytes,
+    );
+  }
 
   String get formattedPrice {
     final currencyFormatter = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
