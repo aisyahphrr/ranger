@@ -17,7 +17,8 @@ class _MitraRoleViewState extends State<MitraRoleView> {
   final List<_MitraRoleOption> _options = [
     _MitraRoleOption(
       title: 'Kurir / Driver',
-      subtitle: 'Antar pesanan pelanggan dan bantu kelola pengiriman dalam komunitas.',
+      subtitle:
+          'Antar pesanan pelanggan dan bantu kelola pengiriman dalam komunitas.',
       icon: LucideIcons.bike,
       iconColor: Colors.deepOrange,
       iconBg: Colors.deepOrange.shade50,
@@ -26,7 +27,8 @@ class _MitraRoleViewState extends State<MitraRoleView> {
     ),
     _MitraRoleOption(
       title: 'Pemilik Kos',
-      subtitle: 'Kelola kamar kos dan sediakan fasilitas terbaik untuk penghuni.',
+      subtitle:
+          'Kelola kamar kos dan sediakan fasilitas terbaik untuk penghuni.',
       icon: LucideIcons.home,
       iconColor: Colors.purple,
       iconBg: Colors.purple.shade50,
@@ -35,7 +37,8 @@ class _MitraRoleViewState extends State<MitraRoleView> {
     ),
     _MitraRoleOption(
       title: 'Pemilik Laundry',
-      subtitle: 'Kelola layanan laundry, terima pesanan, dan atur jadwal jemput.',
+      subtitle:
+          'Kelola layanan laundry, terima pesanan, dan atur jadwal jemput.',
       icon: LucideIcons.shirt,
       iconColor: Colors.blue,
       iconBg: Colors.blue.shade50,
@@ -44,11 +47,12 @@ class _MitraRoleViewState extends State<MitraRoleView> {
     ),
     _MitraRoleOption(
       title: 'Pemilik Catering',
-      subtitle: 'Atur menu catering, terima pesanan katering harian, dan kelola dapur Anda.',
+      subtitle:
+          'Atur menu catering, terima pesanan katering harian, dan kelola dapur Anda.',
       icon: LucideIcons.coffee,
       iconColor: Colors.amber.shade800,
       iconBg: Colors.amber.shade50,
-      screen: AppScreen.cCatering,
+      screen: AppScreen.cateringOwnerRegistration,
       roleType: _MitraRoleType.catering,
     ),
     _MitraRoleOption(
@@ -64,7 +68,8 @@ class _MitraRoleViewState extends State<MitraRoleView> {
 
   void _onContinue() {
     if (_selectedRole == null) return;
-    final selectedOption = _options.firstWhere((option) => option.title == _selectedRole);
+    final selectedOption =
+        _options.firstWhere((option) => option.title == _selectedRole);
     final provider = Provider.of<AppProvider>(context, listen: false);
 
     if (selectedOption.roleType == _MitraRoleType.driver) {
@@ -85,14 +90,16 @@ class _MitraRoleViewState extends State<MitraRoleView> {
           child: Container(
             constraints: const BoxConstraints(maxWidth: 500),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 24.0),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 24.0, vertical: 24.0),
               child: Column(
                 children: [
                   Row(
                     children: [
                       IconButton(
                         onPressed: () => provider.navigate(AppScreen.role),
-                        icon: const Icon(LucideIcons.arrowLeft, color: AppColors.textPrimary),
+                        icon: const Icon(LucideIcons.arrowLeft,
+                            color: AppColors.textPrimary),
                         style: IconButton.styleFrom(
                           backgroundColor: Colors.white,
                           shadowColor: Colors.black.withValues(alpha: 0.05),
@@ -159,7 +166,8 @@ class _MitraRoleViewState extends State<MitraRoleView> {
                     child: ListView.separated(
                       padding: EdgeInsets.zero,
                       itemCount: _options.length,
-                      separatorBuilder: (context, index) => const SizedBox(height: 14),
+                      separatorBuilder: (context, index) =>
+                          const SizedBox(height: 14),
                       itemBuilder: (context, index) {
                         final option = _options[index];
                         final selected = option.title == _selectedRole;
@@ -175,11 +183,14 @@ class _MitraRoleViewState extends State<MitraRoleView> {
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(18),
                               border: Border.all(
-                                color: selected ? AppColors.primary : AppColors.border,
+                                color: selected
+                                    ? AppColors.primary
+                                    : AppColors.border,
                                 width: selected ? 2 : 1,
                               ),
                             ),
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 18),
                             child: Row(
                               children: [
                                 Container(
@@ -189,12 +200,14 @@ class _MitraRoleViewState extends State<MitraRoleView> {
                                     color: option.iconBg,
                                     borderRadius: BorderRadius.circular(14),
                                   ),
-                                  child: Icon(option.icon, color: option.iconColor, size: 24),
+                                  child: Icon(option.icon,
+                                      color: option.iconColor, size: 24),
                                 ),
                                 const SizedBox(width: 14),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         option.title,
@@ -222,7 +235,9 @@ class _MitraRoleViewState extends State<MitraRoleView> {
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
                                     border: Border.all(
-                                      color: selected ? AppColors.primary : AppColors.border,
+                                      color: selected
+                                          ? AppColors.primary
+                                          : AppColors.border,
                                       width: 2,
                                     ),
                                   ),
@@ -232,7 +247,9 @@ class _MitraRoleViewState extends State<MitraRoleView> {
                                       height: 10,
                                       decoration: BoxDecoration(
                                         shape: BoxShape.circle,
-                                        color: selected ? AppColors.primary : Colors.transparent,
+                                        color: selected
+                                            ? AppColors.primary
+                                            : Colors.transparent,
                                       ),
                                     ),
                                   ),
@@ -251,12 +268,16 @@ class _MitraRoleViewState extends State<MitraRoleView> {
                       onPressed: _selectedRole == null ? null : _onContinue,
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                        backgroundColor: _selectedRole == null ? AppColors.border : AppColors.primary,
+                        backgroundColor: _selectedRole == null
+                            ? AppColors.border
+                            : AppColors.primary,
                       ),
                       child: Text(
                         'Lanjutkan',
                         style: TextStyle(
-                          color: _selectedRole == null ? AppColors.textSecondary : Colors.white,
+                          color: _selectedRole == null
+                              ? AppColors.textSecondary
+                              : Colors.white,
                           fontWeight: FontWeight.bold,
                         ),
                       ),

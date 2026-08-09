@@ -503,9 +503,9 @@ class _LoginViewState extends State<LoginView> {
                           style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
                         ),
                         GestureDetector(
-                          onTap: () => provider.navigate(AppScreen.mitraMarketplaceRegistration),
+                          onTap: () => provider.navigate(AppScreen.mitraRole),
                           child: const Text(
-                            "Daftar Mitra Baru",
+                            "Pilih Peran & Daftar",
                             style: TextStyle(
                               color: AppColors.primary,
                               fontWeight: FontWeight.bold,

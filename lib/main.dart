@@ -11,6 +11,10 @@ import 'views/auth/mitra_role_view.dart';
 import 'views/auth/pemilik_marketplace/mitra_marketplace_registration_view.dart';
 import 'views/auth/pemilik_marketplace/mitra_marketplace_success_view.dart';
 import 'views/auth/pemilik_marketplace/mitra_marketplace_dashboard_view.dart';
+import 'views/auth/pemilik_catering/auth/pemilik_catering_login_view.dart';
+import 'views/auth/pemilik_catering/auth/pemilik_catering_registration_view.dart';
+import 'views/auth/pemilik_catering/auth/pemilik_catering_success_view.dart';
+import 'views/auth/pemilik_catering/dashboard/pemilik_catering_dashboard_view.dart';
 import 'views/customer_main_layout.dart';
 import 'views/driver/driver_home_view.dart';
 import 'views/services/marketplace_view.dart';
@@ -80,6 +84,18 @@ class MainAppRouter extends StatelessWidget {
       case AppScreen.mitraMarketplaceDashboard:
         currentWidget = const MitraMarketplaceDashboardView();
         break;
+      case AppScreen.cateringOwnerLogin:
+        currentWidget = const PemilikCateringLoginView();
+        break;
+      case AppScreen.cateringOwnerRegistration:
+        currentWidget = const PemilikCateringRegistrationView();
+        break;
+      case AppScreen.cateringOwnerSuccess:
+        currentWidget = const PemilikCateringSuccessView();
+        break;
+      case AppScreen.cateringOwnerDashboard:
+        currentWidget = const PemilikCateringDashboardView();
+        break;
       case AppScreen.cMarketplace:
         currentWidget = const MarketplaceView();
         break;
@@ -107,36 +123,47 @@ class MainAppRouter extends StatelessWidget {
         appState.currentScreen == AppScreen.mitraRole ||
         appState.currentScreen == AppScreen.mitraMarketplaceRegistration ||
         appState.currentScreen == AppScreen.mitraMarketplaceSuccess ||
-        appState.currentScreen == AppScreen.mitraMarketplaceDashboard;
+        appState.currentScreen == AppScreen.mitraMarketplaceDashboard ||
+        appState.currentScreen == AppScreen.cateringOwnerLogin ||
+        appState.currentScreen == AppScreen.cateringOwnerRegistration ||
+        appState.currentScreen == AppScreen.cateringOwnerSuccess ||
+        appState.currentScreen == AppScreen.cateringOwnerDashboard;
 
     return Scaffold(
       body: currentWidget,
-      floatingActionButton: isAuthOrSplash ? null : FloatingActionButton.extended(
-          backgroundColor: Colors.black87,
-          foregroundColor: Colors.white,
-          onPressed: () {
-            final nextRole = appState.role == UserRole.customer
-                ? UserRole.driver
-                : UserRole.customer;
-            appState.setRole(nextRole);
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  "Mode diganti ke: ${nextRole == UserRole.customer ? 'Pelanggan' : 'Driver'}",
-                ),
-                duration: const Duration(seconds: 1),
+      floatingActionButton: isAuthOrSplash
+          ? null
+          : FloatingActionButton.extended(
+              backgroundColor: Colors.black87,
+              foregroundColor: Colors.white,
+              onPressed: () {
+                final nextRole = appState.role == UserRole.customer
+                    ? UserRole.driver
+                    : UserRole.customer;
+                appState.setRole(nextRole);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      "Mode diganti ke: ${nextRole == UserRole.customer ? 'Pelanggan' : 'Driver'}",
+                    ),
+                    duration: const Duration(seconds: 1),
+                  ),
+                );
+              },
+              icon: Icon(
+                appState.role == UserRole.customer
+                    ? LucideIcons.bike
+                    : LucideIcons.user,
+                size: 18,
               ),
-            );
-          },
-          icon: Icon(
-            appState.role == UserRole.customer ? LucideIcons.bike : LucideIcons.user,
-            size: 18,
-          ),
-          label: Text(
-            appState.role == UserRole.customer ? "Mode Driver" : "Mode Pelanggan",
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-          ),
-        ),
+              label: Text(
+                appState.role == UserRole.customer
+                    ? "Mode Driver"
+                    : "Mode Pelanggan",
+                style:
+                    const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+              ),
+            ),
     );
   }
 }

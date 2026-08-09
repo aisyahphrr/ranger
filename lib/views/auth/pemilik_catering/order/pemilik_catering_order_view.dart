@@ -4,16 +4,16 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/theme/app_theme.dart';
 import 'widgets/order_chat_sheet.dart';
 
-class PemilikMarketplaceOrderView extends StatefulWidget {
-  const PemilikMarketplaceOrderView({super.key});
+class PemilikCateringOrderView extends StatefulWidget {
+  const PemilikCateringOrderView({super.key});
 
   @override
-  State<PemilikMarketplaceOrderView> createState() =>
-      _PemilikMarketplaceOrderViewState();
+  State<PemilikCateringOrderView> createState() =>
+      _PemilikCateringOrderViewState();
 }
 
-class _PemilikMarketplaceOrderViewState
-    extends State<PemilikMarketplaceOrderView> {
+class _PemilikCateringOrderViewState
+    extends State<PemilikCateringOrderView> {
   final _searchController = TextEditingController();
   final _statuses = const [
     'Semua',
@@ -25,27 +25,27 @@ class _PemilikMarketplaceOrderViewState
     'Dibatalkan',
   ];
 
-  final List<MarketplaceOrder> _orders = [
-    MarketplaceOrder(
-      id: 'MKT-2408',
+  final List<CateringOrder> _orders = [
+    CateringOrder(
+      id: 'CAT-2408',
       customer: 'Bambang Wijaya',
       customerPhone: '0812 3456 7890',
       items: const [
-        OrderItem(name: 'Nasi Timbel Komplit', quantity: 2, price: 25000),
+        OrderItem(name: 'Box Nasi Timbel Komplit', quantity: 10, price: 25000),
       ],
-      total: 50000,
+      total: 250000,
       time: '10:24',
       status: 'Menunggu',
     ),
-    MarketplaceOrder(
-      id: 'MKT-2407',
+    CateringOrder(
+      id: 'CAT-2407',
       customer: 'Siti Aminah',
       customerPhone: '0821 9876 5432',
       items: const [
-        OrderItem(name: 'Ayam Bakar Madu', quantity: 1, price: 28000),
-        OrderItem(name: 'Es Jeruk', quantity: 2, price: 8000),
+        OrderItem(name: 'Nasi Tumpeng Mini', quantity: 2, price: 150000),
+        OrderItem(name: 'Es Jeruk', quantity: 20, price: 8000),
       ],
-      total: 44000,
+      total: 460000,
       time: '09:48',
       status: 'Diproses',
       driver: DriverProfile(
@@ -53,19 +53,19 @@ class _PemilikMarketplaceOrderViewState
         vehicle: 'Motor',
         plateNumber: 'B 1234 XYZ',
         rating: 4.9,
-        stage: 'Driver menuju outlet',
+        stage: 'Driver menuju catering',
         distance: '1,2 km',
         eta: '5 menit',
       ),
     ),
-    MarketplaceOrder(
-      id: 'MKT-2406',
+    CateringOrder(
+      id: 'CAT-2406',
       customer: 'Rani Setiawati',
       customerPhone: '0857 1122 3344',
       items: const [
-        OrderItem(name: 'Nasi Timbel Komplit', quantity: 3, price: 25000),
+        OrderItem(name: 'Box Ayam Bakar Madu', quantity: 30, price: 28000),
       ],
-      total: 75000,
+      total: 840000,
       time: '09:15',
       status: 'Selesai',
       driver: DriverProfile(
@@ -119,7 +119,7 @@ class _PemilikMarketplaceOrderViewState
                     ),
                     SizedBox(height: 4),
                     Text(
-                      'Kelola persiapan sampai pesanan tiba di customer.',
+                      'Kelola persiapan sampai pesanan catering tiba di customer.',
                       style: TextStyle(color: AppColors.textSecondary),
                     ),
                   ],
@@ -132,22 +132,22 @@ class _PemilikMarketplaceOrderViewState
                     vertical: 8,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.orange.shade50,
+                    color: Colors.green.shade50,
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.notifications_none_rounded,
                         size: 17,
-                        color: Colors.orange.shade800,
+                        color: AppColors.primary,
                       ),
                       const SizedBox(width: 4),
                       Text(
                         '$newOrders baru',
-                        style: TextStyle(
-                          color: Colors.orange.shade800,
+                        style: const TextStyle(
+                          color: AppColors.primary,
                           fontWeight: FontWeight.w800,
                           fontSize: 11,
                         ),
@@ -171,7 +171,7 @@ class _PemilikMarketplaceOrderViewState
     );
   }
 
-  List<MarketplaceOrder> get _filteredOrders {
+  List<CateringOrder> get _filteredOrders {
     final query = _searchController.text.trim().toLowerCase();
     return _orders.where((order) {
       final matchesStatus =
@@ -277,7 +277,7 @@ class _PemilikMarketplaceOrderViewState
     );
   }
 
-  Widget _orderCard(MarketplaceOrder order) {
+  Widget _orderCard(CateringOrder order) {
     final color = _statusColor(order.status);
     final hasDriver = order.driver != null;
     final canTrack =
@@ -500,7 +500,7 @@ class _PemilikMarketplaceOrderViewState
     );
   }
 
-  void _showDetail(MarketplaceOrder order) {
+  void _showDetail(CateringOrder order) {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -584,7 +584,7 @@ class _PemilikMarketplaceOrderViewState
     );
   }
 
-  Widget _buildCustomerCard(MarketplaceOrder order) {
+  Widget _buildCustomerCard(CateringOrder order) {
     return _sectionCard(
       title: 'Customer',
       icon: Icons.person_outline_rounded,
@@ -635,7 +635,7 @@ class _PemilikMarketplaceOrderViewState
     );
   }
 
-  Widget _buildOrderSummary(MarketplaceOrder order) {
+  Widget _buildOrderSummary(CateringOrder order) {
     return _sectionCard(
       title: 'Detail Pesanan',
       icon: Icons.receipt_long_outlined,
@@ -701,7 +701,7 @@ class _PemilikMarketplaceOrderViewState
     );
   }
 
-  Widget _buildTimeline(MarketplaceOrder order) {
+  Widget _buildTimeline(CateringOrder order) {
     final steps = _timelineSteps(order);
     return _sectionCard(
       title: 'Perjalanan Order',
@@ -718,7 +718,7 @@ class _PemilikMarketplaceOrderViewState
     );
   }
 
-  List<_TimelineItem> _timelineSteps(MarketplaceOrder order) {
+  List<_TimelineItem> _timelineSteps(CateringOrder order) {
     if (order.status == 'Dibatalkan') {
       return const [
         _TimelineItem('Pesanan diterima', _TimelineState.done),
@@ -802,26 +802,26 @@ class _PemilikMarketplaceOrderViewState
                   Expanded(
                     child: Container(
                       width: 1.5,
-                      margin: const EdgeInsets.symmetric(vertical: 3),
                       color: isDone ? AppColors.primary : AppColors.border,
                     ),
                   ),
               ],
             ),
           ),
-          const SizedBox(width: 11),
+          const SizedBox(width: 12),
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.only(top: 2, bottom: 16),
+              padding: const EdgeInsets.only(top: 2, bottom: 14),
               child: Text(
                 item.label,
                 style: TextStyle(
-                  color: isActive || isDone
-                      ? AppColors.textPrimary
-                      : AppColors.textMuted,
-                  fontWeight:
-                      isActive || isDone ? FontWeight.w800 : FontWeight.w500,
-                  fontSize: 13,
+                  color: isCancelled
+                      ? Colors.red
+                      : isDone || isActive
+                          ? AppColors.textPrimary
+                          : AppColors.textSecondary,
+                  fontWeight: isActive || isDone ? FontWeight.w800 : FontWeight.w500,
+                  fontSize: 12.5,
                 ),
               ),
             ),
@@ -831,164 +831,176 @@ class _PemilikMarketplaceOrderViewState
     );
   }
 
-  Widget _buildDriverCard(MarketplaceOrder order) {
-    final driver = order.driver;
-    if (driver == null) {
-      return _sectionCard(
-        title: 'Driver',
-        icon: Icons.delivery_dining_rounded,
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(11),
-              decoration: BoxDecoration(
-                color: Colors.orange.shade50,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.hourglass_top_rounded,
-                color: Colors.orange.shade800,
-              ),
-            ),
-            const SizedBox(width: 12),
-            const Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Driver belum ditugaskan',
-                    style: TextStyle(fontWeight: FontWeight.w800),
-                  ),
-                  SizedBox(height: 3),
-                  Text(
-                    'Tracking akan aktif setelah driver menerima order.',
-                    style: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 11,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
+  Widget _buildDriverCard(CateringOrder order) {
+    if (order.driver == null) return const SizedBox.shrink();
     return _sectionCard(
-      title: 'Driver & Tracking',
+      title: 'Kurir Delivery',
       icon: Icons.delivery_dining_rounded,
-      child: Column(
+      child: Row(
         children: [
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 23,
-                backgroundColor: Colors.orange.shade50,
-                child: Icon(
-                  Icons.delivery_dining_rounded,
-                  color: Colors.orange.shade800,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      driver.name,
-                      style: const TextStyle(fontWeight: FontWeight.w800),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      '${driver.vehicle} · ${driver.plateNumber}',
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 12,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.star_rounded,
-                          color: AppColors.ratingAmber,
-                          size: 15,
-                        ),
-                        const SizedBox(width: 3),
-                        Text(
-                          driver.rating.toStringAsFixed(1),
-                          style: const TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: 11,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
+          CircleAvatar(
+            radius: 22,
+            backgroundColor: Colors.orange.shade50,
+            child: Icon(Icons.delivery_dining_rounded, color: Colors.orange.shade800),
           ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.primaryLight,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Row(
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(
-                  Icons.navigation_rounded,
-                  color: AppColors.primary,
-                  size: 18,
+                Text(
+                  order.driver!.name,
+                  style: const TextStyle(fontWeight: FontWeight.w800),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    driver.stage,
-                    style: const TextStyle(
-                      color: AppColors.primaryDark,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 12,
-                    ),
+                const SizedBox(height: 3),
+                Text(
+                  '${order.driver!.vehicle} · ${order.driver!.plateNumber}',
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
                   ),
                 ),
-                if (driver.eta != '-')
-                  Text(
-                    '${driver.distance}\n${driver.eta}',
-                    textAlign: TextAlign.right,
-                    style: const TextStyle(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 11,
-                    ),
-                  ),
               ],
             ),
           ),
+          IconButton(
+            onPressed: () => _openChat(order, isDriver: true),
+            style: IconButton.styleFrom(
+              backgroundColor: Colors.orange.shade50,
+              foregroundColor: Colors.orange.shade800,
+            ),
+            icon: const Icon(Icons.chat_bubble_outline_rounded, size: 19),
+            tooltip: 'Chat driver',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusActions(CateringOrder order, StateSetter sheetSetState) {
+    if (order.status == 'Selesai' || order.status == 'Dibatalkan') {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Aksi Pesanan',
+            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+          ),
           const SizedBox(height: 12),
           Row(
             children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () => _openChat(order, isDriver: true),
-                  icon: const Icon(Icons.chat_bubble_outline_rounded, size: 17),
-                  label: const Text('Chat Driver'),
+              if (order.status == 'Menunggu') ...[
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => _showRejectDialog(order, sheetSetState),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.red,
+                      side: const BorderSide(color: Colors.red),
+                      padding: const EdgeInsets.symmetric(vertical: 13),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text('Tolak', style: TextStyle(fontWeight: FontWeight.w800)),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: FilledButton.icon(
-                  onPressed:
-                      order.status == 'Selesai' || order.status == 'Dibatalkan'
-                          ? null
-                          : () => _openTracking(order),
-                  icon: const Icon(Icons.map_outlined, size: 17),
-                  label: const Text('Tracking'),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      setState(() => order.status = 'Diproses');
+                      sheetSetState(() {});
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 13),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text('Terima', style: TextStyle(fontWeight: FontWeight.w800)),
+                  ),
                 ),
-              ),
+              ] else if (order.status == 'Diproses') ...[
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      setState(() => order.status = 'Siap');
+                      sheetSetState(() {});
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 13),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text('Siap Diantar', style: TextStyle(fontWeight: FontWeight.w800)),
+                  ),
+                ),
+              ] else if (order.status == 'Siap') ...[
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        order.status = 'Diambil';
+                        order.driver = DriverProfile(
+                          name: 'Budi Santoso',
+                          vehicle: 'Motor',
+                          plateNumber: 'B 1234 XYZ',
+                          rating: 4.9,
+                          stage: 'Driver sedang mengantar pesanan',
+                          distance: '2,4 km',
+                          eta: '10 menit',
+                        );
+                      });
+                      sheetSetState(() {});
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 13),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text('Hubungkan Kurir', style: TextStyle(fontWeight: FontWeight.w800)),
+                  ),
+                ),
+              ] else if (order.status == 'Diambil') ...[
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        order.status = 'Selesai';
+                        order.driver?.stage = 'Pesanan selesai';
+                      });
+                      sheetSetState(() {});
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 13),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text('Selesaikan Order', style: TextStyle(fontWeight: FontWeight.w800)),
+                  ),
+                ),
+              ],
             ],
           ),
         ],
@@ -996,106 +1008,180 @@ class _PemilikMarketplaceOrderViewState
     );
   }
 
-  Widget _buildStatusActions(
-    MarketplaceOrder order,
-    StateSetter sheetSetState,
-  ) {
-    switch (order.status) {
-      case 'Menunggu':
-        return Row(
+  void _showRejectDialog(CateringOrder order, StateSetter sheetSetState) {
+    final controller = TextEditingController();
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: const Text('Tolak Pesanan', style: TextStyle(fontWeight: FontWeight.bold)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              child: OutlinedButton(
-                onPressed: () => _rejectOrder(order, sheetSetState),
-                style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
-                child: const Text('Tolak Pesanan'),
-              ),
+            const Text(
+              'Berikan alasan penolakan pesanan ini:',
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
             ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: FilledButton(
-                onPressed: () => _updateOrderStatus(
-                  order,
-                  'Diproses',
-                  sheetSetState,
-                ),
-                child: const Text('Terima Pesanan'),
+            const SizedBox(height: 12),
+            TextField(
+              controller: controller,
+              decoration: InputDecoration(
+                hintText: 'Misal: Bahan baku habis, Outlet tutup...',
+                hintStyle: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
+              maxLines: 3,
             ),
           ],
-        );
-      case 'Diproses':
-        return SizedBox(
-          width: double.infinity,
-          child: FilledButton.icon(
-            onPressed: () => _updateOrderStatus(order, 'Siap', sheetSetState),
-            icon: const Icon(Icons.check_box_outlined),
-            label: const Text('Tandai Pesanan Siap'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Batal', style: TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.bold)),
           ),
-        );
-      case 'Siap':
-        return order.driver == null
-            ? _infoBanner(
-                Icons.hourglass_top_rounded,
-                'Pesanan siap. Menunggu driver mengambil order.',
-              )
-            : SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed: () =>
-                      _updateOrderStatus(order, 'Diambil', sheetSetState),
-                  icon: const Icon(Icons.delivery_dining_rounded),
-                  label: const Text('Tandai Sudah Diambil Driver'),
-                ),
-              );
-      case 'Diambil':
-        return _infoBanner(
-          Icons.local_shipping_outlined,
-          'Pesanan sedang diantar ke customer. Pantau driver melalui tracking.',
-        );
-      case 'Selesai':
-        return _infoBanner(
-            Icons.check_circle_outline, 'Pesanan selesai diterima customer.');
-      case 'Dibatalkan':
-        return _infoBanner(
-            Icons.cancel_outlined, 'Pesanan ini telah dibatalkan.');
-      default:
-        return const SizedBox.shrink();
-    }
-  }
-
-  Widget _infoBanner(IconData icon, String text) {
-    return Container(
-      padding: const EdgeInsets.all(13),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: AppColors.primary, size: 19),
-          const SizedBox(width: 9),
-          Expanded(
-            child: Text(
-              text,
-              style: const TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-              ),
+          ElevatedButton(
+            onPressed: () {
+              if (controller.text.trim().isNotEmpty) {
+                setState(() {
+                  order.status = 'Dibatalkan';
+                  order.rejectionReason = controller.text.trim();
+                });
+                sheetSetState(() {});
+                Navigator.pop(ctx);
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
+            child: const Text('Tolak Pesanan', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
     );
   }
 
-  Widget _sectionCard({
-    required String title,
-    required IconData icon,
-    required Widget child,
-  }) {
+  void _showFilterSheet() {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return Container(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 30),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 42,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: AppColors.border,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text('Filter Order', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+                  const SizedBox(height: 18),
+                  const Text('Waktu Transaksi', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      _choice('Hari Ini', _selectedDate, (val) => setSheetState(() => _selectedDate = val)),
+                      const SizedBox(width: 8),
+                      _choice('Kemarin', _selectedDate, (val) => setSheetState(() => _selectedDate = val)),
+                      const SizedBox(width: 8),
+                      _choice('Semua Hari', _selectedDate, (val) => setSheetState(() => _selectedDate = val)),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+                  const Text('Berdasarkan Driver', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      _choice('Semua Driver', _selectedDriver, (val) => setSheetState(() => _selectedDriver = val)),
+                      const SizedBox(width: 8),
+                      _choice('Budi Santoso', _selectedDriver, (val) => setSheetState(() => _selectedDriver = val)),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () {
+                            setState(() {
+                              _selectedDate = 'Hari Ini';
+                              _selectedDriver = 'Semua Driver';
+                              _selectedCustomer = 'Semua Customer';
+                            });
+                            Navigator.pop(context);
+                          },
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: AppColors.border),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: const Text('Reset', style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold)),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            setState(() {});
+                            Navigator.pop(context);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: const Text('Terapkan', style: TextStyle(fontWeight: FontWeight.bold)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _choice(String label, String current, Function(String) onSelect) {
+    final active = label == current;
+    return ChoiceChip(
+      label: Text(label),
+      selected: active,
+      onSelected: (_) => onSelect(label),
+      selectedColor: AppColors.primary,
+      backgroundColor: Colors.white,
+      side: BorderSide(color: active ? AppColors.primary : AppColors.border),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      labelStyle: TextStyle(
+        color: active ? Colors.white : AppColors.textSecondary,
+        fontWeight: FontWeight.w700,
+        fontSize: 11,
+      ),
+      showCheckmark: false,
+    );
+  }
+
+  Widget _sectionCard({required String title, required IconData icon, required Widget child}) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -1112,7 +1198,7 @@ class _PemilikMarketplaceOrderViewState
               const SizedBox(width: 8),
               Text(
                 title,
-                style: const TextStyle(fontWeight: FontWeight.w900),
+                style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13),
               ),
             ],
           ),
@@ -1123,248 +1209,19 @@ class _PemilikMarketplaceOrderViewState
     );
   }
 
-  void _openChat(MarketplaceOrder order, {required bool isDriver}) {
-    if (isDriver && order.driver == null) {
-      _showMessage('Chat driver tersedia setelah driver ditugaskan.');
-      return;
-    }
-
-    final history = isDriver
-        ? _driverChats.putIfAbsent(order.id, () => _initialDriverChat(order))
-        : _customerChats.putIfAbsent(
-            order.id, () => _initialCustomerChat(order));
-
-    setState(() {
-      if (isDriver) {
-        order.unreadDriverMessages = 0;
-      } else {
-        order.unreadCustomerMessages = 0;
-      }
-    });
-
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => OrderChatSheet(
-        orderId: order.id,
-        title: isDriver ? 'Chat dengan ${order.driver!.name}' : 'Chat Customer',
-        targetName: isDriver ? order.driver!.name : order.customer,
-        isDriver: isDriver,
-        messages: history,
-        onSendMessage: (text, isMe) {
-          history.add(
-            OrderChatMessage(
-              text: text,
-              time: _currentTime(),
-              isMe: isMe,
-              sender: 'Pemilik Marketplace',
-            ),
-          );
-          setState(() {});
-        },
-      ),
-    );
-  }
-
-  List<OrderChatMessage> _initialCustomerChat(MarketplaceOrder order) {
-    return [
-      OrderChatMessage(
-        text: 'Halo kak, pesanan saya sudah diproses belum?',
-        time: order.time,
-        isMe: false,
-        sender: order.customer,
-      ),
-    ];
-  }
-
-  List<OrderChatMessage> _initialDriverChat(MarketplaceOrder order) {
-    return [
-      OrderChatMessage(
-        text: 'Kak, saya sudah menuju outlet.',
-        time: order.time,
-        isMe: false,
-        sender: order.driver?.name ?? 'Driver',
-      ),
-    ];
-  }
-
-  void _openTracking(MarketplaceOrder order) {
-    if (order.driver == null) {
-      _showMessage('Tracking aktif setelah driver ditugaskan.');
-      return;
-    }
-    if (order.status == 'Selesai' || order.status == 'Dibatalkan') {
-      _showMessage('Tracking live sudah selesai untuk order ini.');
-      return;
-    }
-
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => DriverTrackingView(order: order),
-      ),
-    );
-  }
-
-  void _updateOrderStatus(
-    MarketplaceOrder order,
-    String status,
-    StateSetter sheetSetState,
-  ) {
-    setState(() {
-      order.status = status;
-      if (status == 'Diambil' && order.driver != null) {
-        order.driver!.stage = 'Driver sedang menuju customer';
-        order.driver!.distance = '1,2 km';
-        order.driver!.eta = '5 menit';
-      }
-    });
-    sheetSetState(() {});
-    _showMessage('Status order #${order.id} diubah menjadi $status.');
-  }
-
-  Future<void> _rejectOrder(
-    MarketplaceOrder order,
-    StateSetter sheetSetState,
-  ) async {
-    final reasonController = TextEditingController();
-    final reason = await showDialog<String>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Tolak pesanan?'),
-        content: TextField(
-          controller: reasonController,
-          maxLines: 3,
-          decoration: const InputDecoration(
-            hintText: 'Alasan penolakan (opsional)',
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Batal'),
-          ),
-          FilledButton(
-            onPressed: () =>
-                Navigator.pop(dialogContext, reasonController.text),
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Tolak'),
-          ),
-        ],
-      ),
-    );
-    reasonController.dispose();
-    if (!mounted || reason == null) return;
-    order.rejectionReason =
-        reason.trim().isEmpty ? 'Ditolak oleh outlet' : reason.trim();
-    _updateOrderStatus(order, 'Dibatalkan', sheetSetState);
-  }
-
-  void _showFilterSheet() {
-    showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (sheetContext) => StatefulBuilder(
-        builder: (context, sheetSetState) {
-          final drivers = <String>{
-            'Semua Driver',
-            ..._orders.map((order) => order.driver?.name).whereType<String>(),
-          }.toList();
-          final customers = <String>{
-            'Semua Customer',
-            ..._orders.map((order) => order.customer),
-          }.toList();
-
-          return Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Filter Order',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
-                ),
-                const SizedBox(height: 14),
-                _filterDropdown(
-                  label: 'Tanggal',
-                  value: _selectedDate,
-                  values: const ['Hari Ini', 'Kemarin', 'Semua Tanggal'],
-                  onChanged: (value) =>
-                      sheetSetState(() => _selectedDate = value),
-                ),
-                const SizedBox(height: 10),
-                _filterDropdown(
-                  label: 'Driver',
-                  value: _selectedDriver,
-                  values: drivers,
-                  onChanged: (value) =>
-                      sheetSetState(() => _selectedDriver = value),
-                ),
-                const SizedBox(height: 10),
-                _filterDropdown(
-                  label: 'Customer',
-                  value: _selectedCustomer,
-                  values: customers,
-                  onChanged: (value) =>
-                      sheetSetState(() => _selectedCustomer = value),
-                ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton(
-                    onPressed: () {
-                      setState(() {});
-                      Navigator.pop(sheetContext);
-                    },
-                    child: const Text('Terapkan Filter'),
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _filterDropdown({
-    required String label,
-    required String value,
-    required List<String> values,
-    required ValueChanged<String> onChanged,
-  }) {
-    return DropdownButtonFormField<String>(
-      initialValue: value,
-      isExpanded: true,
-      decoration: InputDecoration(labelText: label),
-      items: values
-          .map((item) => DropdownMenuItem(value: item, child: Text(item)))
-          .toList(),
-      onChanged: (newValue) {
-        if (newValue != null) onChanged(newValue);
-      },
-    );
-  }
-
   Color _statusColor(String status) {
-    switch (status) {
-      case 'Menunggu':
-        return Colors.orange.shade700;
-      case 'Diproses':
-        return AppColors.primary;
-      case 'Siap':
-        return Colors.blue.shade700;
-      case 'Diambil':
-        return Colors.deepPurple.shade600;
-      case 'Selesai':
-        return Colors.green.shade700;
-      default:
-        return Colors.red.shade700;
-    }
+    return switch (status) {
+      'Menunggu' => Colors.amber,
+      'Diproses' => Colors.blue,
+      'Siap' => Colors.teal,
+      'Diambil' => Colors.deepPurple,
+      'Selesai' => Colors.green,
+      'Dibatalkan' => Colors.red,
+      _ => Colors.grey,
+    };
   }
 
-  Widget _chip(String label, Color color) {
+  Widget _chip(String text, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
       decoration: BoxDecoration(
@@ -1372,113 +1229,174 @@ class _PemilikMarketplaceOrderViewState
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
-        label,
-        style: TextStyle(
-          color: color,
-          fontWeight: FontWeight.bold,
-          fontSize: 11,
-        ),
+        text,
+        style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w800),
       ),
     );
-  }
-
-  void _showMessage(String message) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message)));
-  }
-
-  String _currentTime() {
-    final now = TimeOfDay.now();
-    return '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
   }
 
   String _format(int value) => value
       .toString()
       .replaceAllMapped(RegExp(r'(?=(\d{3})+(?!\d))'), (_) => '.');
-}
 
-class DriverTrackingView extends StatefulWidget {
-  final MarketplaceOrder order;
+  void _openChat(CateringOrder order, {required bool isDriver}) {
+    final chatMap = isDriver ? _driverChats : _customerChats;
+    final list = chatMap.putIfAbsent(order.id, () => []);
 
-  const DriverTrackingView({super.key, required this.order});
+    if (list.isEmpty) {
+      if (isDriver) {
+        list.addAll([
+          OrderChatMessage(
+            text: 'Halo, saya kurir yang akan mengantar catering Anda.',
+            time: '09:50',
+            isMe: false,
+            sender: order.driver?.name ?? 'Driver',
+          ),
+          OrderChatMessage(
+            text: 'Baik Pak, mohon ditunggu ya, sedang disiapkan.',
+            time: '09:52',
+            isMe: true,
+            sender: 'Catering Owner',
+          ),
+        ]);
+      } else {
+        list.addAll([
+          OrderChatMessage(
+            text: 'Halo, apakah pesanan catering saya sudah diproses?',
+            time: '10:25',
+            isMe: false,
+            sender: order.customer,
+          ),
+          OrderChatMessage(
+            text: 'Halo Kak, iya sudah kami terima dan sedang dipersiapkan ya.',
+            time: '10:26',
+            isMe: true,
+            sender: 'Catering Owner',
+          ),
+        ]);
+      }
+    }
 
-  @override
-  State<DriverTrackingView> createState() => _DriverTrackingViewState();
-}
+    if (isDriver) {
+      order.unreadDriverMessages = 0;
+    } else {
+      order.unreadCustomerMessages = 0;
+    }
+    setState(() {});
 
-class _DriverTrackingViewState extends State<DriverTrackingView> {
-  bool _isRefreshing = false;
-
-  MarketplaceOrder get order => widget.order;
-  DriverProfile get driver => order.driver!;
-
-  Future<void> _refreshLocation() async {
-    setState(() => _isRefreshing = true);
-    await Future<void>.delayed(const Duration(milliseconds: 700));
-    if (!mounted) return;
-    setState(() => _isRefreshing = false);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Lokasi driver sudah diperbarui.')),
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return OrderChatSheet(
+          orderId: order.id,
+          title: isDriver ? 'Chat Driver' : 'Chat Customer',
+          targetName: isDriver ? (order.driver?.name ?? 'Driver') : order.customer,
+          isDriver: isDriver,
+          messages: list,
+          onSendMessage: (text, isMe) {
+            setState(() {
+              list.add(OrderChatMessage(
+                text: text,
+                time: '${DateTime.now().hour.toString().padLeft(2, '0')}:${DateTime.now().minute.toString().padLeft(2, '0')}',
+                isMe: isMe,
+                sender: 'Catering Owner',
+              ));
+            });
+          },
+        );
+      },
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text('Tracking #${order.id}'),
-        actions: [
-          IconButton(
-            onPressed: _isRefreshing ? null : _refreshLocation,
-            icon: _isRefreshing
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.refresh_rounded),
-            tooltip: 'Perbarui lokasi',
-          ),
-        ],
-      ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 26),
-        children: [
-          _buildMapPreview(),
-          const SizedBox(height: 14),
-          _buildTrackingSummary(),
-          const SizedBox(height: 14),
-          _buildDeliverySteps(),
-          const SizedBox(height: 14),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () => Navigator.pop(context),
-              icon: const Icon(Icons.chat_bubble_outline_rounded),
-              label: const Text('Chat Driver dari Order Ini'),
-            ),
-          ),
-        ],
-      ),
+  void _openTracking(CateringOrder order) {
+    if (order.driver == null) return;
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return DraggableScrollableSheet(
+          initialChildSize: .9,
+          minChildSize: .65,
+          maxChildSize: .97,
+          expand: false,
+          builder: (context, scrollController) {
+            return Container(
+              decoration: const BoxDecoration(
+                color: AppColors.background,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+              ),
+              child: ListView(
+                controller: scrollController,
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 30),
+                children: [
+                  Center(
+                    child: Container(
+                      width: 42,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: AppColors.border,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Pelacakan Kurir #${order.id}',
+                              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+                            ),
+                            const SizedBox(height: 3),
+                            const Text(
+                              'Menampilkan posisi kurir secara real-time',
+                              style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: IconButton.styleFrom(backgroundColor: Colors.white, side: const BorderSide(color: AppColors.border)),
+                        icon: const Icon(Icons.close_rounded),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+                  _buildMapPlaceholder(order.driver!),
+                  const SizedBox(height: 16),
+                  _buildTrackingSummary(order.driver!),
+                  const SizedBox(height: 12),
+                  _buildDeliverySteps(order),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
-  Widget _buildMapPreview() {
+  Widget _buildMapPlaceholder(DriverProfile driver) {
     return Container(
-      height: 350,
-      clipBehavior: Clip.antiAlias,
+      height: 220,
       decoration: BoxDecoration(
         color: const Color(0xFFE9F0EA),
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(color: AppColors.border),
       ),
       child: Stack(
         children: [
-          Positioned.fill(
+          ClipRRect(
+            borderRadius: BorderRadius.circular(24),
             child: CustomPaint(
+              size: Size.infinite,
               painter: _RouteMapPainter(),
             ),
           ),
@@ -1486,16 +1404,12 @@ class _DriverTrackingViewState extends State<DriverTrackingView> {
             top: 14,
             left: 14,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(12),
                 boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x22000000),
-                    blurRadius: 8,
-                    offset: Offset(0, 3),
-                  ),
+                  BoxShadow(color: Color(0x11000000), blurRadius: 6, offset: Offset(0, 2)),
                 ],
               ),
               child: const Row(
@@ -1525,7 +1439,7 @@ class _DriverTrackingViewState extends State<DriverTrackingView> {
             right: 30,
             child: _mapMarker(
               icon: Icons.storefront_outlined,
-              label: 'Outlet',
+              label: 'Catering',
               color: AppColors.primary,
             ),
           ),
@@ -1542,7 +1456,9 @@ class _DriverTrackingViewState extends State<DriverTrackingView> {
             right: 12,
             top: 14,
             child: IconButton(
-              onPressed: _refreshLocation,
+              onPressed: () {
+                setState(() {});
+              },
               style: IconButton.styleFrom(
                 backgroundColor: Colors.white,
                 foregroundColor: AppColors.primary,
@@ -1613,7 +1529,7 @@ class _DriverTrackingViewState extends State<DriverTrackingView> {
     );
   }
 
-  Widget _buildTrackingSummary() {
+  Widget _buildTrackingSummary(DriverProfile driver) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -1731,7 +1647,7 @@ class _DriverTrackingViewState extends State<DriverTrackingView> {
     );
   }
 
-  Widget _buildDeliverySteps() {
+  Widget _buildDeliverySteps(CateringOrder order) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -1747,7 +1663,7 @@ class _DriverTrackingViewState extends State<DriverTrackingView> {
             style: TextStyle(fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: 14),
-          _routeRow(Icons.storefront_outlined, 'Outlet', 'Lokasi marketplace',
+          _routeRow(Icons.storefront_outlined, 'Catering', 'Lokasi catering',
               AppColors.primary),
           _routeLine(),
           _routeRow(Icons.person_pin_circle_outlined, 'Customer',
@@ -1879,8 +1795,8 @@ class _RouteMapPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-class MarketplaceOrder {
-  MarketplaceOrder({
+class CateringOrder {
+  CateringOrder({
     required this.id,
     required this.customer,
     required this.customerPhone,
