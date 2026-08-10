@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:provider/provider.dart';
-import '../../core/theme/app_theme.dart';
-import '../../providers/app_provider.dart';
+import '../../../core/theme/app_theme.dart';
+import '../../../providers/app_provider.dart';
 import 'product_detail_view.dart';
 
 class MerchantView extends StatelessWidget {

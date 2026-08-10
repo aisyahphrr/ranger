@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../core/theme/app_theme.dart';
-import '../../core/constants/mock_data.dart';
+import '../../../core/theme/app_theme.dart';
+import '../../../core/constants/mock_data.dart';
 
 class LaundryView extends StatelessWidget {
   const LaundryView({super.key});

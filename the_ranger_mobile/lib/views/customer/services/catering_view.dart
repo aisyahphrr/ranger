@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/theme/app_theme.dart';
-import '../../models/models.dart';
-import '../../providers/app_provider.dart';
+import '../../../core/theme/app_theme.dart';
+import '../../../models/models.dart';
+import '../../../providers/app_provider.dart';
 import 'cart_view.dart';
 import 'product_detail_view.dart';
 
