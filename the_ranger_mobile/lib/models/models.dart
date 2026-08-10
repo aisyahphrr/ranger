@@ -66,10 +66,15 @@ class Laundry {
   final String address;
   final int price;
   final double rating;
+  final String reviews;
   final bool open;
+  final String openHours;
   final String distance;
   final String type;
   final String img;
+  final List<String> tags;
+  final bool isFavorite;
+  final bool isExpress;
 
   Laundry({
     required this.id,
@@ -77,11 +82,21 @@ class Laundry {
     required this.address,
     required this.price,
     required this.rating,
+    this.reviews = "1.2k",
     required this.open,
+    this.openHours = "Buka - Tutup 21.00",
     required this.distance,
     required this.type,
     required this.img,
+    this.tags = const ["Antar Jemput", "Ekspres 3 Jam"],
+    this.isFavorite = false,
+    this.isExpress = true,
   });
+
+  String get formattedPrice {
+    final currencyFormatter = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+    return currencyFormatter.format(price);
+  }
 }
 
 class KosItem {
@@ -93,6 +108,10 @@ class KosItem {
   final List<String> facilities;
   final bool available;
   final String img;
+  final double rating;
+  final String reviews;
+  final bool isFavorite;
+  final int photoCount;
 
   KosItem({
     required this.id,
@@ -103,7 +122,16 @@ class KosItem {
     required this.facilities,
     required this.available,
     required this.img,
+    this.rating = 4.8,
+    this.reviews = "120 ulasan",
+    this.isFavorite = false,
+    this.photoCount = 8,
   });
+
+  String get formattedPrice {
+    final currencyFormatter = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+    return currencyFormatter.format(price);
+  }
 }
 
 class OrderModel {

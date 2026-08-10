@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import '../../core/theme/app_theme.dart';
-import '../../core/constants/mock_data.dart';
+import '../../../core/theme/app_theme.dart';
+import '../../../core/constants/mock_data.dart';
 
 class CateringView extends StatelessWidget {
   const CateringView({super.key});

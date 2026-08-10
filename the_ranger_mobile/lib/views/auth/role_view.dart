@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/app_provider.dart';
+import 'daftar_mitra_view.dart';
 
 class RoleView extends StatelessWidget {
   const RoleView({super.key});
@@ -76,9 +77,16 @@ class RoleView extends StatelessWidget {
               ),
               const SizedBox(height: 16),
 
-              // Option 2: Driver
+              // Option 2: Driver / Mitra Registration
               InkWell(
-                onTap: () => provider.setRole(UserRole.driver),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const DaftarMitraView(),
+                    ),
+                  );
+                },
                 borderRadius: BorderRadius.circular(24),
                 child: Container(
                   padding: const EdgeInsets.all(20),

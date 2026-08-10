@@ -4,10 +4,10 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/app_provider.dart';
 import '../../core/constants/mock_data.dart';
-import '../services/catering_view.dart';
-import '../services/laundry_view.dart';
-import '../services/kos_view.dart';
-import '../services/marketplace_view.dart';
+import 'services/catering_view.dart';
+import 'services/laundry_view.dart';
+import 'services/kos_view.dart';
+import 'services/marketplace_view.dart';
 
 class CustomerHomeView extends StatefulWidget {
   const CustomerHomeView({super.key});
@@ -441,7 +441,7 @@ class _CustomerHomeViewState extends State<CustomerHomeView> {
                                         shape: BoxShape.circle,
                                       ),
                                       child: Icon(
-                                        LucideIcons.heart,
+                                        isLiked ? Icons.favorite : LucideIcons.heart,
                                         size: 14,
                                         color: isLiked ? Colors.red : Colors.grey,
                                       ),

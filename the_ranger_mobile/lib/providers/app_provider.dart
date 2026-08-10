@@ -2,7 +2,14 @@ import 'package:flutter/material.dart';
 import '../models/models.dart';
 import '../core/constants/mock_data.dart';
 
-enum UserRole { customer, driver }
+enum UserRole {
+  customer,
+  driver,
+  pemilikKos,
+  pemilikLaundry,
+  pemilikCatering,
+  pemilikMarketplace,
+}
 
 enum AppScreen {
   splash,
@@ -28,6 +35,10 @@ enum AppScreen {
   dRiwayat,
   dPendapatan,
   dProfil,
+  kosHome,
+  laundryHome,
+  cateringHome,
+  marketplaceHome,
 }
 
 class AppProvider with ChangeNotifier {
@@ -63,10 +74,25 @@ class AppProvider with ChangeNotifier {
 
   void setRole(UserRole role) {
     _role = role;
-    if (role == UserRole.customer) {
-      _currentScreen = AppScreen.cHome;
-    } else {
-      _currentScreen = AppScreen.dHome;
+    switch (role) {
+      case UserRole.customer:
+        _currentScreen = AppScreen.cHome;
+        break;
+      case UserRole.driver:
+        _currentScreen = AppScreen.dHome;
+        break;
+      case UserRole.pemilikKos:
+        _currentScreen = AppScreen.kosHome;
+        break;
+      case UserRole.pemilikLaundry:
+        _currentScreen = AppScreen.laundryHome;
+        break;
+      case UserRole.pemilikCatering:
+        _currentScreen = AppScreen.cateringHome;
+        break;
+      case UserRole.pemilikMarketplace:
+        _currentScreen = AppScreen.marketplaceHome;
+        break;
     }
     notifyListeners();
   }

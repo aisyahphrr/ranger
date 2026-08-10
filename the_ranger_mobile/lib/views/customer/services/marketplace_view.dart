@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import '../../core/theme/app_theme.dart';
-import '../../providers/app_provider.dart';
-import '../../core/constants/mock_data.dart';
+import '../../../core/theme/app_theme.dart';
+import '../../../providers/app_provider.dart';
+import '../../../core/constants/mock_data.dart';
 
 class MarketplaceView extends StatelessWidget {
   const MarketplaceView({super.key});
