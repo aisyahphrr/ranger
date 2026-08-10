@@ -5,6 +5,7 @@ import '../../core/theme/app_theme.dart';
 import '../../providers/app_provider.dart';
 import 'product_detail_view.dart';
 import 'cart_view.dart';
+import 'merchant_view.dart';
 
 class MarketplaceView extends StatefulWidget {
   const MarketplaceView({super.key});
@@ -16,15 +17,27 @@ class MarketplaceView extends StatefulWidget {
 class _MarketplaceViewState extends State<MarketplaceView> {
   String _searchQuery = "";
   String _selectedCategory = "Semua";
-  final List<String> _categories = ["Semua", "Makanan", "Fashion", "Minuman", "Kesehatan", "Kerajinan"];
+  final List<String> _categories = [
+    "Semua",
+    "Makanan",
+    "Fashion",
+    "Minuman",
+    "Kesehatan",
+    "Kerajinan"
+  ];
 
   @override
   Widget build(BuildContext context) {
     final appState = Provider.of<AppProvider>(context);
     final productsList = appState.products.where((p) {
-      final matchesCategory = _selectedCategory == "Semua" || p.cat == _selectedCategory;
-      final matchesQuery = _searchQuery.isEmpty || p.name.toLowerCase().contains(_searchQuery.toLowerCase()) || p.store.toLowerCase().contains(_searchQuery.toLowerCase());
-      return p.isAvailable && matchesCategory && matchesQuery;
+      final matchesCategory =
+          _selectedCategory == "Semua" || p.cat == _selectedCategory;
+      final query = _searchQuery.toLowerCase();
+      final matchesQuery = query.isEmpty ||
+          p.name.toLowerCase().contains(query) ||
+          p.store.toLowerCase().contains(query) ||
+          p.cat.toLowerCase().contains(query);
+      return matchesCategory && matchesQuery;
     }).toList();
 
     return Scaffold(
@@ -44,7 +57,7 @@ class _MarketplaceViewState extends State<MarketplaceView> {
                   );
                 },
               ),
-              if (appState.cartItems.isNotEmpty)
+              if (appState.cartItemCount > 0)
                 Positioned(
                   right: 4,
                   top: 4,
@@ -55,7 +68,7 @@ class _MarketplaceViewState extends State<MarketplaceView> {
                       shape: BoxShape.circle,
                     ),
                     child: Text(
-                      appState.cartItems.length.toString(),
+                      appState.cartItemCount.toString(),
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 9,
@@ -77,7 +90,8 @@ class _MarketplaceViewState extends State<MarketplaceView> {
               onChanged: (value) => setState(() => _searchQuery = value),
               decoration: InputDecoration(
                 hintText: "Cari produk, toko, atau kategori...",
-                prefixIcon: const Icon(LucideIcons.search, color: AppColors.textMuted),
+                prefixIcon:
+                    const Icon(LucideIcons.search, color: AppColors.textMuted),
                 filled: true,
                 fillColor: Colors.white,
                 contentPadding: const EdgeInsets.symmetric(vertical: 12),
@@ -88,6 +102,99 @@ class _MarketplaceViewState extends State<MarketplaceView> {
               ),
             ),
           ),
+          if (appState.marketplaceNames.isNotEmpty)
+            SizedBox(
+              height: 92,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                itemCount: appState.marketplaceNames.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                itemBuilder: (context, index) {
+                  final store = appState.marketplaceNames[index];
+                  final storeProducts = appState.productsForStore(store);
+                  final rating = storeProducts.isEmpty
+                      ? 0.0
+                      : storeProducts
+                              .map((item) => item.rating)
+                              .reduce((a, b) => a + b) /
+                          storeProducts.length;
+                  final isOpen = appState.isStoreOpen(store);
+                  return InkWell(
+                    borderRadius: BorderRadius.circular(14),
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => MerchantView(storeName: store)),
+                    ),
+                    child: Container(
+                      width: 190,
+                      height: 76,
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: Row(
+                        children: [
+                          const CircleAvatar(
+                            radius: 18,
+                            backgroundColor: AppColors.primaryLight,
+                            child: Icon(LucideIcons.store,
+                                color: AppColors.primary, size: 18),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(store,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12)),
+                                const SizedBox(height: 3),
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(LucideIcons.star,
+                                        size: 11, color: AppColors.ratingAmber),
+                                    const SizedBox(width: 3),
+                                    Flexible(
+                                      child: Text(
+                                          rating == 0
+                                              ? 'Belum ada rating'
+                                              : rating.toStringAsFixed(1),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                              fontSize: 10,
+                                              color: AppColors.textSecondary)),
+                                    ),
+                                  ],
+                                ),
+                                Text(isOpen ? 'Buka' : 'Tutup',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                        fontSize: 10,
+                                        color:
+                                            isOpen ? Colors.green : Colors.red,
+                                        fontWeight: FontWeight.bold)),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
           SizedBox(
             height: 44,
             child: ListView.builder(
@@ -104,9 +211,15 @@ class _MarketplaceViewState extends State<MarketplaceView> {
                     selected: selected,
                     selectedColor: AppColors.primary,
                     backgroundColor: Colors.white,
-                    labelStyle: TextStyle(color: selected ? Colors.white : AppColors.textPrimary, fontWeight: FontWeight.bold, fontSize: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: AppColors.border)),
-                    onSelected: (_) => setState(() => _selectedCategory = category),
+                    labelStyle: TextStyle(
+                        color: selected ? Colors.white : AppColors.textPrimary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        side: const BorderSide(color: AppColors.border)),
+                    onSelected: (_) =>
+                        setState(() => _selectedCategory = category),
                   ),
                 );
               },
@@ -147,15 +260,18 @@ class _MarketplaceViewState extends State<MarketplaceView> {
                       children: [
                         Expanded(
                           child: p.imageBytes != null
-                              ? Image.memory(p.imageBytes!, width: double.infinity, fit: BoxFit.cover)
+                              ? Image.memory(p.imageBytes!,
+                                  width: double.infinity, fit: BoxFit.cover)
                               : p.img.startsWith('http')
-                              ? Image.network(
-                                  p.img,
-                                  width: double.infinity,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) => _imageFallback(),
-                                )
-                              : _imageFallback(),
+                                  ? Image.network(
+                                      p.img,
+                                      width: double.infinity,
+                                      fit: BoxFit.cover,
+                                      errorBuilder:
+                                          (context, error, stackTrace) =>
+                                              _imageFallback(),
+                                    )
+                                  : _imageFallback(),
                         ),
                         Padding(
                           padding: const EdgeInsets.all(12),
@@ -186,7 +302,8 @@ class _MarketplaceViewState extends State<MarketplaceView> {
                               const SizedBox(height: 6),
                               Row(
                                 children: [
-                                  const Icon(LucideIcons.star, size: 12, color: AppColors.ratingAmber),
+                                  const Icon(LucideIcons.star,
+                                      size: 12, color: AppColors.ratingAmber),
                                   const SizedBox(width: 3),
                                   Text(
                                     p.rating.toString(),
@@ -208,7 +325,8 @@ class _MarketplaceViewState extends State<MarketplaceView> {
                               ),
                               const SizedBox(height: 8),
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   Expanded(
                                     child: Text(
@@ -227,30 +345,39 @@ class _MarketplaceViewState extends State<MarketplaceView> {
                                     borderRadius: BorderRadius.circular(10),
                                     child: InkWell(
                                       borderRadius: BorderRadius.circular(10),
-                                      onTap: () {
-                                        appState.addToCart(p);
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(
-                                            content: Text("${p.name} ditambahkan ke keranjang!"),
-                                            action: SnackBarAction(
-                                              label: "Keranjang",
-                                              textColor: Colors.amberAccent,
-                                              onPressed: () {
-                                                Navigator.push(
-                                                  context,
-                                                  MaterialPageRoute(builder: (_) => const CartView()),
-                                                );
-                                              },
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                      child: const Padding(
-                                        padding: EdgeInsets.all(6),
+                                      onTap: p.isAvailable
+                                          ? () {
+                                              appState.addToCart(p);
+                                              ScaffoldMessenger.of(context)
+                                                  .showSnackBar(
+                                                SnackBar(
+                                                  content: Text(
+                                                      "${p.name} ditambahkan ke keranjang!"),
+                                                  action: SnackBarAction(
+                                                    label: "Keranjang",
+                                                    textColor:
+                                                        Colors.amberAccent,
+                                                    onPressed: () {
+                                                      Navigator.push(
+                                                        context,
+                                                        MaterialPageRoute(
+                                                            builder: (_) =>
+                                                                const CartView()),
+                                                      );
+                                                    },
+                                                  ),
+                                                ),
+                                              );
+                                            }
+                                          : null,
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(6),
                                         child: Icon(
                                           LucideIcons.plus,
                                           size: 14,
-                                          color: AppColors.primary,
+                                          color: p.isAvailable
+                                              ? AppColors.primary
+                                              : AppColors.textMuted,
                                         ),
                                       ),
                                     ),

@@ -12,14 +12,17 @@ class LoginView extends StatefulWidget {
 }
 
 class _LoginViewState extends State<LoginView> {
-  final TextEditingController _phoneController = TextEditingController(text: "81234567890");
-  final TextEditingController _emailController = TextEditingController(text: "wuwu@gmail.com");
-  final TextEditingController _passwordController = TextEditingController(text: "wuwu123");
-  
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _emailController =
+      TextEditingController(text: "wuwu@gmail.com");
+  final TextEditingController _passwordController =
+      TextEditingController(text: "wuwu123");
+
   bool _isFocusedPhone = false;
   bool _isFocusedEmail = false;
   bool _isFocusedPassword = false;
-  
+
   bool _isMitraMode = false;
   bool _obscurePassword = true;
   String? _errorMessage;
@@ -27,6 +30,7 @@ class _LoginViewState extends State<LoginView> {
   @override
   void dispose() {
     _phoneController.dispose();
+    _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -41,16 +45,18 @@ class _LoginViewState extends State<LoginView> {
       body: SafeArea(
         child: Center(
           child: Container(
-            constraints: const BoxConstraints(maxWidth: 480), // Premium responsive layout on desktop
+            constraints: const BoxConstraints(
+                maxWidth: 480), // Premium responsive layout on desktop
             child: SingleChildScrollView(
               keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 28.0, vertical: 24.0),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 28.0, vertical: 24.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 16),
-                  
+
                   // App Logo with soft background
                   Center(
                     child: Container(
@@ -119,12 +125,15 @@ class _LoginViewState extends State<LoginView> {
                             child: Container(
                               padding: const EdgeInsets.symmetric(vertical: 12),
                               decoration: BoxDecoration(
-                                color: !_isMitraMode ? Colors.white : Colors.transparent,
+                                color: !_isMitraMode
+                                    ? Colors.white
+                                    : Colors.transparent,
                                 borderRadius: BorderRadius.circular(12),
                                 boxShadow: !_isMitraMode
                                     ? [
                                         BoxShadow(
-                                          color: Colors.black.withOpacity(0.05),
+                                          color: Colors.black
+                                              .withValues(alpha: 0.05),
                                           blurRadius: 8,
                                           offset: const Offset(0, 2),
                                         )
@@ -136,7 +145,9 @@ class _LoginViewState extends State<LoginView> {
                                   "Pelanggan / Driver",
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
-                                    color: !_isMitraMode ? AppColors.primary : AppColors.textSecondary,
+                                    color: !_isMitraMode
+                                        ? AppColors.primary
+                                        : AppColors.textSecondary,
                                     fontSize: 14,
                                   ),
                                 ),
@@ -154,12 +165,15 @@ class _LoginViewState extends State<LoginView> {
                             child: Container(
                               padding: const EdgeInsets.symmetric(vertical: 12),
                               decoration: BoxDecoration(
-                                color: _isMitraMode ? Colors.white : Colors.transparent,
+                                color: _isMitraMode
+                                    ? Colors.white
+                                    : Colors.transparent,
                                 borderRadius: BorderRadius.circular(12),
                                 boxShadow: _isMitraMode
                                     ? [
                                         BoxShadow(
-                                          color: Colors.black.withOpacity(0.05),
+                                          color: Colors.black
+                                              .withValues(alpha: 0.05),
                                           blurRadius: 8,
                                           offset: const Offset(0, 2),
                                         )
@@ -171,7 +185,9 @@ class _LoginViewState extends State<LoginView> {
                                   "Mitra Usaha",
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
-                                    color: _isMitraMode ? AppColors.primary : AppColors.textSecondary,
+                                    color: _isMitraMode
+                                        ? AppColors.primary
+                                        : AppColors.textSecondary,
                                     fontSize: 14,
                                   ),
                                 ),
@@ -185,6 +201,32 @@ class _LoginViewState extends State<LoginView> {
                   const SizedBox(height: 28),
 
                   if (!_isMitraMode) ...[
+                    const Text(
+                      "Nama lengkap",
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _nameController,
+                      textCapitalization: TextCapitalization.words,
+                      textInputAction: TextInputAction.next,
+                      decoration: InputDecoration(
+                        hintText: "Nama yang akan tampil di beranda",
+                        prefixIcon: const Icon(LucideIcons.user,
+                            color: AppColors.textMuted),
+                        filled: true,
+                        fillColor: AppColors.background,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: const BorderSide(color: AppColors.border),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 18),
                     // Customer & Driver Phone Field
                     const Text(
                       "Nomor Telepon",
@@ -216,7 +258,8 @@ class _LoginViewState extends State<LoginView> {
                           boxShadow: _isFocusedPhone
                               ? [
                                   BoxShadow(
-                                    color: AppColors.primary.withValues(alpha: 0.15),
+                                    color: AppColors.primary
+                                        .withValues(alpha: 0.15),
                                     blurRadius: 10,
                                     offset: const Offset(0, 4),
                                   )
@@ -258,7 +301,7 @@ class _LoginViewState extends State<LoginView> {
                       ),
                     ),
                     const SizedBox(height: 24),
-                    
+
                     // Continue Button for Phone Login
                     SizedBox(
                       width: double.infinity,
@@ -273,7 +316,17 @@ class _LoginViewState extends State<LoginView> {
                             borderRadius: BorderRadius.circular(16),
                           ),
                         ),
-                        onPressed: () => provider.navigate(AppScreen.otp),
+                        onPressed: () async {
+                          await provider.saveCustomerProfile(
+                            name: _nameController.text.trim().isEmpty
+                                ? null
+                                : _nameController.text,
+                            phone: _phoneController.text.trim().isEmpty
+                                ? null
+                                : _phoneController.text,
+                          );
+                          if (context.mounted) provider.navigate(AppScreen.otp);
+                        },
                         child: const Text(
                           "Lanjutkan",
                           style: TextStyle(
@@ -288,7 +341,8 @@ class _LoginViewState extends State<LoginView> {
                     if (_errorMessage != null) ...[
                       Container(
                         width: double.infinity,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 12),
                         decoration: BoxDecoration(
                           color: Colors.red.shade50,
                           borderRadius: BorderRadius.circular(14),
@@ -296,7 +350,8 @@ class _LoginViewState extends State<LoginView> {
                         ),
                         child: Row(
                           children: [
-                            Icon(LucideIcons.alertCircle, color: Colors.red.shade700, size: 20),
+                            Icon(LucideIcons.alertCircle,
+                                color: Colors.red.shade700, size: 20),
                             const SizedBox(width: 10),
                             Expanded(
                               child: Text(
@@ -344,7 +399,8 @@ class _LoginViewState extends State<LoginView> {
                           boxShadow: _isFocusedEmail
                               ? [
                                   BoxShadow(
-                                    color: AppColors.primary.withValues(alpha: 0.15),
+                                    color: AppColors.primary
+                                        .withValues(alpha: 0.15),
                                     blurRadius: 10,
                                     offset: const Offset(0, 4),
                                   )
@@ -402,7 +458,8 @@ class _LoginViewState extends State<LoginView> {
                           boxShadow: _isFocusedPassword
                               ? [
                                   BoxShadow(
-                                    color: AppColors.primary.withValues(alpha: 0.15),
+                                    color: AppColors.primary
+                                        .withValues(alpha: 0.15),
                                     blurRadius: 10,
                                     offset: const Offset(0, 4),
                                   )
@@ -447,7 +504,7 @@ class _LoginViewState extends State<LoginView> {
                       ),
                     ),
                     const SizedBox(height: 24),
-                    
+
                     // Login Button for Mitra
                     SizedBox(
                       width: double.infinity,
@@ -471,8 +528,9 @@ class _LoginViewState extends State<LoginView> {
                             });
                             return;
                           }
-                          
-                          final success = await provider.loginMitra(email, password);
+
+                          final success =
+                              await provider.loginMitra(email, password);
                           if (!success) {
                             setState(() {
                               _errorMessage = "Email atau password salah!";
@@ -500,7 +558,8 @@ class _LoginViewState extends State<LoginView> {
                       children: [
                         const Text(
                           "Belum punya akun mitra? ",
-                          style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                          style: TextStyle(
+                              color: AppColors.textSecondary, fontSize: 13),
                         ),
                         GestureDetector(
                           onTap: () => provider.navigate(AppScreen.mitraRole),
@@ -559,7 +618,8 @@ class _LoginViewState extends State<LoginView> {
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),
-                        side: const BorderSide(color: AppColors.border, width: 1.5),
+                        side: const BorderSide(
+                            color: AppColors.border, width: 1.5),
                         backgroundColor: Colors.white,
                         foregroundColor: AppColors.textPrimary,
                       ),
@@ -569,7 +629,8 @@ class _LoginViewState extends State<LoginView> {
                         width: 20,
                         height: 20,
                         errorBuilder: (context, error, stackTrace) =>
-                            const Icon(LucideIcons.globe, size: 20, color: Colors.blue),
+                            const Icon(LucideIcons.globe,
+                                size: 20, color: Colors.blue),
                       ),
                       label: const Text(
                         "Lanjutkan dengan Google",
@@ -581,7 +642,8 @@ class _LoginViewState extends State<LoginView> {
                     ),
                   ),
 
-                  const SizedBox(height: 48), // Replace Spacer with a stable spacing
+                  const SizedBox(
+                      height: 48), // Replace Spacer with a stable spacing
 
                   // Terms & Conditions Footer
                   const Center(

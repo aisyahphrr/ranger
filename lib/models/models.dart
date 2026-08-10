@@ -64,7 +64,8 @@ class Product {
   }
 
   String get formattedPrice {
-    final currencyFormatter = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+    final currencyFormatter =
+        NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
     return currencyFormatter.format(price);
   }
 }
@@ -80,6 +81,10 @@ class Restaurant {
   final List<String> tags;
   final bool open;
   final int priceStarts;
+  final int reviewCount;
+  final String address;
+  final String description;
+  final String openingHours;
 
   Restaurant({
     required this.id,
@@ -92,12 +97,33 @@ class Restaurant {
     required this.tags,
     required this.open,
     required this.priceStarts,
+    this.reviewCount = 0,
+    this.address = '',
+    this.description = '',
+    this.openingHours = '',
   });
 
   String get formattedMinOrder {
-    final currencyFormatter = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+    final currencyFormatter =
+        NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
     return currencyFormatter.format(minOrder);
   }
+}
+
+class OrderLine {
+  final int productId;
+  final String name;
+  final int price;
+  final int quantity;
+
+  const OrderLine({
+    required this.productId,
+    required this.name,
+    required this.price,
+    required this.quantity,
+  });
+
+  int get total => price * quantity;
 }
 
 class Laundry {
@@ -154,6 +180,13 @@ class OrderModel {
   final String status;
   final String date;
   final int total;
+  final List<OrderLine> lines;
+  final String address;
+  final String paymentMethod;
+  final String? driverId;
+  final String? driverName;
+  final String? driverPhone;
+  final String? driverVehicle;
 
   OrderModel({
     required this.id,
@@ -163,7 +196,134 @@ class OrderModel {
     required this.status,
     required this.date,
     required this.total,
+    this.lines = const [],
+    this.address = '',
+    this.paymentMethod = '',
+    this.driverId,
+    this.driverName,
+    this.driverPhone,
+    this.driverVehicle,
   });
+
+  bool get hasAssignedDriver =>
+      (driverId?.trim().isNotEmpty ?? false) ||
+      (driverName?.trim().isNotEmpty ?? false);
+}
+
+class CustomerNotification {
+  final String id;
+  final String title;
+  final String description;
+  final String time;
+  final String type;
+  final String? orderId;
+  final bool isRead;
+
+  const CustomerNotification({
+    required this.id,
+    required this.title,
+    required this.description,
+    required this.time,
+    required this.type,
+    this.orderId,
+    this.isRead = false,
+  });
+
+  CustomerNotification copyWith({bool? isRead}) {
+    return CustomerNotification(
+      id: id,
+      title: title,
+      description: description,
+      time: time,
+      type: type,
+      orderId: orderId,
+      isRead: isRead ?? this.isRead,
+    );
+  }
+}
+
+class CustomerChatMessage {
+  final String id;
+  final String threadId;
+  final String text;
+  final String senderType;
+  final String sentAt;
+
+  const CustomerChatMessage({
+    required this.id,
+    required this.threadId,
+    required this.text,
+    required this.senderType,
+    required this.sentAt,
+  });
+
+  bool get isCustomer => senderType == 'customer';
+}
+
+class CustomerChatThread {
+  final String id;
+  final String orderId;
+  final String participantType;
+  final String participantName;
+  final String lastMessage;
+  final String updatedAt;
+  final int unreadCount;
+
+  const CustomerChatThread({
+    required this.id,
+    required this.orderId,
+    required this.participantType,
+    required this.participantName,
+    required this.lastMessage,
+    required this.updatedAt,
+    this.unreadCount = 0,
+  });
+
+  CustomerChatThread copyWith({
+    String? lastMessage,
+    String? updatedAt,
+    int? unreadCount,
+    String? participantName,
+  }) {
+    return CustomerChatThread(
+      id: id,
+      orderId: orderId,
+      participantType: participantType,
+      participantName: participantName ?? this.participantName,
+      lastMessage: lastMessage ?? this.lastMessage,
+      updatedAt: updatedAt ?? this.updatedAt,
+      unreadCount: unreadCount ?? this.unreadCount,
+    );
+  }
+}
+
+class CustomerPromotion {
+  final String id;
+  final String title;
+  final String subtitle;
+  final String? code;
+  final String ctaLabel;
+
+  const CustomerPromotion({
+    required this.id,
+    required this.title,
+    required this.subtitle,
+    this.code,
+    this.ctaLabel = 'Lihat Promo',
+  });
+}
+
+class CustomerReview {
+  final String orderId;
+  final int rating;
+  final String text;
+  final String date;
+
+  const CustomerReview(
+      {required this.orderId,
+      required this.rating,
+      required this.text,
+      required this.date});
 }
 
 class DriverOrder {

@@ -21,7 +21,6 @@ import 'views/services/marketplace_view.dart';
 import 'views/services/catering_view.dart';
 import 'views/services/laundry_view.dart';
 import 'views/services/kos_view.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 void main() {
   runApp(
@@ -115,55 +114,6 @@ class MainAppRouter extends StatelessWidget {
         break;
     }
 
-    final isAuthOrSplash = appState.currentScreen == AppScreen.splash ||
-        appState.currentScreen == AppScreen.onboarding ||
-        appState.currentScreen == AppScreen.login ||
-        appState.currentScreen == AppScreen.otp ||
-        appState.currentScreen == AppScreen.role ||
-        appState.currentScreen == AppScreen.mitraRole ||
-        appState.currentScreen == AppScreen.mitraMarketplaceRegistration ||
-        appState.currentScreen == AppScreen.mitraMarketplaceSuccess ||
-        appState.currentScreen == AppScreen.mitraMarketplaceDashboard ||
-        appState.currentScreen == AppScreen.cateringOwnerLogin ||
-        appState.currentScreen == AppScreen.cateringOwnerRegistration ||
-        appState.currentScreen == AppScreen.cateringOwnerSuccess ||
-        appState.currentScreen == AppScreen.cateringOwnerDashboard;
-
-    return Scaffold(
-      body: currentWidget,
-      floatingActionButton: isAuthOrSplash
-          ? null
-          : FloatingActionButton.extended(
-              backgroundColor: Colors.black87,
-              foregroundColor: Colors.white,
-              onPressed: () {
-                final nextRole = appState.role == UserRole.customer
-                    ? UserRole.driver
-                    : UserRole.customer;
-                appState.setRole(nextRole);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      "Mode diganti ke: ${nextRole == UserRole.customer ? 'Pelanggan' : 'Driver'}",
-                    ),
-                    duration: const Duration(seconds: 1),
-                  ),
-                );
-              },
-              icon: Icon(
-                appState.role == UserRole.customer
-                    ? LucideIcons.bike
-                    : LucideIcons.user,
-                size: 18,
-              ),
-              label: Text(
-                appState.role == UserRole.customer
-                    ? "Mode Driver"
-                    : "Mode Pelanggan",
-                style:
-                    const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-              ),
-            ),
-    );
+    return Scaffold(body: currentWidget);
   }
 }

@@ -44,6 +44,10 @@ enum AppScreen {
 
 class AppProvider with ChangeNotifier {
   AppProvider() {
+    _restoreCustomerSession();
+    _restoreCustomerOrders();
+    _restoreCustomerReviews();
+    _restoreCustomerChats();
     _restoreMarketplaceSession();
     _restoreRegisteredMitras();
     _restoreCateringSession();
@@ -56,13 +60,23 @@ class AppProvider with ChangeNotifier {
   int _driverTabIndex = 0;
   bool _isDriverOnline = true;
 
-  int _walletBalance = 150000;
-  int _gopayBalance = 100000;
-  final int _rangerPoints = 1250;
+  int? _walletBalance;
+  int? _gopayBalance;
+  int? _rangerPoints;
+
+  String _customerName = '';
+  String _customerPhone = '';
+  String _customerAddress = '';
+  String _customerLocation = '';
 
   final List<Product> _cartItems = [];
   final List<Product> _products = List.from(MockData.products);
-  final List<OrderModel> _orders = List.from(MockData.orders);
+  final List<OrderModel> _orders = [];
+  final List<CustomerNotification> _notifications = [];
+  final List<CustomerPromotion> _promotions = [];
+  final List<CustomerReview> _reviews = [];
+  final List<CustomerChatThread> _chatThreads = [];
+  final List<CustomerChatMessage> _chatMessages = [];
   final List<Product> _cateringProducts = [];
   final List<OrderModel> _cateringOrders = [];
   String _marketplaceOwnerName = '';
@@ -97,9 +111,16 @@ class AppProvider with ChangeNotifier {
   int get customerTabIndex => _customerTabIndex;
   int get driverTabIndex => _driverTabIndex;
   bool get isDriverOnline => _isDriverOnline;
-  int get walletBalance => _walletBalance;
-  int get gopayBalance => _gopayBalance;
-  int get rangerPoints => _rangerPoints;
+  int? get walletBalance => _walletBalance;
+  int? get gopayBalance => _gopayBalance;
+  int? get rangerPoints => _rangerPoints;
+  String? get customerName =>
+      _customerName.trim().isEmpty ? null : _customerName.trim();
+  String get customerPhone => _customerPhone;
+  String? get customerAddress =>
+      _customerAddress.trim().isEmpty ? null : _customerAddress.trim();
+  String? get customerLocation =>
+      _customerLocation.trim().isEmpty ? null : _customerLocation.trim();
 
   List<Product> get products => _products;
   List<Product> get marketplaceProducts => _products
@@ -128,8 +149,29 @@ class AppProvider with ChangeNotifier {
   String get marketplaceEmail => _marketplaceEmail;
   String get marketplacePassword => _marketplacePassword;
   bool get isMarketplaceRegistered => _isMarketplaceRegistered;
-  List<Product> get cartItems => _cartItems;
-  List<OrderModel> get orders => _orders;
+  List<Product> get cartItems => List.unmodifiable(_cartItems);
+  List<OrderModel> get orders => List.unmodifiable(_orders);
+  List<CustomerNotification> get notifications =>
+      List.unmodifiable(_notifications);
+  List<CustomerPromotion> get promotions => List.unmodifiable(_promotions);
+  List<CustomerReview> get reviews => List.unmodifiable(_reviews);
+  List<CustomerChatThread> get chatThreads => List.unmodifiable(_chatThreads);
+  int get unreadChatCount =>
+      _chatThreads.fold(0, (total, thread) => total + thread.unreadCount);
+  int get unreadInboxCount => unreadNotificationCount + unreadChatCount;
+  List<CustomerReview> reviewsForStore(String storeName) {
+    final orderIds = _orders
+        .where((order) => order.detail == storeName)
+        .map((order) => order.id)
+        .toSet();
+    return _reviews
+        .where((review) => orderIds.contains(review.orderId))
+        .toList(growable: false);
+  }
+
+  int get unreadNotificationCount =>
+      _notifications.where((item) => !item.isRead).length;
+  int get cartItemCount => _cartItems.length;
   List<Product> get cateringProducts => _cateringProducts;
   List<OrderModel> get cateringOrders => _cateringOrders;
   String get cateringOwnerName => _cateringOwnerName;
@@ -156,6 +198,45 @@ class AppProvider with ChangeNotifier {
       _cateringPhone.trim().toLowerCase() != 'belum diisi';
 
   int get cartTotalPrice => _cartItems.fold(0, (sum, item) => sum + item.price);
+
+  List<String> get marketplaceNames => _products
+      .map((product) => product.store.trim())
+      .where((store) => store.isNotEmpty)
+      .toSet()
+      .toList();
+
+  List<Product> productsForStore(String storeName) => _products
+      .followedBy(_cateringProducts)
+      .where((product) => product.store == storeName)
+      .toList(growable: false);
+
+  bool isStoreOpen(String storeName) {
+    if (storeName == _marketplaceStoreName &&
+        _marketplaceStoreName.isNotEmpty) {
+      return _marketplaceIsOpen;
+    }
+    if (storeName == _cateringBusinessName &&
+        _cateringBusinessName.isNotEmpty) {
+      return _cateringIsOpen;
+    }
+    return true;
+  }
+
+  String storeAddress(String storeName) {
+    if (storeName == _marketplaceStoreName && _marketplaceAddress.isNotEmpty) {
+      return _marketplaceAddress;
+    }
+    if (storeName == _cateringBusinessName && _cateringAddress.isNotEmpty) {
+      return _cateringAddress;
+    }
+    return '';
+  }
+
+  bool isCateringStore(String storeName) =>
+      storeName.isNotEmpty && storeName == _cateringBusinessName;
+
+  int cartQuantity(int productId) =>
+      _cartItems.where((item) => item.id == productId).length;
 
   void navigate(AppScreen screen) {
     _currentScreen = screen;
@@ -222,7 +303,13 @@ class AppProvider with ChangeNotifier {
   }
 
   void addToCart(Product product, {int quantity = 1}) {
-    for (int i = 0; i < quantity; i++) {
+    if (!product.isAvailable || !isStoreOpen(product.store) || quantity <= 0) {
+      return;
+    }
+    final remainingStock = product.stock - cartQuantity(product.id);
+    final safeQuantity = quantity > remainingStock ? remainingStock : quantity;
+    if (safeQuantity <= 0) return;
+    for (int i = 0; i < safeQuantity; i++) {
       _cartItems.add(product);
     }
     notifyListeners();
@@ -238,18 +325,228 @@ class AppProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  void setCartQuantity(Product product, int quantity) {
+    final current = cartQuantity(product.id);
+    final target = quantity.clamp(0, product.stock).toInt();
+    if (target > current) {
+      addToCart(product, quantity: target - current);
+    } else if (target < current) {
+      for (var i = 0; i < current - target; i++) {
+        removeFromCart(product);
+      }
+    }
+  }
+
+  Future<void> saveCustomerProfile({
+    String? name,
+    String? phone,
+    String? address,
+    String? location,
+  }) async {
+    if (name != null) _customerName = name.trim();
+    if (phone != null) _customerPhone = phone.trim();
+    if (address != null) _customerAddress = address.trim();
+    if (location != null) _customerLocation = location.trim();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      'customer_profile',
+      jsonEncode({
+        'name': _customerName,
+        'phone': _customerPhone,
+        'address': _customerAddress,
+        'location': _customerLocation,
+      }),
+    );
+    notifyListeners();
+  }
+
+  Future<void> logoutCustomer() async {
+    _customerName = '';
+    _customerPhone = '';
+    _customerAddress = '';
+    _customerLocation = '';
+    _cartItems.clear();
+    _orders.clear();
+    _notifications.clear();
+    _reviews.clear();
+    _chatThreads.clear();
+    _chatMessages.clear();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('customer_profile');
+    await prefs.remove('customer_orders');
+    await prefs.remove('customer_reviews');
+    await prefs.remove('customer_chats');
+    _currentScreen = AppScreen.login;
+    notifyListeners();
+  }
+
+  void markNotificationRead(String notificationId) {
+    final index =
+        _notifications.indexWhere((item) => item.id == notificationId);
+    if (index == -1 || _notifications[index].isRead) return;
+    _notifications[index] = _notifications[index].copyWith(isRead: true);
+    notifyListeners();
+  }
+
+  void markAllNotificationsRead() {
+    for (var index = 0; index < _notifications.length; index++) {
+      _notifications[index] = _notifications[index].copyWith(isRead: true);
+    }
+    notifyListeners();
+  }
+
+  void markAllInboxRead() {
+    markAllNotificationsRead();
+    for (var index = 0; index < _chatThreads.length; index++) {
+      if (_chatThreads[index].unreadCount > 0) {
+        _chatThreads[index] = _chatThreads[index].copyWith(unreadCount: 0);
+      }
+    }
+    _saveCustomerChats();
+    notifyListeners();
+  }
+
+  CustomerChatThread? chatThread(String threadId) {
+    for (final thread in _chatThreads) {
+      if (thread.id == threadId) return thread;
+    }
+    return null;
+  }
+
+  List<CustomerChatMessage> messagesForThread(String threadId) {
+    return _chatMessages
+        .where((message) => message.threadId == threadId)
+        .toList(growable: false);
+  }
+
+  String chatThreadId({
+    required String orderId,
+    required String participantType,
+  }) =>
+      'order:$orderId:$participantType';
+
+  CustomerChatThread ensureChatThread({
+    required OrderModel order,
+    required String participantType,
+  }) {
+    final id = chatThreadId(
+      orderId: order.id,
+      participantType: participantType,
+    );
+    final existing = chatThread(id);
+    if (existing != null) return existing;
+
+    final participantName = participantType == 'driver'
+        ? (order.driverName?.trim().isNotEmpty ?? false)
+            ? order.driverName!.trim()
+            : 'Driver Rangers'
+        : order.detail.trim().isEmpty
+            ? 'Toko'
+            : order.detail.trim();
+    final thread = CustomerChatThread(
+      id: id,
+      orderId: order.id,
+      participantType: participantType,
+      participantName: participantName,
+      lastMessage: '',
+      updatedAt: DateTime.now().toIso8601String(),
+    );
+    _chatThreads.insert(0, thread);
+    _saveCustomerChats();
+    notifyListeners();
+    return thread;
+  }
+
+  void sendChatMessage({
+    required String threadId,
+    required String text,
+  }) {
+    final cleanText = text.trim();
+    if (cleanText.isEmpty) return;
+    final threadIndex = _chatThreads.indexWhere((item) => item.id == threadId);
+    if (threadIndex == -1) return;
+
+    final now = DateTime.now().toIso8601String();
+    _chatMessages.add(CustomerChatMessage(
+      id: 'message-${DateTime.now().microsecondsSinceEpoch}',
+      threadId: threadId,
+      text: cleanText,
+      senderType: 'customer',
+      sentAt: now,
+    ));
+    _chatThreads[threadIndex] = _chatThreads[threadIndex].copyWith(
+      lastMessage: cleanText,
+      updatedAt: now,
+      unreadCount: 0,
+    );
+    _sortChatThreads();
+    _saveCustomerChats();
+    notifyListeners();
+  }
+
+  void markChatThreadRead(String threadId) {
+    final index = _chatThreads.indexWhere((item) => item.id == threadId);
+    if (index == -1 || _chatThreads[index].unreadCount == 0) return;
+    _chatThreads[index] = _chatThreads[index].copyWith(unreadCount: 0);
+    _saveCustomerChats();
+    notifyListeners();
+  }
+
+  void replacePromotions(Iterable<CustomerPromotion> promotions) {
+    _promotions
+      ..clear()
+      ..addAll(promotions);
+    notifyListeners();
+  }
+
+  Future<void> submitReview(
+      {required String orderId,
+      required int rating,
+      required String text}) async {
+    _reviews.removeWhere((review) => review.orderId == orderId);
+    _reviews.add(CustomerReview(
+        orderId: orderId,
+        rating: rating,
+        text: text.trim(),
+        date: DateTime.now().toIso8601String()));
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+        'customer_reviews',
+        jsonEncode(_reviews
+            .map((review) => {
+                  'orderId': review.orderId,
+                  'rating': review.rating,
+                  'text': review.text,
+                  'date': review.date
+                })
+            .toList()));
+    notifyListeners();
+  }
+
   void deductWallet(int amount) {
-    _walletBalance -= amount;
+    if (_walletBalance != null) _walletBalance = _walletBalance! - amount;
     notifyListeners();
   }
 
   void deductGoPay(int amount) {
-    _gopayBalance -= amount;
+    if (_gopayBalance != null) _gopayBalance = _gopayBalance! - amount;
     notifyListeners();
   }
 
   void placeOrder(OrderModel order) {
     _orders.insert(0, order);
+    _notifications.insert(
+      0,
+      CustomerNotification(
+        id: 'order-${order.id}',
+        title: 'Pesanan dibuat',
+        description: 'Pesanan #${order.id} sedang menunggu diproses.',
+        time: 'Baru saja',
+        type: 'order',
+        orderId: order.id,
+      ),
+    );
+    _saveCustomerOrders();
     notifyListeners();
   }
 
@@ -478,11 +775,12 @@ class AppProvider with ChangeNotifier {
     _cateringEmail = credentials['email'] as String? ?? email.trim();
     _cateringPassword = credentials['password'] as String? ?? password;
     _cateringDescription = credentials['description'] as String? ?? '';
-    _cateringProfileImageBase64 = credentials['profileImageBase64'] as String? ?? '';
-    _cateringOperatingHours = _stringMapFrom(
-        credentials['operatingHours'], _defaultCateringHours());
-    _cateringOperatingDays = _boolMapFrom(
-        credentials['operatingDays'], _defaultCateringDays());
+    _cateringProfileImageBase64 =
+        credentials['profileImageBase64'] as String? ?? '';
+    _cateringOperatingHours =
+        _stringMapFrom(credentials['operatingHours'], _defaultCateringHours());
+    _cateringOperatingDays =
+        _boolMapFrom(credentials['operatingDays'], _defaultCateringDays());
     _cateringIsOpen = credentials['isOpen'] as bool? ?? true;
     _isCateringRegistered = true;
     await _saveCateringSession();
@@ -621,6 +919,163 @@ class AppProvider with ChangeNotifier {
     await prefs.remove('marketplace_session');
     notifyListeners();
   }
+
+  Future<void> _restoreCustomerSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString('customer_profile');
+    if (raw == null) return;
+    try {
+      final data = jsonDecode(raw) as Map<String, dynamic>;
+      _customerName = data['name'] as String? ?? '';
+      _customerPhone = data['phone'] as String? ?? '';
+      _customerAddress = data['address'] as String? ?? '';
+      _customerLocation = data['location'] as String? ?? '';
+      notifyListeners();
+    } catch (_) {
+      // Ignore an invalid local session and allow the customer to continue
+      // with the safe empty-profile fallback.
+    }
+  }
+
+  Future<void> _restoreCustomerOrders() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString('customer_orders');
+    if (raw == null) return;
+    try {
+      final decoded = jsonDecode(raw) as List<dynamic>;
+      _orders
+        ..clear()
+        ..addAll(decoded
+            .map((item) => _orderFromJson(item as Map<String, dynamic>)));
+      _notifications
+        ..clear()
+        ..addAll(
+          _orders.map(
+            (order) => CustomerNotification(
+              id: 'order-${order.id}',
+              title: 'Pesanan ${order.status}',
+              description: 'Pesanan #${order.id} dari ${order.detail}.',
+              time: order.date,
+              type: order.status == 'Selesai' ? 'review' : 'order',
+              orderId: order.id,
+              isRead: true,
+            ),
+          ),
+        );
+      notifyListeners();
+    } catch (_) {
+      // Ignore invalid local orders instead of breaking the customer home.
+    }
+  }
+
+  Future<void> _restoreCustomerReviews() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString('customer_reviews');
+    if (raw == null) return;
+    try {
+      final decoded = jsonDecode(raw) as List<dynamic>;
+      _reviews
+        ..clear()
+        ..addAll(decoded
+            .whereType<Map<String, dynamic>>()
+            .map((item) => CustomerReview(
+                  orderId: item['orderId'] as String? ?? '',
+                  rating: (item['rating'] as num?)?.toInt() ?? 0,
+                  text: item['text'] as String? ?? '',
+                  date: item['date'] as String? ?? '',
+                )));
+      notifyListeners();
+    } catch (_) {
+      // Ignore invalid local reviews.
+    }
+  }
+
+  Future<void> _saveCustomerOrders() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      'customer_orders',
+      jsonEncode(_orders.map(_orderToJson).toList()),
+    );
+  }
+
+  Future<void> _restoreCustomerChats() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString('customer_chats');
+    if (raw == null) return;
+    try {
+      final data = jsonDecode(raw) as Map<String, dynamic>;
+      final rawThreads = data['threads'] as List<dynamic>? ?? [];
+      final rawMessages = data['messages'] as List<dynamic>? ?? [];
+      _chatThreads
+        ..clear()
+        ..addAll(rawThreads
+            .whereType<Map<String, dynamic>>()
+            .map(_chatThreadFromJson));
+      _chatMessages
+        ..clear()
+        ..addAll(rawMessages
+            .whereType<Map<String, dynamic>>()
+            .map(_chatMessageFromJson));
+      _sortChatThreads();
+      notifyListeners();
+    } catch (_) {
+      // Ignore invalid chat history and keep the inbox usable.
+    }
+  }
+
+  Future<void> _saveCustomerChats() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      'customer_chats',
+      jsonEncode({
+        'threads': _chatThreads.map(_chatThreadToJson).toList(),
+        'messages': _chatMessages.map(_chatMessageToJson).toList(),
+      }),
+    );
+  }
+
+  void _sortChatThreads() {
+    _chatThreads
+        .sort((left, right) => right.updatedAt.compareTo(left.updatedAt));
+  }
+
+  Map<String, dynamic> _chatThreadToJson(CustomerChatThread thread) => {
+        'id': thread.id,
+        'orderId': thread.orderId,
+        'participantType': thread.participantType,
+        'participantName': thread.participantName,
+        'lastMessage': thread.lastMessage,
+        'updatedAt': thread.updatedAt,
+        'unreadCount': thread.unreadCount,
+      };
+
+  CustomerChatThread _chatThreadFromJson(Map<String, dynamic> data) =>
+      CustomerChatThread(
+        id: data['id'] as String? ?? '',
+        orderId: data['orderId'] as String? ?? '',
+        participantType: data['participantType'] as String? ?? 'store',
+        participantName: data['participantName'] as String? ?? 'Toko',
+        lastMessage: data['lastMessage'] as String? ?? '',
+        updatedAt: data['updatedAt'] as String? ?? '',
+        unreadCount: (data['unreadCount'] as num?)?.toInt() ?? 0,
+      );
+
+  Map<String, dynamic> _chatMessageToJson(CustomerChatMessage message) => {
+        'id': message.id,
+        'threadId': message.threadId,
+        'text': message.text,
+        'senderType': message.senderType,
+        'sentAt': message.sentAt,
+      };
+
+  CustomerChatMessage _chatMessageFromJson(Map<String, dynamic> data) =>
+      CustomerChatMessage(
+        id: data['id'] as String? ?? '',
+        threadId: data['threadId'] as String? ?? '',
+        text: data['text'] as String? ?? '',
+        senderType: data['senderType'] as String? ?? 'customer',
+        sentAt: data['sentAt'] as String? ?? '',
+      );
 
   Future<void> _restoreMarketplaceSession() async {
     final prefs = await SharedPreferences.getInstance();
@@ -789,6 +1244,63 @@ class AppProvider with ChangeNotifier {
             ? null
             : base64Encode(product.imageBytes!)
       };
+
+  Map<String, dynamic> _orderToJson(OrderModel order) => {
+        'id': order.id,
+        'type': order.type,
+        'item': order.item,
+        'detail': order.detail,
+        'status': order.status,
+        'date': order.date,
+        'total': order.total,
+        'address': order.address,
+        'paymentMethod': order.paymentMethod,
+        'driverId': order.driverId,
+        'driverName': order.driverName,
+        'driverPhone': order.driverPhone,
+        'driverVehicle': order.driverVehicle,
+        'lines': order.lines
+            .map(
+              (line) => {
+                'productId': line.productId,
+                'name': line.name,
+                'price': line.price,
+                'quantity': line.quantity,
+              },
+            )
+            .toList(),
+      };
+
+  OrderModel _orderFromJson(Map<String, dynamic> data) {
+    final rawLines = data['lines'] as List<dynamic>? ?? [];
+    return OrderModel(
+      id: data['id'] as String? ?? '',
+      type: data['type'] as String? ?? 'Marketplace',
+      item: data['item'] as String? ?? '',
+      detail: data['detail'] as String? ?? '',
+      status: data['status'] as String? ?? 'Diproses',
+      date: data['date'] as String? ?? '',
+      total: (data['total'] as num?)?.toInt() ?? 0,
+      address: data['address'] as String? ?? '',
+      paymentMethod: data['paymentMethod'] as String? ?? '',
+      driverId: data['driverId'] as String?,
+      driverName: data['driverName'] as String?,
+      driverPhone: data['driverPhone'] as String?,
+      driverVehicle: data['driverVehicle'] as String?,
+      lines: rawLines
+          .whereType<Map<String, dynamic>>()
+          .map(
+            (line) => OrderLine(
+              productId: (line['productId'] as num?)?.toInt() ?? 0,
+              name: line['name'] as String? ?? '',
+              price: (line['price'] as num?)?.toInt() ?? 0,
+              quantity: (line['quantity'] as num?)?.toInt() ?? 0,
+            ),
+          )
+          .toList(),
+    );
+  }
+
   Product _productFromJson(Map<String, dynamic> data) => Product(
       id: data['id'] as int,
       name: data['name'] as String,
