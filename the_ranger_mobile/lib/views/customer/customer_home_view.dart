@@ -4,13 +4,13 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme/app_theme.dart';
 import '../../models/models.dart';
 import '../../providers/app_provider.dart';
-import '../services/cart_view.dart';
-import '../services/catering_view.dart';
-import '../services/kos_view.dart';
-import '../services/laundry_view.dart';
-import '../services/marketplace_view.dart';
-import '../services/merchant_view.dart';
-import '../services/product_detail_view.dart';
+import 'services/cart_view.dart';
+import 'services/catering_view.dart';
+import 'services/kos_view.dart';
+import 'services/laundry_view.dart';
+import 'services/marketplace_view.dart';
+import 'services/merchant_view.dart';
+import 'services/product_detail_view.dart';
 
 class CustomerHomeView extends StatelessWidget {
   const CustomerHomeView({super.key});

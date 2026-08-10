@@ -6,7 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/models.dart';
 import '../core/constants/mock_data.dart';
 
-enum UserRole { customer, driver }
+enum UserRole { customer, driver, pemilikKos, pemilikLaundry, pemilikCatering, pemilikMarketplace }
 
 enum AppScreen {
   splash,
@@ -40,6 +40,10 @@ enum AppScreen {
   cateringOwnerRegistration,
   cateringOwnerSuccess,
   cateringOwnerDashboard,
+  kosHome,
+  laundryHome,
+  cateringHome,
+  marketplaceHome,
 }
 
 class AppProvider with ChangeNotifier {
