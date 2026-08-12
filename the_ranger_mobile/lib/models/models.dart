@@ -136,6 +136,7 @@ class Laundry {
   final String distance;
   final String type;
   final String img;
+  final bool isFavorite;
 
   Laundry({
     required this.id,
@@ -147,7 +148,14 @@ class Laundry {
     required this.distance,
     required this.type,
     required this.img,
+    this.isFavorite = false,
   });
+
+  String get formattedPrice {
+    final currencyFormatter =
+        NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+    return currencyFormatter.format(price);
+  }
 }
 
 class KosItem {
@@ -159,6 +167,7 @@ class KosItem {
   final List<String> facilities;
   final bool available;
   final String img;
+  final bool isFavorite;
 
   KosItem({
     required this.id,
@@ -169,7 +178,14 @@ class KosItem {
     required this.facilities,
     required this.available,
     required this.img,
+    this.isFavorite = false,
   });
+
+  String get formattedPrice {
+    final currencyFormatter =
+        NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+    return currencyFormatter.format(price);
+  }
 }
 
 class OrderModel {

@@ -6,14 +6,22 @@ import 'pelanggan_laundry_view.dart';
 import '../driver/notifikasi_view.dart';
 
 class LaundryHomeView extends StatefulWidget {
-  const LaundryHomeView({super.key});
+  final VoidCallback? onOpenOrders;
+  final VoidCallback? onOpenEarnings;
+  final VoidCallback? onOpenProfile;
+
+  const LaundryHomeView({
+    super.key,
+    this.onOpenOrders,
+    this.onOpenEarnings,
+    this.onOpenProfile,
+  });
 
   @override
   State<LaundryHomeView> createState() => _LaundryHomeViewState();
 }
 
 class _LaundryHomeViewState extends State<LaundryHomeView> {
-  int _currentBottomNavIndex = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -260,12 +268,16 @@ class _LaundryHomeViewState extends State<LaundryHomeView> {
                       ),
                       GestureDetector(
                         onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const ManajemenOrderView(),
-                            ),
-                          );
+                          if (widget.onOpenOrders != null) {
+                            widget.onOpenOrders!();
+                          } else {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const ManajemenOrderView(),
+                              ),
+                            );
+                          }
                         },
                         child: Row(
                           children: const [
@@ -358,12 +370,16 @@ class _LaundryHomeViewState extends State<LaundryHomeView> {
                         icon: LucideIcons.box,
                         label: "Manajemen\nOrder",
                         onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const ManajemenOrderView(),
-                            ),
-                          );
+                          if (widget.onOpenOrders != null) {
+                            widget.onOpenOrders!();
+                          } else {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const ManajemenOrderView(),
+                              ),
+                            );
+                          }
                         },
                       ),
                       _buildQuickActionButton(
@@ -382,12 +398,16 @@ class _LaundryHomeViewState extends State<LaundryHomeView> {
                         icon: LucideIcons.barChart2,
                         label: "Laporan\nKeuangan",
                         onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const LaundryKeuanganView(),
-                            ),
-                          );
+                          if (widget.onOpenEarnings != null) {
+                            widget.onOpenEarnings!();
+                          } else {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const LaundryKeuanganView(),
+                              ),
+                            );
+                          }
                         },
                       ),
                       _buildQuickActionButton(
@@ -405,38 +425,6 @@ class _LaundryHomeViewState extends State<LaundryHomeView> {
                 ],
               ),
             ),
-          ],
-        ),
-      ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, -4),
-            ),
-          ],
-        ),
-        child: BottomNavigationBar(
-          currentIndex: _currentBottomNavIndex,
-          onTap: (idx) {
-            setState(() {
-              _currentBottomNavIndex = idx;
-            });
-          },
-          type: BottomNavigationBarType.fixed,
-          selectedItemColor: accentGreen,
-          unselectedItemColor: const Color(0xFF94A3B8),
-          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w800, fontSize: 11),
-          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 11),
-          items: const [
-            BottomNavigationBarItem(icon: Icon(LucideIcons.home), label: "Beranda"),
-            BottomNavigationBarItem(icon: Icon(LucideIcons.box), label: "Order"),
-            BottomNavigationBarItem(icon: Icon(LucideIcons.clock), label: "Riwayat"),
-            BottomNavigationBarItem(icon: Icon(LucideIcons.wallet), label: "Pendapatan"),
-            BottomNavigationBarItem(icon: Icon(LucideIcons.user), label: "Profil"),
           ],
         ),
       ),

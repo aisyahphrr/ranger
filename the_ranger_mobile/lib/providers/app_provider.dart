@@ -6,7 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/models.dart';
 import '../core/constants/mock_data.dart';
 
-enum UserRole { customer, driver, pemilikKos, pemilikLaundry, pemilikCatering, pemilikMarketplace }
+enum UserRole { customer, driver }
 
 enum AppScreen {
   splash,
@@ -40,10 +40,14 @@ enum AppScreen {
   cateringOwnerRegistration,
   cateringOwnerSuccess,
   cateringOwnerDashboard,
-  kosHome,
-  laundryHome,
-  cateringHome,
-  marketplaceHome,
+  laundryOwnerRegistration,
+  laundryOwnerSuccess,
+  laundryOwnerLogin,
+  laundryOwnerDashboard,
+  kosOwnerRegistration,
+  kosOwnerSuccess,
+  kosOwnerLogin,
+  kosOwnerDashboard,
 }
 
 class AppProvider with ChangeNotifier {
@@ -109,6 +113,26 @@ class AppProvider with ChangeNotifier {
   Map<String, String> _cateringOperatingHours = _defaultCateringHours();
   Map<String, bool> _cateringOperatingDays = _defaultCateringDays();
   bool _cateringIsOpen = true;
+
+  // Laundry owner fields
+  String _laundryOwnerName = '';
+  String _laundryBusinessName = '';
+  String _laundryPhone = '';
+  String _laundryAddress = '';
+  String _laundryEmail = '';
+  String _laundryPassword = '';
+  bool _isLaundryRegistered = false;
+  Map<String, Map<String, dynamic>> _registeredLaundryOwners = {};
+
+  // Kos owner fields
+  String _kosOwnerName = '';
+  String _kosBusinessName = '';
+  String _kosPhone = '';
+  String _kosAddress = '';
+  String _kosEmail = '';
+  String _kosPassword = '';
+  bool _isKosRegistered = false;
+  Map<String, Map<String, dynamic>> _registeredKosOwners = {};
 
   UserRole get role => _role;
   AppScreen get currentScreen => _currentScreen;
@@ -200,6 +224,22 @@ class AppProvider with ChangeNotifier {
       _cateringAddress.trim().isNotEmpty &&
       _cateringPhone.trim().isNotEmpty &&
       _cateringPhone.trim().toLowerCase() != 'belum diisi';
+
+  // Laundry getters
+  String get laundryOwnerName => _laundryOwnerName;
+  String get laundryBusinessName => _laundryBusinessName;
+  String get laundryPhone => _laundryPhone;
+  String get laundryAddress => _laundryAddress;
+  String get laundryEmail => _laundryEmail;
+  bool get isLaundryRegistered => _isLaundryRegistered;
+
+  // Kos getters
+  String get kosOwnerName => _kosOwnerName;
+  String get kosBusinessName => _kosBusinessName;
+  String get kosPhone => _kosPhone;
+  String get kosAddress => _kosAddress;
+  String get kosEmail => _kosEmail;
+  bool get isKosRegistered => _isKosRegistered;
 
   int get cartTotalPrice => _cartItems.fold(0, (sum, item) => sum + item.price);
 
@@ -791,6 +831,122 @@ class AppProvider with ChangeNotifier {
     _currentScreen = AppScreen.cateringOwnerDashboard;
     notifyListeners();
     return true;
+  }
+
+  // Laundry registration flow
+  Future<void> registerLaundryOwner({
+    required String ownerName,
+    required String businessName,
+    required String phone,
+    required String address,
+    required String email,
+    required String password,
+  }) async {
+    _laundryOwnerName = ownerName.trim();
+    _laundryBusinessName = businessName.trim();
+    _laundryPhone = phone.trim();
+    _laundryAddress = address.trim();
+    _laundryEmail = email.trim();
+    _laundryPassword = password;
+    _isLaundryRegistered = true;
+    _registeredLaundryOwners[_laundryEmail] = {
+      'ownerName': _laundryOwnerName,
+      'businessName': _laundryBusinessName,
+      'phone': _laundryPhone,
+      'address': _laundryAddress,
+      'email': _laundryEmail,
+      'password': _laundryPassword,
+    };
+    notifyListeners();
+    await _saveCateringSession();
+    await _saveRegisteredCateringOwners();
+  }
+
+  Future<bool> loginLaundryOwner(String email, String password) async {
+    final credentials = _registeredLaundryOwners[email.trim()];
+    if (credentials == null || credentials['password'] != password) {
+      return false;
+    }
+    _laundryOwnerName = credentials['ownerName'] as String? ?? '';
+    _laundryBusinessName = credentials['businessName'] as String? ?? '';
+    _laundryPhone = credentials['phone'] as String? ?? '';
+    _laundryAddress = credentials['address'] as String? ?? '';
+    _laundryEmail = credentials['email'] as String? ?? email.trim();
+    _laundryPassword = credentials['password'] as String? ?? password;
+    _isLaundryRegistered = true;
+    // Note: persistence helpers for laundry not yet implemented; add if needed
+    _currentScreen = AppScreen.laundryOwnerDashboard;
+    notifyListeners();
+    return true;
+  }
+
+  Future<void> logoutLaundryOwner() async {
+    _laundryOwnerName = '';
+    _laundryBusinessName = '';
+    _laundryPhone = '';
+    _laundryAddress = '';
+    _laundryEmail = '';
+    _laundryPassword = '';
+    _isLaundryRegistered = false;
+    // If you add persistence, remove saved session here
+    _currentScreen = AppScreen.laundryOwnerLogin;
+    notifyListeners();
+  }
+
+  // Kos registration flow
+  Future<void> registerKosOwner({
+    required String ownerName,
+    required String businessName,
+    required String phone,
+    required String address,
+    required String email,
+    required String password,
+  }) async {
+    _kosOwnerName = ownerName.trim();
+    _kosBusinessName = businessName.trim();
+    _kosPhone = phone.trim();
+    _kosAddress = address.trim();
+    _kosEmail = email.trim();
+    _kosPassword = password;
+    _isKosRegistered = true;
+    _registeredKosOwners[_kosEmail] = {
+      'ownerName': _kosOwnerName,
+      'businessName': _kosBusinessName,
+      'phone': _kosPhone,
+      'address': _kosAddress,
+      'email': _kosEmail,
+      'password': _kosPassword,
+    };
+    notifyListeners();
+  }
+
+  Future<bool> loginKosOwner(String email, String password) async {
+    final credentials = _registeredKosOwners[email.trim()];
+    if (credentials == null || credentials['password'] != password) {
+      return false;
+    }
+    _kosOwnerName = credentials['ownerName'] as String? ?? '';
+    _kosBusinessName = credentials['businessName'] as String? ?? '';
+    _kosPhone = credentials['phone'] as String? ?? '';
+    _kosAddress = credentials['address'] as String? ?? '';
+    _kosEmail = credentials['email'] as String? ?? email.trim();
+    _kosPassword = credentials['password'] as String? ?? password;
+    _isKosRegistered = true;
+    _currentScreen = AppScreen.kosOwnerDashboard;
+    notifyListeners();
+    return true;
+  }
+
+  Future<void> logoutKosOwner() async {
+    _kosOwnerName = '';
+    _kosBusinessName = '';
+    _kosPhone = '';
+    _kosAddress = '';
+    _kosEmail = '';
+    _kosPassword = '';
+    _isKosRegistered = false;
+    _currentScreen = AppScreen.kosOwnerLogin;
+    notifyListeners();
   }
 
   Future<void> logoutCateringOwner() async {

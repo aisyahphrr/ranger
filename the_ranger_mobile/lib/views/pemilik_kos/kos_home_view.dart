@@ -8,14 +8,24 @@ import '../driver/laporan_keuangan_view.dart';
 import '../driver/notifikasi_view.dart';
 
 class KosHomeView extends StatefulWidget {
-  const KosHomeView({super.key});
+  final VoidCallback? onOpenRooms;
+  final VoidCallback? onOpenOccupants;
+  final VoidCallback? onOpenKeuangan;
+  final VoidCallback? onOpenProfile;
+
+  const KosHomeView({
+    super.key,
+    this.onOpenRooms,
+    this.onOpenOccupants,
+    this.onOpenKeuangan,
+    this.onOpenProfile,
+  });
 
   @override
   State<KosHomeView> createState() => _KosHomeViewState();
 }
 
 class _KosHomeViewState extends State<KosHomeView> {
-  int _currentBottomNavIndex = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -383,42 +393,58 @@ class _KosHomeViewState extends State<KosHomeView> {
                         icon: LucideIcons.building,
                         title: "Manajemen\nKamar",
                         onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const ManajemenKamarView(),
-                            ),
-                          );
+                          if (widget.onOpenRooms != null) {
+                            widget.onOpenRooms!();
+                          } else {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const ManajemenKamarView(),
+                              ),
+                            );
+                          }
                         },
                       ),
                       _buildQuickActionCard(
                         icon: LucideIcons.users,
                         title: "Penghuni",
                         onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const ManajemenPenghuniView(),
-                            ),
-                          );
+                          if (widget.onOpenOccupants != null) {
+                            widget.onOpenOccupants!();
+                          } else {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const ManajemenPenghuniView(),
+                              ),
+                            );
+                          }
                         },
                       ),
                       _buildQuickActionCard(
                         icon: LucideIcons.fileText,
                         title: "Laporan\nKeuangan",
                         onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const LaporanKeuanganView(),
-                            ),
-                          );
+                          if (widget.onOpenKeuangan != null) {
+                            widget.onOpenKeuangan!();
+                          } else {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const LaporanKeuanganView(),
+                              ),
+                            );
+                          }
                         },
                       ),
                       _buildQuickActionCard(
                         icon: LucideIcons.layoutGrid,
                         title: "Lainnya",
-                        onTap: () {},
+                        onTap: () {
+                          if (widget.onOpenProfile != null) {
+                            widget.onOpenProfile!();
+                          }
+                        },
                       ),
                     ],
                   ),
@@ -528,12 +554,16 @@ class _KosHomeViewState extends State<KosHomeView> {
                       ),
                       TextButton(
                         onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const ManajemenKamarView(),
-                            ),
-                          );
+                          if (widget.onOpenRooms != null) {
+                            widget.onOpenRooms!();
+                          } else {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const ManajemenKamarView(),
+                              ),
+                            );
+                          }
                         },
                         style: TextButton.styleFrom(
                           padding: EdgeInsets.zero,
@@ -588,26 +618,6 @@ class _KosHomeViewState extends State<KosHomeView> {
             ),
           ],
         ),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentBottomNavIndex,
-        onTap: (idx) {
-          setState(() {
-            _currentBottomNavIndex = idx;
-          });
-        },
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: primaryGreen,
-        unselectedItemColor: const Color(0xFF94A3B8),
-        selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w800, fontSize: 11),
-        unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 11),
-        items: const [
-          BottomNavigationBarItem(icon: Icon(LucideIcons.home), label: "Beranda"),
-          BottomNavigationBarItem(icon: Icon(LucideIcons.box), label: "Order"),
-          BottomNavigationBarItem(icon: Icon(LucideIcons.clock), label: "Riwayat"),
-          BottomNavigationBarItem(icon: Icon(LucideIcons.wallet), label: "Pendapatan"),
-          BottomNavigationBarItem(icon: Icon(LucideIcons.user), label: "Profil"),
-        ],
       ),
     );
   }

@@ -32,7 +32,7 @@ class _MitraRoleViewState extends State<MitraRoleView> {
       icon: LucideIcons.home,
       iconColor: Colors.purple,
       iconBg: Colors.purple.shade50,
-      screen: AppScreen.cKos,
+      screen: AppScreen.kosOwnerRegistration,
       roleType: _MitraRoleType.kos,
     ),
     _MitraRoleOption(
@@ -42,7 +42,7 @@ class _MitraRoleViewState extends State<MitraRoleView> {
       icon: LucideIcons.shirt,
       iconColor: Colors.blue,
       iconBg: Colors.blue.shade50,
-      screen: AppScreen.cLaundry,
+      screen: AppScreen.laundryOwnerRegistration,
       roleType: _MitraRoleType.laundry,
     ),
     _MitraRoleOption(

@@ -9,7 +9,6 @@ class ManajemenPenghuniView extends StatefulWidget {
 }
 
 class _ManajemenPenghuniViewState extends State<ManajemenPenghuniView> {
-  int _currentBottomNavIndex = 0;
   String _selectedFilter = "Semua"; // "Semua", "Aktif", "Akan Keluar"
 
   final List<Map<String, dynamic>> _tenants = [
@@ -61,10 +60,12 @@ class _ManajemenPenghuniViewState extends State<ManajemenPenghuniView> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(LucideIcons.arrowLeft, color: Color(0xFF0F172A)),
-          onPressed: () => Navigator.maybePop(context),
-        ),
+        leading: Navigator.canPop(context)
+            ? IconButton(
+                icon: const Icon(LucideIcons.arrowLeft, color: Color(0xFF0F172A)),
+                onPressed: () => Navigator.maybePop(context),
+              )
+            : null,
         title: const Text(
           "Manajemen\nPenghuni",
           style: TextStyle(
@@ -310,38 +311,6 @@ class _ManajemenPenghuniViewState extends State<ManajemenPenghuniView> {
             ),
           ),
         ],
-      ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, -4),
-            ),
-          ],
-        ),
-        child: BottomNavigationBar(
-          currentIndex: _currentBottomNavIndex,
-          onTap: (idx) {
-            setState(() {
-              _currentBottomNavIndex = idx;
-            });
-          },
-          type: BottomNavigationBarType.fixed,
-          selectedItemColor: const Color(0xFF15803D),
-          unselectedItemColor: const Color(0xFF94A3B8),
-          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w800, fontSize: 11),
-          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 11),
-          items: const [
-            BottomNavigationBarItem(icon: Icon(LucideIcons.home), label: "Beranda"),
-            BottomNavigationBarItem(icon: Icon(LucideIcons.box), label: "Order"),
-            BottomNavigationBarItem(icon: Icon(LucideIcons.clock), label: "Riwayat"),
-            BottomNavigationBarItem(icon: Icon(LucideIcons.wallet), label: "Pendapatan"),
-            BottomNavigationBarItem(icon: Icon(LucideIcons.user), label: "Profil"),
-          ],
-        ),
       ),
     );
   }
