@@ -300,6 +300,9 @@ export const Beranda: React.FC<BerandaProps> = ({
                 setSelectedOrderId={setSelectedOrderId}
                 setNotifications={setNotifications}
                 setSelectedCateringPO={setSelectedCateringPO}
+                addresses={addresses}
+                selectedAddressId={selectedAddressId}
+                setSelectedAddressId={setSelectedAddressId}
               />
             );
           case "c_catering_qris":

@@ -35,6 +35,9 @@ export const createCateringOrder = ({
   paymentReference?: string;
 }): OrderItem => {
   const totalPrice = Number(cateringPO.totalPrice) || 0;
+  const deliveryFee = Number(cateringPO.shippingFee) || 0;
+  const tip = Number(cateringPO.tip) || 0;
+  const discount = Number(cateringPO.discount) || 0;
   const breakdown = getCateringPaymentBreakdown(totalPrice, paymentOption);
   const isTumpeng = cateringPO.package.cat === "Tumpeng";
   const unitLabel = isTumpeng ? "Unit" : "Pax";
@@ -55,9 +58,9 @@ export const createCateringOrder = ({
     statusColor: "orange",
     date: bookingDate,
     total: totalPrice,
-    deliveryFee: 8000,
-    serviceFee: 0,
-    discount: 0,
+    deliveryFee,
+    serviceFee: tip,
+    discount,
     paymentMethod,
     paymentStatus: breakdown.remainingAmount > 0 ? "Menunggu Pelunasan" : "Lunas",
     paymentOption,
@@ -79,7 +82,7 @@ export const createCateringOrder = ({
     cateringPortions: cateringPO.paxCount,
     cateringTime: "08:00 - 10:00 WIB",
     notes: cateringPO.note,
-    address: {
+    address: cateringPO.address || {
       id: "addr-po",
       label: "Rumah Utama",
       receiverName: "Customer Rangers",
