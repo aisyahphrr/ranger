@@ -81,6 +81,8 @@ export interface KosItem {
   img: string;
 }
 
+export type CateringPaymentOption = "lunas" | "dp30" | "dp50";
+
 export interface OrderItem {
   id: string;
   type: string;
@@ -92,6 +94,24 @@ export interface OrderItem {
   statusColor: string;
   date: string;
   total: number;
+  deliveryFee?: number;
+  serviceFee?: number;
+  discount?: number;
+  paymentMethod?: string;
+  paymentStatus?: string;
+  paymentOption?: CateringPaymentOption;
+  paidAmount?: number;
+  remainingAmount?: number;
+  paymentDueDate?: string;
+  paymentReminder?: string;
+  paymentReference?: string;
+  paymentHistory?: any[];
+  cateringDate?: string;
+  cateringPortions?: number;
+  cateringTime?: string;
+  notes?: string;
+  address?: any;
+  items?: any[];
 }
 
 export interface NotifItem {
