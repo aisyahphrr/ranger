@@ -1,10 +1,37 @@
-import React from "react";
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView } from "react-native";
+import React, { useEffect, useState } from "react";
+import { Alert, View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView } from "react-native";
 import { Nav } from "../../types";
 import { ShieldCheck, Users, CheckCircle, AlertCircle, LogOut } from "lucide-react-native";
 import { rp } from "../../utils/formatters";
+import { AuthAccount, ROLE_LABELS } from "../auth/authTypes";
+import { loadMitraAccounts, updateAccountStatus } from "../auth/authService";
 
 export const AdminHomeScreen: React.FC<Nav> = ({ navigate }) => {
+  const [mitraAccounts, setMitraAccounts] = useState<AuthAccount[]>([]);
+
+  const refresh = async () => setMitraAccounts(await loadMitraAccounts());
+  useEffect(() => { void refresh(); }, []);
+
+  const approve = async (account: AuthAccount) => {
+    await updateAccountStatus(account.id, "verified");
+    await refresh();
+    Alert.alert("Mitra disetujui", `${account.name} sekarang bisa masuk sebagai ${ROLE_LABELS[account.role as keyof typeof ROLE_LABELS] || "mitra"}.`);
+  };
+
+  const reject = (account: AuthAccount) => Alert.alert(
+    "Tolak pendaftaran",
+    "Dokumen belum memenuhi persyaratan. Status akan dikembalikan ke pendaftar untuk diperbaiki.",
+    [
+      { text: "Batal", style: "cancel" },
+      { text: "Tolak", style: "destructive", onPress: () => void (async () => {
+      await updateAccountStatus(account.id, "rejected", "Dokumen belum memenuhi persyaratan.");
+      await refresh();
+      Alert.alert("Pendaftaran ditolak", "Status akun sudah diperbarui.");
+      })() },
+    ],
+  );
+
+  const pendingAccounts = mitraAccounts.filter((account) => account.status === "pending");
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.topHeader}>
@@ -17,9 +44,9 @@ export const AdminHomeScreen: React.FC<Nav> = ({ navigate }) => {
             <Text style={styles.adminStatus}>Pengelola Komunitas Ring 1–3 🛡️</Text>
           </View>
         </View>
-        <TouchableOpacity style={styles.roleSwitchBtn} onPress={() => navigate("role")} activeOpacity={0.7}>
+        <TouchableOpacity style={styles.roleSwitchBtn} onPress={() => navigate("login")} activeOpacity={0.7}>
           <LogOut size={14} color="#DC2626" />
-          <Text style={styles.roleSwitchText}>Ganti Peran</Text>
+          <Text style={styles.roleSwitchText}>Keluar</Text>
         </TouchableOpacity>
       </View>
 
@@ -44,28 +71,19 @@ export const AdminHomeScreen: React.FC<Nav> = ({ navigate }) => {
         {/* Verifikasi Pendaftaran Mitra */}
         <Text style={styles.sectionTitle}>Pendaftaran Mitra Baru (Menunggu Verifikasi)</Text>
 
-        <View style={styles.verifyCard}>
+        {pendingAccounts.length === 0 ? <View style={styles.emptyCard}><CheckCircle size={22} color="#1B7A4E" /><Text style={styles.emptyText}>Belum ada pendaftaran mitra yang menunggu.</Text></View> : pendingAccounts.map((account) => <View key={account.id} style={styles.verifyCard}>
           <View style={styles.verifyHeader}>
-            <Text style={styles.mitraType}>Mitra Catering</Text>
-            <View style={styles.pendingBadge}>
-              <AlertCircle size={12} color="#DC2626" />
-              <Text style={styles.pendingBadgeText}>Pending Verifikasi</Text>
-            </View>
+            <Text style={styles.mitraType}>{ROLE_LABELS[account.role as keyof typeof ROLE_LABELS] || "Mitra"}</Text>
+            <View style={styles.pendingBadge}><AlertCircle size={12} color="#B45309" /><Text style={[styles.pendingBadgeText, styles.pendingText]}>Pending Verifikasi</Text></View>
           </View>
-
-          <Text style={styles.mitraName}>Dapur Asri Kamojang (Ibu Popon)</Text>
-          <Text style={styles.mitraAddress}>Alamat: Dusun Kamojang RT 02 / RW 04</Text>
-
+          <Text style={styles.mitraName}>{account.name}</Text>
+          <Text style={styles.mitraAddress}>{account.email} · {account.address}</Text>
+          <Text style={styles.mitraAddress}>{Object.keys(account.documents).length} dokumen terunggah</Text>
           <View style={styles.verifyFooter}>
-            <TouchableOpacity style={styles.rejectBtn}>
-              <Text style={styles.rejectBtnText}>Tolak</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.approveBtn}>
-              <CheckCircle size={14} color="#FFFFFF" />
-              <Text style={styles.approveBtnText}>Setujui Mitra</Text>
-            </TouchableOpacity>
+            <TouchableOpacity style={styles.rejectBtn} onPress={() => reject(account)}><Text style={styles.rejectBtnText}>Tolak</Text></TouchableOpacity>
+            <TouchableOpacity style={styles.approveBtn} onPress={() => void approve(account)}><CheckCircle size={14} color="#FFFFFF" /><Text style={styles.approveBtnText}>Setujui Mitra</Text></TouchableOpacity>
           </View>
-        </View>
+        </View>)}
       </ScrollView>
     </SafeAreaView>
   );
@@ -202,6 +220,23 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "700",
     color: "#DC2626",
+  },
+  pendingText: {
+    color: "#B45309",
+  },
+  emptyCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 20,
+    alignItems: "center",
+    gap: 8,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  emptyText: {
+    fontSize: 13,
+    color: "#6B7280",
+    textAlign: "center",
   },
   mitraName: {
     fontSize: 15,

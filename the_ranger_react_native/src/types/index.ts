@@ -1,7 +1,10 @@
 export type Screen =
   | "splash" | "onboarding" | "login" | "role"
   | "daftar_mitra_step1" | "daftar_mitra_step2" | "daftar_mitra_step3"
-  | "c_home" | "c_marketplace" | "c_catering" | "c_laundry" | "c_laundry_detail" | "c_kos"
+  | "auth_register_role" | "auth_register" | "auth_register_success" | "auth_forgot_password"
+  | "c_home" | "c_marketplace" | "c_catering" | "c_laundry" | "c_laundry_detail" | "c_kos" | "c_product_detail"
+  | "c_checkout" | "c_order_success" | "c_tracking"
+  | "c_catering_detail" | "c_catering_payment" | "c_catering_qris"
   | "d_home"
   | "pemilik_catering_home"
   | "pemilik_marketplace_home"
