@@ -1,0 +1,190 @@
+import '../../models/models.dart';
+
+class MockData {
+  static List<Product> products = [
+    Product(
+      id: 1,
+      name: "Nasi Timbel Komplit",
+      store: "Warung Bu Siti",
+      price: 25000,
+      rating: 4.8,
+      sold: 234,
+      img: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300&h=300&fit=crop&auto=format&q=80",
+      liked: false,
+      cat: "Makanan",
+    ),
+    Product(
+      id: 2,
+      name: "Batik Kawung Premium",
+      store: "Batik Kamojang",
+      price: 185000,
+      rating: 4.9,
+      sold: 87,
+      img: "https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=300&h=300&fit=crop&auto=format&q=80",
+      liked: true,
+      cat: "Fashion",
+    ),
+    Product(
+      id: 3,
+      name: "Keripik Singkong Pedas",
+      store: "Cemilan Bu Eni",
+      price: 15000,
+      rating: 4.7,
+      sold: 412,
+      img: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=300&h=300&fit=crop&auto=format&q=80",
+      liked: false,
+      cat: "Makanan",
+    ),
+    Product(
+      id: 4,
+      name: "Kopi Arabika Gunung",
+      store: "Kopi Nusantara",
+      price: 55000,
+      rating: 4.9,
+      sold: 156,
+      img: "https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=300&h=300&fit=crop&auto=format&q=80",
+      liked: false,
+      cat: "Minuman",
+    ),
+    Product(
+      id: 5,
+      name: "Sabun Herbal Alami",
+      store: "Herbalis Lokal",
+      price: 22000,
+      rating: 4.6,
+      sold: 89,
+      img: "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=300&h=300&fit=crop&auto=format&q=80",
+      liked: true,
+      cat: "Kesehatan",
+    ),
+  ];
+
+  static List<Restaurant> restaurants = [
+    Restaurant(
+      id: 1,
+      name: "Saung Sunda Asli",
+      cuisine: "Masakan Sunda",
+      rating: 4.9,
+      distance: 0.3,
+      minOrder: 25000,
+      img: "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=400&h=220&fit=crop&auto=format&q=80",
+      tags: ["Halal", "Populer"],
+      open: true,
+      priceStarts: 25000,
+    ),
+    Restaurant(
+      id: 2,
+      name: "Catering Bu Haji Nani",
+      cuisine: "Prasmanan & Nasi Box",
+      rating: 4.7,
+      distance: 1.2,
+      minOrder: 50000,
+      img: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=220&fit=crop&auto=format&q=80",
+      tags: ["Halal", "Min. 10 Pax"],
+      open: true,
+      priceStarts: 22000,
+    ),
+    Restaurant(
+      id: 3,
+      name: "Dapur Asri Kamojang",
+      cuisine: "Masakan Rumahan",
+      rating: 4.8,
+      distance: 0.8,
+      minOrder: 20000,
+      img: "https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=400&h=220&fit=crop&auto=format&q=80",
+      tags: ["Halal", "Sehat"],
+      open: true,
+      priceStarts: 27500,
+    ),
+  ];
+
+  static List<Laundry> laundries = [
+    Laundry(
+      id: 1,
+      name: "Laundry Express Pak Dedi",
+      address: "Jl. Raya Kamojang No. 12",
+      price: 6000,
+      rating: 4.8,
+      open: true,
+      distance: "0.5 km",
+      type: "Ekspres",
+      img: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop&auto=format&q=80",
+    ),
+    Laundry(
+      id: 2,
+      name: "Bersih Kilat Laundry",
+      address: "Jl. Geothermal No. 5",
+      price: 7000,
+      rating: 4.6,
+      open: true,
+      distance: "1.1 km",
+      type: "Ekspres",
+      img: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=400&h=300&fit=crop&auto=format&q=80",
+    ),
+  ];
+
+  static List<KosItem> kosList = [
+    KosItem(
+      id: 1,
+      name: "Kos Putri Melati",
+      address: "Jl. Aster No. 7, Kamojang",
+      price: 750000,
+      type: "Putri",
+      facilities: ["WiFi", "AC", "KM Dalam", "Parkir"],
+      available: true,
+      img: "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=400&h=220&fit=crop&auto=format&q=80",
+    ),
+    KosItem(
+      id: 2,
+      name: "Kos Putra Garuda",
+      address: "Jl. Raya Kamojang No. 20",
+      price: 600000,
+      type: "Putra",
+      facilities: ["WiFi", "KM Dalam", "Dapur"],
+      available: true,
+      img: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=220&fit=crop&auto=format&q=80",
+    ),
+  ];
+
+  static List<OrderModel> orders = [
+    OrderModel(
+      id: "RNG001",
+      type: "Marketplace",
+      item: "Nasi Timbel Komplit",
+      detail: "Warung Bu Siti",
+      status: "Dikirim",
+      date: "15 Jan 2024",
+      total: 25000,
+    ),
+    OrderModel(
+      id: "RNG002",
+      type: "Laundry",
+      item: "Laundry Express Pak Dedi",
+      detail: "2.5 kg pakaian",
+      status: "Selesai",
+      date: "14 Jan 2024",
+      total: 15000,
+    ),
+  ];
+
+  static List<DriverOrder> driverOrders = [
+    DriverOrder(
+      id: "ORD-001",
+      type: "Marketplace",
+      from: "Warung Bu Siti",
+      to: "Jl. Aster No. 7",
+      dist: "1.2 km",
+      pay: 12000,
+      time: "5 mnt lalu",
+    ),
+    DriverOrder(
+      id: "ORD-002",
+      type: "Laundry Pickup",
+      from: "Kos Putri Melati",
+      to: "Laundry Bersih Kilat",
+      dist: "0.8 km",
+      pay: 8000,
+      time: "12 mnt lalu",
+    ),
+  ];
+}
