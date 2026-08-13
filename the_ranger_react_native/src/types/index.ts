@@ -1,11 +1,23 @@
 export type Screen =
   | "splash" | "onboarding" | "login" | "role"
+  | "daftar_mitra_step1" | "daftar_mitra_step2" | "daftar_mitra_step3"
   | "c_home" | "c_marketplace" | "c_catering" | "c_laundry" | "c_kos"
   | "d_home"
   | "pemilik_catering_home"
   | "pemilik_marketplace_home"
   | "pemilik_laundry_home"
+  | "pemilik_laundry_order"
+  | "pemilik_laundry_user"
+  | "pemilik_laundry_riwayat"
+  | "pemilik_laundry_pendapatan"
+  | "pemilik_laundry_profil"
   | "pemilik_kos_home"
+  | "pemilik_kos_manajemen_kamar"
+  | "pemilik_kos_manajemen_penghuni"
+  | "pemilik_kos_laporan_keuangan"
+  | "pemilik_kos_profil"
+  | "pemilik_kos_verifikasi_dp"
+  | "pemilik_kos_kirim_pengingat"
   | "admin_home";
 
 export type Role =

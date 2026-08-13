@@ -50,8 +50,8 @@ export const RoleScreen: React.FC<Nav> = ({ navigate }) => {
       title: "Pemilik Kos",
       desc: "Kelola ketersediaan kamar kos dan penerimaan penghuni baru.",
       icon: Building2,
-      color: "#7C3AED",
-      bg: "#EDE9FE",
+      color: "#0D7A53",
+      bg: "#E8F5EE",
     },
     {
       id: "admin_home" as const,
