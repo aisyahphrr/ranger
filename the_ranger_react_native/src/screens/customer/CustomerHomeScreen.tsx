@@ -60,7 +60,7 @@ export const CustomerHomeScreen: React.FC<Nav> = ({ navigate }) => {
           <Text style={styles.greetingTitle}>Halo, Warga Kamojang! 👋</Text>
           <Text style={styles.greetingSubtitle}>Mau pesan apa hari ini?</Text>
 
-          <TouchableOpacity style={styles.searchBar} activeOpacity={0.8}>
+          <TouchableOpacity style={styles.searchBar} onPress={() => navigate("c_laundry")} activeOpacity={0.8}>
             <Search size={18} color="#9CA3AF" />
             <Text style={styles.searchPlaceholder}>Cari produk, catering, laundry...</Text>
           </TouchableOpacity>

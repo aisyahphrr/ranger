@@ -1,7 +1,7 @@
 export type Screen =
   | "splash" | "onboarding" | "login" | "role"
   | "daftar_mitra_step1" | "daftar_mitra_step2" | "daftar_mitra_step3"
-  | "c_home" | "c_marketplace" | "c_catering" | "c_laundry" | "c_kos"
+  | "c_home" | "c_marketplace" | "c_catering" | "c_laundry" | "c_laundry_detail" | "c_kos"
   | "d_home"
   | "pemilik_catering_home"
   | "pemilik_marketplace_home"

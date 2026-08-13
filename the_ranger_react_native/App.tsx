@@ -15,6 +15,8 @@ import { DaftarMitraStep3Screen } from "./src/screens/auth/DaftarMitraStep3Scree
 // Role Screens (7 Roles)
 import { CustomerHomeScreen } from "./src/screens/customer/CustomerHomeScreen";
 import { MarketplaceScreen } from "./src/screens/customer/MarketplaceScreen";
+import { CustomerLaundryScreen } from "./src/screens/customer/CustomerLaundryScreen";
+import { CustomerLaundryDetailScreen } from "./src/screens/customer/CustomerLaundryDetailScreen";
 import { DriverHomeScreen } from "./src/screens/driver/DriverHomeScreen";
 import { PemilikCateringHomeScreen } from "./src/screens/pemilik_catering/PemilikCateringHomeScreen";
 import { PemilikMarketplaceHomeScreen } from "./src/screens/pemilik_marketplace/PemilikMarketplaceHomeScreen";
@@ -63,6 +65,10 @@ export default function App() {
         return <CustomerHomeScreen navigate={navigate} />;
       case "c_marketplace":
         return <MarketplaceScreen navigate={navigate} />;
+      case "c_laundry":
+        return <CustomerLaundryScreen navigate={navigate} />;
+      case "c_laundry_detail":
+        return <CustomerLaundryDetailScreen navigate={navigate} />;
 
       // 2. Driver
       case "d_home":
