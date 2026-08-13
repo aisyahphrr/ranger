@@ -24,6 +24,7 @@ import {
   Clock,
   X,
   Navigation,
+  AlertCircle,
 } from "lucide-react-native";
 import { Screen, OrderItem } from "../../types";
 import { rp } from "../../utils/formatters";
@@ -206,6 +207,23 @@ export const Pesanan: React.FC<PesananProps> = ({
               </View>
 
               <View style={styles.cardDivider} />
+
+              {item.paymentStatus === "Menunggu Pelunasan" && (
+                <View style={styles.paymentReminderCard}>
+                  <AlertCircle size={17} color="#B45309" />
+                  <View style={styles.paymentReminderCopy}>
+                    <View style={styles.paymentReminderTitleRow}>
+                      <Text style={styles.paymentReminderTitle}>Pengingat pelunasan</Text>
+                      <View style={styles.dpPill}>
+                        <Text style={styles.dpPillText}>DP</Text>
+                      </View>
+                    </View>
+                    <Text style={styles.paymentReminderText}>
+                      {item.paymentReminder || `Sisa pembayaran ${rp(item.remainingAmount || 0)} belum dilunasi.`}
+                    </Text>
+                  </View>
+                </View>
+              )}
 
               <View style={styles.cardFooter}>
                 <View style={styles.dateCol}>
@@ -505,6 +523,49 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: "#F3F4F6",
     marginVertical: 12,
+  },
+  paymentReminderCard: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    backgroundColor: "#FFFBEB",
+    borderWidth: 1,
+    borderColor: "#FDE68A",
+    borderRadius: 14,
+    padding: 10,
+    marginBottom: 12,
+    gap: 8,
+  },
+  paymentReminderCopy: {
+    flex: 1,
+  },
+  paymentReminderTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  paymentReminderTitle: {
+    color: "#92400E",
+    fontSize: 10,
+    fontWeight: "900",
+  },
+  dpPill: {
+    backgroundColor: "#F59E0B",
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  dpPillText: {
+    color: "#FFFFFF",
+    fontSize: 8,
+    fontWeight: "900",
+  },
+  paymentReminderText: {
+    color: "#A16207",
+    fontSize: 9,
+    lineHeight: 13,
+    fontWeight: "600",
+    marginTop: 4,
   },
   cardFooter: {
     flexDirection: "row",

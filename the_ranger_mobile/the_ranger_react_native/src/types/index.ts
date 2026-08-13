@@ -10,6 +10,16 @@ export type Screen =
   | "pemilik_kos_home"
   | "admin_home";
 
+export type CateringPaymentOption = "full" | "dp30" | "dp50";
+
+export interface PaymentHistoryEntry {
+  label: string;
+  amount: number;
+  date: string;
+  method: string;
+  reference?: string;
+}
+
 export type Role =
   | "customer"
   | "driver"
@@ -136,6 +146,14 @@ export interface OrderItem {
   driverRatingVal?: number;
   merchantReview?: string;
   driverReview?: string;
+  paymentStatus?: "Lunas" | "Menunggu Pelunasan";
+  paymentOption?: CateringPaymentOption;
+  paidAmount?: number;
+  remainingAmount?: number;
+  paymentDueDate?: string;
+  paymentReminder?: string;
+  paymentReference?: string;
+  paymentHistory?: PaymentHistoryEntry[];
 }
 
 export interface NotifItem {

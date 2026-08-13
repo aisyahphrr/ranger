@@ -8,9 +8,10 @@ import {
   ScrollView,
   Alert,
 } from "react-native";
-import { Screen, OrderItem } from "../../types";
+import { CateringPaymentOption, OrderItem, Screen } from "../../types";
 import { BackHeader } from "../../components/BackHeader";
 import { rp } from "../../utils/formatters";
+import { createCateringOrder, getCateringPaymentBreakdown } from "../../utils/cateringPayment";
 
 interface CateringPaymentScreenProps {
   navigate: (s: Screen) => void;
@@ -21,6 +22,7 @@ interface CateringPaymentScreenProps {
   setOrders: React.Dispatch<React.SetStateAction<OrderItem[]>>;
   setSelectedOrderId: (id: string | null) => void;
   setNotifications: React.Dispatch<React.SetStateAction<any[]>>;
+  setSelectedCateringPO: (po: any) => void;
 }
 
 export const CateringPaymentScreen: React.FC<CateringPaymentScreenProps> = ({
@@ -32,8 +34,9 @@ export const CateringPaymentScreen: React.FC<CateringPaymentScreenProps> = ({
   setOrders,
   setSelectedOrderId,
   setNotifications,
+  setSelectedCateringPO,
 }) => {
-  const [paymentOption, setPaymentOption] = useState<"full" | "dp30" | "dp50">("full");
+  const [paymentOption, setPaymentOption] = useState<CateringPaymentOption>("full");
   const [payMethod, setPayMethod] = useState<"dompet" | "qris">("dompet");
 
   if (!cateringPO) {
@@ -48,59 +51,22 @@ export const CateringPaymentScreen: React.FC<CateringPaymentScreenProps> = ({
   }
 
   const totalPrice = cateringPO.totalPrice;
-  let paidAmount = totalPrice;
-  if (paymentOption === "dp30") {
-    paidAmount = Math.round(totalPrice * 0.3);
-  } else if (paymentOption === "dp50") {
-    paidAmount = Math.round(totalPrice * 0.5);
-  }
+  const { paidAmount, remainingAmount, dpPercent } = getCateringPaymentBreakdown(totalPrice, paymentOption);
 
   const handleConfirmPO = () => {
-    // Generate new order
-    const orderId = `PO-${Math.floor(1000 + Math.random() * 9000)}`;
-    const newOrder: OrderItem = {
-      id: orderId,
-      type: "Catering",
-      iconName: "Coffee",
-      color: "#FF7043",
-      item: cateringPO.package.name,
-      detail: cateringPO.merchant.name,
-      status: "Diproses",
-      statusColor: "orange",
-      date: cateringPO.bookingDate || "Hari Ini",
-      total: totalPrice,
-      deliveryFee: 8000,
-      serviceFee: 0,
-      discount: 0,
-      paymentMethod: payMethod === "dompet" ? "Dompet Rangers" : "QRIS Barcode",
-      notes: cateringPO.note,
-      address: {
-        id: "addr-po",
-        label: "Rumah Utama",
-        receiverName: "Customer Rangers",
-        phoneNumber: "081234567890",
-        fullAddress: "Jl. Aster No. 7, Kamojang, Kab. Garut",
-        isMain: true
-      },
-      items: [
-        {
-          id: cateringPO.package.id.toString(),
-          name: cateringPO.package.name,
-          price: cateringPO.package.price,
-          qty: cateringPO.paxCount,
-          img: cateringPO.package.img,
-          store: cateringPO.merchant.name
-        }
-      ]
-    };
-
-    if (payMethod === "dompet") {
-      if (dompetBalance < paidAmount) {
-        Alert.alert("Saldo Kurang", "Saldo Dompet Rangers Anda tidak mencukupi untuk melakukan pembayaran katering ini.");
-        return;
-      }
-      setDompetBalance(prev => prev - paidAmount);
+    if (dompetBalance < paidAmount) {
+      Alert.alert("Saldo Kurang", "Saldo Dompet Rangers Anda tidak mencukupi untuk melakukan pembayaran katering ini.");
+      return;
     }
+    setDompetBalance(prev => prev - paidAmount);
+
+    const newOrder = createCateringOrder({
+      cateringPO,
+      paymentOption,
+      paymentMethod: "Dompet Rangers",
+      paymentReference: `WALLET-${Date.now().toString().slice(-8)}`,
+    });
+    const orderId = newOrder.id;
 
     setOrders(prev => [newOrder, ...prev]);
     setSelectedOrderId(orderId);
@@ -114,19 +80,38 @@ export const CateringPaymentScreen: React.FC<CateringPaymentScreenProps> = ({
       time: "Baru saja",
       read: false,
     };
-    setNotifications(prev => [newNotif, ...prev]);
+    setNotifications(prev => [
+      ...(remainingAmount > 0
+        ? [{
+            id: Date.now() + 1,
+            type: "payment",
+            title: "Pengingat Pelunasan",
+            msg: `Sisa pembayaran ${rp(remainingAmount)} untuk order #${orderId} jatuh tempo H-1 sebelum pengiriman.`,
+            time: "Baru saja",
+            read: false,
+          }]
+        : []),
+      newNotif,
+      ...prev,
+    ]);
 
-    Alert.alert("Pembayaran Berhasil", `Pre-Order ${cateringPO.package.name} berhasil dibuat!`, [
+    Alert.alert(
+      remainingAmount > 0 ? "DP Berhasil Dibayar" : "Pembayaran Berhasil",
+      remainingAmount > 0
+        ? `Order masuk ke Diproses. Sisa ${rp(remainingAmount)} perlu dilunasi paling lambat H-1 sebelum pengiriman.`
+        : `Pre-Order ${cateringPO.package.name} berhasil dibuat!`,
+      [
       {
         text: "Lacak Pesanan",
         onPress: () => navigate("c_tracking")
       }
-    ]);
+      ]
+    );
   };
 
   const handlePayAndCreatePO = () => {
     if (payMethod === "qris") {
-      // Navigate to full-page QRIS screen, passing the selected amount
+      setSelectedCateringPO({ ...cateringPO, paymentOption });
       navigate("c_catering_qris");
     } else {
       handleConfirmPO();

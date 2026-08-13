@@ -646,10 +646,33 @@ export const OrderTrackingScreen: React.FC<OrderTrackingScreenProps> = ({
               <Text style={styles.totalMethodLabel}>Metode Pembayaran</Text>
               <Text style={styles.totalMethodValue}>{order.paymentMethod || "Dompet Rangers"}</Text>
             </View>
+            {order.remainingAmount && order.remainingAmount > 0 && (
+              <>
+                <View style={styles.priceRow}>
+                  <Text style={styles.priceLabel}>Sudah Dibayar</Text>
+                  <Text style={styles.priceValue}>{rp(order.paidAmount || 0)}</Text>
+                </View>
+                <View style={styles.priceRow}>
+                  <Text style={styles.priceLabel}>Sisa Pelunasan</Text>
+                  <Text style={styles.priceValueAccent}>{rp(order.remainingAmount)}</Text>
+                </View>
+              </>
+            )}
             <View style={styles.totalRow}>
-              <Text style={styles.totalLabel}>Total Dibayar</Text>
+              <Text style={styles.totalLabel}>{order.remainingAmount ? "Total Pesanan" : "Total Dibayar"}</Text>
               <Text style={styles.totalValue}>{rp(order.total)}</Text>
             </View>
+            {order.remainingAmount && order.remainingAmount > 0 && (
+              <View style={styles.settlementReminderCard}>
+                <AlertTriangle size={16} color="#B45309" />
+                <View style={styles.settlementReminderCopy}>
+                  <Text style={styles.settlementReminderTitle}>Pelunasan belum selesai</Text>
+                  <Text style={styles.settlementReminderText}>
+                    {order.paymentReminder || `Sisa ${rp(order.remainingAmount)} perlu dilunasi sebelum pengiriman.`}
+                  </Text>
+                </View>
+              </View>
+            )}
           </View>
         )}
 
@@ -1249,6 +1272,11 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#1E293B",
   },
+  priceValueAccent: {
+    fontSize: 11,
+    fontWeight: "800",
+    color: "#B45309",
+  },
   priceLabelPromo: {
     fontSize: 11,
     color: "#16A34A",
@@ -1289,6 +1317,32 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "900",
     color: "#1B7A4E",
+  },
+  settlementReminderCard: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    backgroundColor: "#FFFBEB",
+    borderWidth: 1,
+    borderColor: "#FDE68A",
+    borderRadius: 14,
+    padding: 10,
+    marginTop: 10,
+    gap: 8,
+  },
+  settlementReminderCopy: {
+    flex: 1,
+  },
+  settlementReminderTitle: {
+    color: "#92400E",
+    fontSize: 10,
+    fontWeight: "900",
+  },
+  settlementReminderText: {
+    color: "#A16207",
+    fontSize: 9,
+    lineHeight: 13,
+    fontWeight: "600",
+    marginTop: 3,
   },
   bottomActions: {
     marginTop: 8,

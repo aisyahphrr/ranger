@@ -9,12 +9,66 @@ import {
   SafeAreaView,
   TextInput,
   Alert,
+  Modal,
+  Pressable,
 } from "react-native";
 import { Screen, Product } from "../../types";
 import { BackHeader } from "../../components/BackHeader";
 import { Stars } from "../../components/Stars";
 import { rp } from "../../utils/formatters";
-import { MessageSquare, Plus, Minus, Calendar, AlignLeft, Star } from "lucide-react-native";
+import { MessageSquare, Plus, Minus, Calendar, AlignLeft, Star, ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react-native";
+
+const MONTH_NAMES = [
+  "Januari",
+  "Februari",
+  "Maret",
+  "April",
+  "Mei",
+  "Juni",
+  "Juli",
+  "Agustus",
+  "September",
+  "Oktober",
+  "November",
+  "Desember",
+];
+
+const WEEKDAY_NAMES = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
+
+const dateOnly = (date: Date) =>
+  new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+const formatBookingDate = (date: Date) => {
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  return `${day}/${month}/${date.getFullYear()}`;
+};
+
+const parseBookingDate = (value: string) => {
+  const parts = value.includes("/")
+    ? value.split("/").map(Number)
+    : value.split("-").map(Number).reverse();
+  if (parts.length !== 3 || parts.some(Number.isNaN)) return null;
+
+  const [day, month, year] = parts;
+  const date = new Date(year, month - 1, day);
+  return date.getFullYear() === year &&
+      date.getMonth() === month - 1 &&
+      date.getDate() === day
+    ? dateOnly(date)
+    : null;
+};
+
+const getCalendarDays = (month: Date) => {
+  const firstDay = new Date(month.getFullYear(), month.getMonth(), 1).getDay();
+  const daysInMonth = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
+  return [
+    ...Array<Date | null>(firstDay).fill(null),
+    ...Array.from({ length: daysInMonth }, (_, index) =>
+      new Date(month.getFullYear(), month.getMonth(), index + 1)
+    ),
+  ];
+};
 
 const getMerchantCateringProducts = (merchantName: string): Product[] => {
   if (merchantName === "Saung Sunda Asli") {
@@ -109,6 +163,7 @@ interface CateringDetailScreenProps {
   selectedMerchant: any;
   setSelectedCateringPO: (po: any) => void;
   selectedProduct: Product | null;
+  selectedCateringPO?: any;
 }
 
 export const CateringDetailScreen: React.FC<CateringDetailScreenProps> = ({
@@ -116,23 +171,79 @@ export const CateringDetailScreen: React.FC<CateringDetailScreenProps> = ({
   selectedMerchant,
   setSelectedCateringPO,
   selectedProduct,
+  selectedCateringPO,
 }) => {
   const [activeTab, setActiveTab] = useState<"menu" | "review" | "info">("menu");
   
   const merchantName = selectedMerchant?.name || "Catering Bu Haji Nani";
   const packages = getMerchantCateringProducts(merchantName);
+
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowDay = String(tomorrow.getDate()).padStart(2, "0");
+  const tomorrowMonth = String(tomorrow.getMonth() + 1).padStart(2, "0");
+  const tomorrowYear = tomorrow.getFullYear();
+  const tomorrowFormatted = `${tomorrowDay}/${tomorrowMonth}/${tomorrowYear}`;
+
+  const isPoMatching = selectedCateringPO && selectedCateringPO.merchant?.name === merchantName;
+
+  const [showCheckoutForm, setShowCheckoutForm] = useState(isPoMatching ? true : false);
   
   // Pre-select the clicked package if it belongs to this merchant, otherwise fallback to packages[0]
   const [selectedPackage, setSelectedPackage] = useState<Product | null>(
-    selectedProduct && selectedProduct.store === merchantName 
-      ? packages.find(pkg => pkg.name === selectedProduct.name) || selectedProduct 
-      : (packages[0] || null)
+    isPoMatching && selectedCateringPO.package
+      ? packages.find(pkg => pkg.id === selectedCateringPO.package.id) || selectedCateringPO.package
+      : (selectedProduct && selectedProduct.store === merchantName
+          ? packages.find(pkg => pkg.name === selectedProduct.name) || selectedProduct
+          : (packages[0] || null))
   );
   const isTumpeng = selectedPackage?.cat === "Tumpeng";
 
-  const [paxCount, setPaxCount] = useState(isTumpeng ? 1 : 10);
-  const [bookingDate, setBookingDate] = useState("");
-  const [note, setNote] = useState("");
+  const [paxCount, setPaxCount] = useState(
+    isPoMatching ? selectedCateringPO.paxCount : (isTumpeng ? 1 : 10)
+  );
+  const [bookingDate, setBookingDate] = useState(
+    isPoMatching ? selectedCateringPO.bookingDate : tomorrowFormatted
+  );
+  const [note, setNote] = useState(
+    isPoMatching ? selectedCateringPO.note : ""
+  );
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [calendarMonth, setCalendarMonth] = useState(() => {
+    const initialDate = parseBookingDate(isPoMatching ? selectedCateringPO.bookingDate : tomorrowFormatted);
+    const date = initialDate || dateOnly(tomorrow);
+    return new Date(date.getFullYear(), date.getMonth(), 1);
+  });
+
+  const minimumBookingDate = dateOnly(tomorrow);
+  const selectedBookingDate = parseBookingDate(bookingDate);
+
+  const openDatePicker = () => {
+    const dateToShow = selectedBookingDate || minimumBookingDate;
+    setCalendarMonth(new Date(dateToShow.getFullYear(), dateToShow.getMonth(), 1));
+    setShowDatePicker(true);
+  };
+
+  const selectBookingDate = (date: Date) => {
+    if (dateOnly(date) < minimumBookingDate) return;
+    setBookingDate(formatBookingDate(date));
+    setShowDatePicker(false);
+  };
+
+  const moveCalendarMonth = (offset: number) => {
+    const nextMonth = new Date(
+      calendarMonth.getFullYear(),
+      calendarMonth.getMonth() + offset,
+      1
+    );
+    const firstAllowedMonth = new Date(
+      minimumBookingDate.getFullYear(),
+      minimumBookingDate.getMonth(),
+      1
+    );
+    if (nextMonth < firstAllowedMonth) return;
+    setCalendarMonth(nextMonth);
+  };
 
   const handleSelectPackage = (p: Product) => {
     setSelectedPackage(p);
@@ -146,6 +257,11 @@ export const CateringDetailScreen: React.FC<CateringDetailScreenProps> = ({
     }
     if (!bookingDate) {
       Alert.alert("Perhatian", "Silakan pilih hari pengiriman katering.");
+      return;
+    }
+    const selectedDate = parseBookingDate(bookingDate);
+    if (!selectedDate || selectedDate < minimumBookingDate) {
+      Alert.alert("Perhatian", "Tanggal pengiriman minimal mulai besok.");
       return;
     }
 
@@ -162,16 +278,26 @@ export const CateringDetailScreen: React.FC<CateringDetailScreenProps> = ({
     navigate("c_catering_payment");
   };
 
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const tomorrowStr = tomorrow.toISOString().split("T")[0];
 
   return (
     <SafeAreaView style={styles.container}>
-      <BackHeader
-        title={merchantName}
-        onBack={() => navigate("c_catering")}
-      />
+      {showCheckoutForm ? (
+        <View style={styles.customHeader}>
+          <TouchableOpacity style={styles.backButton} onPress={() => setShowCheckoutForm(false)} activeOpacity={0.7}>
+            <ArrowLeft size={20} color="#111827" />
+          </TouchableOpacity>
+          <View style={styles.headerTitleContainer}>
+            <Text style={styles.headerTitle} numberOfLines={1}>{merchantName}</Text>
+            <Text style={styles.headerSubtitle}>Detail PO & Booking Catering</Text>
+          </View>
+          <View style={styles.rightContainer} />
+        </View>
+      ) : (
+        <BackHeader
+          title={merchantName}
+          onBack={() => navigate("c_catering")}
+        />
+      )}
 
       {/* Tabs selector */}
       <View style={styles.tabsRow}>
@@ -237,7 +363,7 @@ export const CateringDetailScreen: React.FC<CateringDetailScreenProps> = ({
             </View>
 
             {/* Pre-Order Configuration Panel */}
-            {selectedPackage && (
+            {selectedPackage && showCheckoutForm && (
               <View style={styles.poConfigCard}>
                 <Text style={styles.poConfigTitle}>Kustomisasi Pre-Order (PO)</Text>
 
@@ -249,14 +375,14 @@ export const CateringDetailScreen: React.FC<CateringDetailScreenProps> = ({
                   </View>
                   <View style={styles.counterControl}>
                     <TouchableOpacity
-                      onPress={() => setPaxCount(prev => Math.max(isTumpeng ? 1 : 10, prev - (isTumpeng ? 1 : 5)))}
+                      onPress={() => setPaxCount((prev: number) => Math.max(isTumpeng ? 1 : 10, prev - (isTumpeng ? 1 : 5)))}
                       style={styles.counterBtn}
                     >
                       <Minus size={14} color="#111827" />
                     </TouchableOpacity>
                     <Text style={styles.counterVal}>{paxCount}</Text>
                     <TouchableOpacity
-                      onPress={() => setPaxCount(prev => prev + (isTumpeng ? 1 : 5))}
+                      onPress={() => setPaxCount((prev: number) => prev + (isTumpeng ? 1 : 5))}
                       style={styles.counterBtn}
                     >
                       <Plus size={14} color="#111827" />
@@ -270,16 +396,17 @@ export const CateringDetailScreen: React.FC<CateringDetailScreenProps> = ({
                     <Text style={styles.inputLabel}>Pilih Hari Pengiriman</Text>
                     <Text style={styles.reqText}>*Min. H-1</Text>
                   </View>
-                  <View style={styles.dateInputWrapper}>
+                  <TouchableOpacity
+                    onPress={openDatePicker}
+                    style={styles.dateInputWrapper}
+                    activeOpacity={0.75}
+                    accessibilityRole="button"
+                    accessibilityLabel="Pilih hari pengiriman"
+                  >
                     <Calendar size={14} color="#9CA3AF" style={styles.dateIcon} />
-                    <TextInput
-                      value={bookingDate}
-                      onChangeText={setBookingDate}
-                      placeholder="YYYY-MM-DD (Contoh: 2026-08-20)"
-                      placeholderTextColor="#9CA3AF"
-                      style={styles.textInput}
-                    />
-                  </View>
+                    <Text style={styles.dateValue}>{bookingDate || "Pilih tanggal"}</Text>
+                    <ChevronRight size={16} color="#9CA3AF" />
+                  </TouchableOpacity>
                 </View>
 
                 {/* Seller Note */}
@@ -359,30 +486,160 @@ export const CateringDetailScreen: React.FC<CateringDetailScreenProps> = ({
         )}
       </ScrollView>
 
+      <Modal
+        visible={showDatePicker}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowDatePicker(false)}
+      >
+        <Pressable
+          style={styles.calendarModalOverlay}
+          onPress={() => setShowDatePicker(false)}
+        >
+          <Pressable
+            style={styles.calendarModalCard}
+            onPress={event => event.stopPropagation()}
+          >
+            <View style={styles.calendarModalHeader}>
+              <View>
+                <Text style={styles.calendarModalTitle}>Pilih Hari Pengiriman</Text>
+                <Text style={styles.calendarModalSubtitle}>Minimal pengiriman mulai besok</Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => setShowDatePicker(false)}
+                style={styles.calendarCloseButton}
+                accessibilityRole="button"
+                accessibilityLabel="Tutup kalender"
+              >
+                <Text style={styles.calendarCloseText}>×</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.calendarMonthRow}>
+              <TouchableOpacity
+                onPress={() => moveCalendarMonth(-1)}
+                disabled={
+                  calendarMonth.getFullYear() === minimumBookingDate.getFullYear() &&
+                  calendarMonth.getMonth() === minimumBookingDate.getMonth()
+                }
+                style={styles.calendarNavButton}
+                accessibilityRole="button"
+                accessibilityLabel="Bulan sebelumnya"
+              >
+                <ChevronLeft
+                  size={18}
+                  color={
+                    calendarMonth.getFullYear() === minimumBookingDate.getFullYear() &&
+                    calendarMonth.getMonth() === minimumBookingDate.getMonth()
+                      ? "#D1D5DB"
+                      : "#1B7A4E"
+                  }
+                />
+              </TouchableOpacity>
+              <Text style={styles.calendarMonthTitle}>
+                {MONTH_NAMES[calendarMonth.getMonth()]} {calendarMonth.getFullYear()}
+              </Text>
+              <TouchableOpacity
+                onPress={() => moveCalendarMonth(1)}
+                style={styles.calendarNavButton}
+                accessibilityRole="button"
+                accessibilityLabel="Bulan berikutnya"
+              >
+                <ChevronRight size={18} color="#1B7A4E" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.calendarWeekRow}>
+              {WEEKDAY_NAMES.map(day => (
+                <Text key={day} style={styles.calendarWeekday}>{day}</Text>
+              ))}
+            </View>
+
+            <View style={styles.calendarDaysGrid}>
+              {getCalendarDays(calendarMonth).map((date, index) => {
+                if (!date) return <View key={`empty-${index}`} style={styles.calendarDayCell} />;
+
+                const isPastDate = dateOnly(date) < minimumBookingDate;
+                const isSelected = selectedBookingDate?.getTime() === date.getTime();
+                return (
+                  <TouchableOpacity
+                    key={date.toISOString()}
+                    onPress={() => selectBookingDate(date)}
+                    disabled={isPastDate}
+                    style={[
+                      styles.calendarDayCell,
+                      isSelected && styles.calendarDaySelected,
+                    ]}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Tanggal ${formatBookingDate(date)}`}
+                  >
+                    <Text
+                      style={[
+                        styles.calendarDayText,
+                        isPastDate && styles.calendarDayDisabled,
+                        isSelected && styles.calendarDaySelectedText,
+                      ]}
+                    >
+                      {date.getDate()}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            <Text style={styles.calendarSelectedDate}>
+              Tanggal dipilih: {bookingDate || "Belum dipilih"}
+            </Text>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
       {/* Sticky Bottom Summary/CTA */}
       {selectedPackage && activeTab === "menu" && (
         <View style={styles.stickyBottomBar}>
-          <View style={styles.paymentCol}>
-            <Text style={styles.totalPOText}>TOTAL PEMBAYARAN PO</Text>
-            <Text style={styles.totalPOValue}>{rp(selectedPackage.price * paxCount)}</Text>
-          </View>
-          <View style={styles.btnRow}>
-            <TouchableOpacity
-              onPress={() => {
-                Alert.alert("Chat Admin", `Membuka ruang chat dengan admin ${merchantName}.`);
-              }}
-              style={styles.chatAdminBtn}
-            >
-              <MessageSquare size={13} color="#1B7A4E" />
-              <Text style={styles.chatAdminBtnText}>Chat Admin</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={handlePesanSekarang}
-              style={styles.orderPOBtn}
-            >
-              <Text style={styles.orderPOBtnText}>Pesan Sekarang (PO)</Text>
-            </TouchableOpacity>
-          </View>
+          {showCheckoutForm ? (
+            <>
+              <View style={styles.paymentCol}>
+                <Text style={styles.totalPOText}>TOTAL PEMBAYARAN PO</Text>
+                <Text style={styles.totalPOValue}>{rp(selectedPackage.price * paxCount)}</Text>
+              </View>
+              <View style={styles.btnRow}>
+                <TouchableOpacity
+                  onPress={() => {
+                    Alert.alert("Chat Admin", `Membuka ruang chat dengan admin ${merchantName}.`);
+                  }}
+                  style={styles.chatAdminBtn}
+                >
+                  <MessageSquare size={13} color="#1B7A4E" />
+                  <Text style={styles.chatAdminBtnText}>Chat Admin</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={handlePesanSekarang}
+                  style={styles.orderPOBtn}
+                >
+                  <Text style={styles.orderPOBtnText}>Pesan Sekarang (PO)</Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          ) : (
+            <>
+              <View style={styles.paymentCol}>
+                <Text style={styles.totalPOText}>HARGA PAKET</Text>
+                <View style={styles.priceRowSimple}>
+                  <Text style={styles.totalPOValue}>{rp(selectedPackage.price)}</Text>
+                  <Text style={styles.pricePerTextSimple}>{selectedPackage.cat === "Tumpeng" ? " / unit" : " / pax"}</Text>
+                </View>
+              </View>
+              <View style={styles.btnRow}>
+                <TouchableOpacity
+                  onPress={() => setShowCheckoutForm(true)}
+                  style={styles.checkoutSekarangBtn}
+                >
+                  <Text style={styles.checkoutSekarangBtnText}>Checkout Sekarang</Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
         </View>
       )}
     </SafeAreaView>
@@ -613,6 +870,126 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#1E293B",
   },
+  dateValue: {
+    flex: 1,
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#1E293B",
+  },
+  calendarModalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(15, 23, 42, 0.45)",
+    justifyContent: "center",
+    padding: 20,
+  },
+  calendarModalCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 22,
+    padding: 18,
+    shadowColor: "#000000",
+    shadowOpacity: 0.15,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 8,
+  },
+  calendarModalHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    marginBottom: 16,
+  },
+  calendarModalTitle: {
+    fontSize: 14,
+    fontWeight: "900",
+    color: "#111827",
+  },
+  calendarModalSubtitle: {
+    fontSize: 10,
+    fontWeight: "600",
+    color: "#9CA3AF",
+    marginTop: 4,
+  },
+  calendarCloseButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "#F3F4F6",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  calendarCloseText: {
+    color: "#6B7280",
+    fontSize: 22,
+    fontWeight: "400",
+    lineHeight: 24,
+  },
+  calendarMonthRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 14,
+  },
+  calendarMonthTitle: {
+    fontSize: 13,
+    fontWeight: "900",
+    color: "#1B7A4E",
+  },
+  calendarNavButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: "#F0F8F3",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  calendarWeekRow: {
+    flexDirection: "row",
+    marginBottom: 6,
+  },
+  calendarWeekday: {
+    width: "14.2857%",
+    textAlign: "center",
+    color: "#9CA3AF",
+    fontSize: 10,
+    fontWeight: "800",
+  },
+  calendarDaysGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    rowGap: 4,
+  },
+  calendarDayCell: {
+    width: "14.2857%",
+    height: 36,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 10,
+  },
+  calendarDayText: {
+    color: "#1E293B",
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  calendarDayDisabled: {
+    color: "#D1D5DB",
+  },
+  calendarDaySelected: {
+    backgroundColor: "#1B7A4E",
+  },
+  calendarDaySelectedText: {
+    color: "#FFFFFF",
+    fontWeight: "900",
+  },
+  calendarSelectedDate: {
+    marginTop: 14,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: "#F3F4F6",
+    color: "#6B7280",
+    fontSize: 10,
+    fontWeight: "700",
+    textAlign: "center",
+  },
   reviewTabContainer: {
     padding: 16,
   },
@@ -769,5 +1146,64 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 11,
     fontWeight: "800",
+  },
+  customHeader: {
+    height: 56,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    backgroundColor: "#FFFFFF",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E7EB",
+  },
+  backButton: {
+    width: 32,
+    height: 32,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  rightContainer: {
+    width: 32,
+  },
+  headerTitleContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerTitle: {
+    fontSize: 14,
+    fontWeight: "800",
+    color: "#111827",
+    textAlign: "center",
+  },
+  headerSubtitle: {
+    fontSize: 10,
+    fontWeight: "600",
+    color: "#6B7280",
+    marginTop: 1,
+    textAlign: "center",
+  },
+  checkoutSekarangBtn: {
+    flex: 1,
+    height: 40,
+    backgroundColor: "#1B7A4E",
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  checkoutSekarangBtnText: {
+    color: "#FFFFFF",
+    fontSize: 11,
+    fontWeight: "800",
+  },
+  priceRowSimple: {
+    flexDirection: "row",
+    alignItems: "baseline",
+  },
+  pricePerTextSimple: {
+    color: "#9CA3AF",
+    fontSize: 9,
+    fontWeight: "600",
+    marginLeft: 2,
   },
 });

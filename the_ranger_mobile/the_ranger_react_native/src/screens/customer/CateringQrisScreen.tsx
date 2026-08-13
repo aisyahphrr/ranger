@@ -1,322 +1,390 @@
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  SafeAreaView,
-  TouchableOpacity,
+  ActivityIndicator,
   Alert,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import Svg, { Rect, Circle, Path } from "react-native-svg";
-import { Screen, OrderItem } from "../../types";
+import Svg, { Rect } from "react-native-svg";
+import {
+  CheckCircle2,
+  ChevronRight,
+  Clock3,
+  Copy,
+  QrCode,
+  ShieldCheck,
+  Store,
+} from "lucide-react-native";
+import { toQR } from "toqr";
+import { CateringPaymentOption, OrderItem, Screen } from "../../types";
+import { BackHeader } from "../../components/BackHeader";
 import { rp } from "../../utils/formatters";
+import {
+  createCateringOrder,
+  getCateringPaymentBreakdown,
+} from "../../utils/cateringPayment";
 
 interface CateringQrisScreenProps {
   navigate: (s: Screen) => void;
-  cateringPO: any; // Contains: merchant, package, paxCount, bookingDate, note, totalPrice
-  paymentOption: "full" | "dp30" | "dp50";
+  cateringPO: any;
+  paymentOption: CateringPaymentOption;
   orders: OrderItem[];
   setOrders: React.Dispatch<React.SetStateAction<OrderItem[]>>;
   setSelectedOrderId: (id: string | null) => void;
   setNotifications: React.Dispatch<React.SetStateAction<any[]>>;
 }
 
-export const CateringQrisScreen: React.FC<CateringQrisScreenProps> = ({
+const QR_EXPIRY_SECONDS = 15 * 60;
+
+const CateringQrisContent: React.FC<CateringQrisScreenProps> = ({
   navigate,
   cateringPO,
   paymentOption,
-  orders,
   setOrders,
   setSelectedOrderId,
   setNotifications,
 }) => {
-  if (!cateringPO) {
-    return (
-      <SafeAreaView style={styles.errorContainer}>
-        <View style={styles.errorBody}>
-          <Text style={styles.errorText}>Data pre-order tidak ditemukan.</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
+  const [secondsLeft, setSecondsLeft] = useState(QR_EXPIRY_SECONDS);
+  const [isCheckingPayment, setIsCheckingPayment] = useState(false);
+  const [qrVersion, setQrVersion] = useState(0);
 
-  const totalPrice = cateringPO.totalPrice;
-  let paidAmount = totalPrice;
-  if (paymentOption === "dp30") {
-    paidAmount = Math.round(totalPrice * 0.3);
-  } else if (paymentOption === "dp50") {
-    paidAmount = Math.round(totalPrice * 0.5);
-  }
+  const totalPrice = Number(cateringPO.totalPrice) || 0;
+  const breakdown = getCateringPaymentBreakdown(totalPrice, paymentOption);
+  const paymentReference = useMemo(
+    () => `RNG${Date.now().toString().slice(-8)}${qrVersion}`,
+    [qrVersion],
+  );
+  const qrPayload = useMemo(
+    () => [
+      "RANGERS",
+      "QRIS",
+      paymentReference,
+      breakdown.paidAmount,
+      cateringPO.merchant.name,
+      cateringPO.bookingDate,
+    ].join("|"),
+    [breakdown.paidAmount, cateringPO.bookingDate, cateringPO.merchant.name, paymentReference],
+  );
+  const qrCode = useMemo(() => {
+    const matrix = toQR(qrPayload);
+    const size = Math.sqrt(matrix.length);
+    const darkModules: number[] = [];
+    matrix.forEach((module, index) => {
+      if (module) darkModules.push(index);
+    });
+    return { size, darkModules };
+  }, [qrPayload]);
 
-  const handleSimulatePaymentSuccess = () => {
-    // Generate new order
-    const orderId = `PO-${Math.floor(1000 + Math.random() * 9000)}`;
-    const newOrder: OrderItem = {
-      id: orderId,
-      type: "Catering",
-      iconName: "Coffee",
-      color: "#FF7043",
-      item: cateringPO.package.name,
-      detail: cateringPO.merchant.name,
-      status: "Diproses",
-      statusColor: "orange",
-      date: cateringPO.bookingDate || "Hari Ini",
-      total: totalPrice,
-      deliveryFee: 8000,
-      serviceFee: 0,
-      discount: 0,
-      paymentMethod: "QRIS Barcode",
-      notes: cateringPO.note,
-      address: {
-        id: "addr-po",
-        label: "Rumah Utama",
-        receiverName: "Customer Rangers",
-        phoneNumber: "081234567890",
-        fullAddress: "Jl. Aster No. 7, Kamojang, Kab. Garut",
-        isMain: true
-      },
-      items: [
+  useEffect(() => {
+    if (secondsLeft <= 0) return;
+    const timer = setInterval(() => {
+      setSecondsLeft(current => Math.max(0, current - 1));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [secondsLeft]);
+
+  const timeLabel = `${String(Math.floor(secondsLeft / 60)).padStart(2, "0")}:${String(secondsLeft % 60).padStart(2, "0")}`;
+
+  const refreshQr = () => {
+    setSecondsLeft(QR_EXPIRY_SECONDS);
+    setQrVersion(version => version + 1);
+  };
+
+  const handlePaymentConfirmed = () => {
+    if (secondsLeft <= 0 || isCheckingPayment) return;
+
+    setIsCheckingPayment(true);
+    setTimeout(() => {
+      const newOrder = createCateringOrder({
+        cateringPO,
+        paymentOption,
+        paymentMethod: "QRIS",
+        paymentReference,
+      });
+
+      setOrders(previousOrders => [newOrder, ...previousOrders]);
+      setSelectedOrderId(newOrder.id);
+      setNotifications(previousNotifications => [
+        ...(newOrder.remainingAmount && newOrder.remainingAmount > 0
+          ? [{
+              id: Date.now() + 1,
+              type: "payment",
+              title: "Pengingat Pelunasan Catering",
+              msg: `Sisa ${rp(newOrder.remainingAmount)} untuk order #${newOrder.id} wajib dilunasi H-1 sebelum pengiriman.`,
+              time: "Baru saja",
+              read: false,
+            }]
+          : []),
         {
-          id: cateringPO.package.id.toString(),
-          name: cateringPO.package.name,
-          price: cateringPO.package.price,
-          qty: cateringPO.paxCount,
-          img: cateringPO.package.img,
-          store: cateringPO.merchant.name
-        }
-      ]
-    };
+          id: Date.now(),
+          type: "payment",
+          title: "Pembayaran QRIS Berhasil",
+          msg: `Pembayaran ${rp(newOrder.paidAmount || 0)} untuk order #${newOrder.id} sudah terkonfirmasi.`,
+          time: "Baru saja",
+          read: false,
+        },
+        ...previousNotifications,
+      ]);
+      setIsCheckingPayment(false);
 
-    setOrders(prev => [newOrder, ...prev]);
-    setSelectedOrderId(orderId);
-
-    // Save notification
-    const newNotif = {
-      id: Date.now(),
-      type: "info",
-      title: "Pembayaran QRIS PO Sukses 📱",
-      msg: `Pembayaran katering sebesar ${rp(paidAmount)} untuk order #${orderId} telah terkonfirmasi.`,
-      time: "Baru saja",
-      read: false,
-    };
-    setNotifications(prev => [newNotif, ...prev]);
-
-    Alert.alert("Simulasi Sukses", "Pembayaran QRIS berhasil dikonfirmasi! Kami mengalihkan Anda ke pelacakan kurir.", [
-      {
-        text: "Lacak Pesanan",
-        onPress: () => navigate("c_tracking")
-      }
-    ]);
+      Alert.alert(
+        newOrder.remainingAmount && newOrder.remainingAmount > 0
+          ? "DP Berhasil Dibayar"
+          : "Pembayaran Berhasil",
+        newOrder.remainingAmount && newOrder.remainingAmount > 0
+          ? `Order masuk ke Diproses. Sisa ${rp(newOrder.remainingAmount)} perlu dilunasi paling lambat H-1 sebelum pengiriman.`
+          : "Pembayaran lunas Anda sudah terkonfirmasi dan PO diteruskan ke merchant.",
+        [{ text: "Lihat Pesanan", onPress: () => navigate("c_tracking") }],
+      );
+    }, 900);
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Pembayaran QRIS PO</Text>
-        <Text style={styles.subtitle}>PGE Kamojang Community Payment Gate</Text>
-      </View>
+      <BackHeader title="Pembayaran QRIS" onBack={() => navigate("c_catering_payment")} />
 
-      <View style={styles.card}>
-        {/* QRIS Top labels */}
-        <View style={styles.cardHeader}>
-          <Text style={styles.qrisLabel}>QRIS STANDAR NASIONAL</Text>
-          <Text style={styles.appLabel}>RANGERS APP</Text>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.secureBanner}>
+          <View style={styles.secureIcon}>
+            <ShieldCheck size={18} color="#1B7A4E" />
+          </View>
+          <View style={styles.secureCopy}>
+            <Text style={styles.secureTitle}>Pembayaran aman dengan QRIS</Text>
+            <Text style={styles.secureSubtitle}>QR berlaku hanya untuk transaksi ini</Text>
+          </View>
+          <View style={styles.liveBadge}>
+            <View style={styles.liveDot} />
+            <Text style={styles.liveBadgeText}>LIVE</Text>
+          </View>
         </View>
 
-        {/* Amount */}
-        <Text style={styles.tagihanLabel}>Jumlah Tagihan PO</Text>
-        <Text style={styles.tagihanVal}>{rp(paidAmount)}</Text>
+        <View style={styles.invoiceCard}>
+          <View style={styles.invoiceHeader}>
+            <View style={styles.merchantIdentity}>
+              <View style={styles.merchantIcon}>
+                <Store size={17} color="#1B7A4E" />
+              </View>
+              <View style={styles.merchantCopy}>
+                <Text style={styles.merchantLabel}>Merchant QRIS</Text>
+                <Text style={styles.merchantName} numberOfLines={1}>{cateringPO.merchant.name}</Text>
+              </View>
+            </View>
+            <Text style={styles.qrisWordmark}>QRIS</Text>
+          </View>
 
-        {/* SVG QR Code */}
-        <View style={styles.qrContainer}>
-          <Svg viewBox="0 0 100 100" style={styles.qrSvg}>
-            {/* Top-Left Finder Pattern */}
-            <Rect x="0" y="0" width="25" height="25" fill="#1E293B" />
-            <Rect x="5" y="5" width="15" height="15" fill="#FFFFFF" />
-            <Rect x="9" y="9" width="7" height="7" fill="#1E293B" />
-            
-            {/* Top-Right Finder Pattern */}
-            <Rect x="75" y="0" width="25" height="25" fill="#1E293B" />
-            <Rect x="75" y="5" width="15" height="15" fill="#FFFFFF" />
-            <Rect x="79" y="9" width="7" height="7" fill="#1E293B" />
+          <View style={styles.amountBlock}>
+            <Text style={styles.amountLabel}>Total yang dibayar sekarang</Text>
+            <Text style={styles.amountValue}>{rp(breakdown.paidAmount)}</Text>
+            <View style={styles.planPill}>
+              <Text style={styles.planPillText}>{breakdown.optionLabel}</Text>
+            </View>
+          </View>
 
-            {/* Bottom-Left Finder Pattern */}
-            <Rect x="0" y="75" width="25" height="25" fill="#1E293B" />
-            <Rect x="5" y="75" width="15" height="15" fill="#FFFFFF" />
-            <Rect x="9" y="79" width="7" height="7" fill="#1E293B" />
+          {breakdown.remainingAmount > 0 && (
+            <View style={styles.remainingCard}>
+              <View style={styles.remainingRow}>
+                <Text style={styles.remainingLabel}>Total pesanan</Text>
+                <Text style={styles.remainingValue}>{rp(totalPrice)}</Text>
+              </View>
+              <View style={styles.remainingRow}>
+                <Text style={styles.remainingLabel}>Sisa pelunasan</Text>
+                <Text style={styles.remainingValueAccent}>{rp(breakdown.remainingAmount)}</Text>
+              </View>
+              <Text style={styles.remainingHint}>Pelunasan maksimal H-1 sebelum tanggal pengiriman.</Text>
+            </View>
+          )}
 
-            {/* Mock random code points */}
-            <Rect x="35" y="10" width="10" height="20" fill="#1E293B" />
-            <Rect x="55" y="5" width="15" height="10" fill="#1E293B" />
-            <Rect x="40" y="40" width="20" height="20" fill="#1E293B" />
-            <Rect x="10" y="45" width="15" height="15" fill="#1E293B" />
-            <Rect x="70" y="40" width="15" height="15" fill="#1E293B" />
-            <Rect x="30" y="70" width="20" height="15" fill="#1E293B" />
-            <Rect x="65" y="70" width="15" height="20" fill="#1E293B" />
-            <Rect x="45" y="85" width="15" height="10" fill="#1E293B" />
-            
-            {/* Center Logo Area */}
-            <Circle cx="50" cy="50" r="12" fill="#FFFFFF" />
-            <Circle cx="50" cy="50" r="9" fill="#1B7A4E" />
-            {/* White up-arrow inside green circle */}
-            <Path d="M 47,52 L 50,47 L 53,52" fill="none" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-          </Svg>
+          <View style={styles.qrFrame}>
+            <View style={styles.qrInner}>
+              <Svg viewBox={`0 0 ${qrCode.size} ${qrCode.size}`} style={styles.qrSvg}>
+                <Rect x="0" y="0" width={qrCode.size} height={qrCode.size} fill="#FFFFFF" />
+                {qrCode.darkModules.map(index => {
+                  const x = index % qrCode.size;
+                  const y = Math.floor(index / qrCode.size);
+                  return <Rect key={index} x={x} y={y} width="1" height="1" fill="#111827" />;
+                })}
+              </Svg>
+            </View>
+            <View style={styles.qrTag}>
+              <QrCode size={12} color="#111827" />
+              <Text style={styles.qrTagText}>QRIS DINAMIS</Text>
+            </View>
+          </View>
+
+          <Text style={styles.scanHint}>Scan QR di atas menggunakan aplikasi bank atau e-wallet yang mendukung QRIS.</Text>
+
+          <View style={styles.transactionRow}>
+            <View>
+              <Text style={styles.transactionLabel}>ID TRANSAKSI</Text>
+              <Text style={styles.transactionValue}>{paymentReference}</Text>
+            </View>
+            <TouchableOpacity
+              style={styles.copyButton}
+              onPress={() => Alert.alert("ID transaksi", `${paymentReference}\nGunakan ID ini jika membutuhkan bantuan pembayaran.`)}
+            >
+              <Copy size={14} color="#1B7A4E" />
+              <Text style={styles.copyButtonText}>Salin</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
-        <Text style={styles.qrFooterText}>
-          Pindai QR di atas menggunakan aplikasi perbankan atau e-wallet Anda untuk menyelesaikan pembayaran PO
-        </Text>
-      </View>
+        <View style={styles.expiryCard}>
+          <View style={styles.expiryIcon}>
+            <Clock3 size={18} color={secondsLeft > 0 ? "#D97706" : "#B91C1C"} />
+          </View>
+          <View style={styles.expiryCopy}>
+            <Text style={styles.expiryTitle}>{secondsLeft > 0 ? "Menunggu pembayaran" : "QR sudah kedaluwarsa"}</Text>
+            <Text style={styles.expirySubtitle}>{secondsLeft > 0 ? "Selesaikan pembayaran sebelum waktu habis" : "Buat QR baru untuk melanjutkan pembayaran"}</Text>
+          </View>
+          <Text style={[styles.expiryTimer, secondsLeft <= 0 && styles.expiryTimerExpired]}>{timeLabel}</Text>
+        </View>
 
-      <View style={styles.bottomActions}>
-        <TouchableOpacity
-          onPress={handleSimulatePaymentSuccess}
-          style={styles.simulateBtn}
-        >
-          <Text style={styles.simulateBtnText}>✅ Simulasikan Bayar PO Sukses</Text>
-        </TouchableOpacity>
+        <View style={styles.instructionCard}>
+          <Text style={styles.instructionTitle}>Cara membayar</Text>
+          {[
+            "Buka aplikasi bank atau e-wallet pilihan Anda.",
+            "Pilih menu Scan QRIS, lalu arahkan ke QR di atas.",
+            `Pastikan nominal pembayaran ${rp(breakdown.paidAmount)} sesuai sebelum konfirmasi.`,
+            "Setelah berhasil, kembali ke aplikasi Rangers dan tekan Saya Sudah Bayar.",
+          ].map((instruction, index) => (
+            <View key={instruction} style={styles.instructionRow}>
+              <View style={styles.instructionNumber}><Text style={styles.instructionNumberText}>{index + 1}</Text></View>
+              <Text style={styles.instructionText}>{instruction}</Text>
+            </View>
+          ))}
+        </View>
+      </ScrollView>
 
-        <TouchableOpacity
-          onPress={() => navigate("c_catering_payment")}
-          style={styles.backBtn}
-        >
-          <Text style={styles.backBtnText}>Kembali</Text>
+      <View style={styles.bottomBar}>
+        {secondsLeft <= 0 ? (
+          <TouchableOpacity onPress={refreshQr} style={styles.primaryButton} activeOpacity={0.85}>
+            <QrCode size={17} color="#FFFFFF" />
+            <Text style={styles.primaryButtonText}>Buat QR Baru</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            onPress={handlePaymentConfirmed}
+            style={[styles.primaryButton, isCheckingPayment && styles.primaryButtonDisabled]}
+            disabled={isCheckingPayment}
+            activeOpacity={0.85}
+          >
+            {isCheckingPayment ? <ActivityIndicator size="small" color="#FFFFFF" /> : <CheckCircle2 size={17} color="#FFFFFF" />}
+            <Text style={styles.primaryButtonText}>{isCheckingPayment ? "Memeriksa pembayaran..." : "Saya Sudah Bayar"}</Text>
+            {!isCheckingPayment && <ChevronRight size={17} color="#FFFFFF" />}
+          </TouchableOpacity>
+        )}
+        <TouchableOpacity onPress={() => navigate("c_catering_payment")} style={styles.secondaryButton}>
+          <Text style={styles.secondaryButtonText}>Kembali</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
 };
 
+export const CateringQrisScreen: React.FC<CateringQrisScreenProps> = props => {
+  if (!props.cateringPO) {
+    return (
+      <SafeAreaView style={styles.errorContainer}>
+        <BackHeader title="Pembayaran QRIS" onBack={() => props.navigate("c_catering")} />
+        <View style={styles.errorBody}>
+          <Text style={styles.errorText}>Data pembayaran tidak ditemukan.</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  return <CateringQrisContent {...props} />;
+};
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#1B7A4E",
-    paddingHorizontal: 24,
-    justifyContent: "center",
-  },
-  header: {
-    alignItems: "center",
-    marginBottom: 24,
-    gap: 4,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: "900",
-    color: "#FFFFFF",
-  },
-  subtitle: {
-    fontSize: 10,
-    color: "#A7F3D0",
-    fontWeight: "600",
-  },
-  card: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 28,
-    padding: 24,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-  },
-  cardHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    width: "100%",
-    borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
-    paddingBottom: 8,
-    marginBottom: 16,
-  },
-  qrisLabel: {
-    fontSize: 9,
-    fontWeight: "800",
-    color: "#9CA3AF",
-    letterSpacing: 0.5,
-  },
-  appLabel: {
-    fontSize: 9,
-    fontWeight: "900",
-    color: "#1B7A4E",
-  },
-  tagihanLabel: {
-    fontSize: 11,
-    color: "#6B7280",
-    fontWeight: "600",
-    marginBottom: 2,
-  },
-  tagihanVal: {
-    fontSize: 20,
-    fontWeight: "900",
-    color: "#111827",
-    marginBottom: 16,
-  },
-  qrContainer: {
-    width: 180,
-    height: 180,
-    borderWidth: 4,
-    borderColor: "#F3F4F6",
-    borderRadius: 20,
-    padding: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#FFFFFF",
-    marginBottom: 16,
-  },
-  qrSvg: {
-    width: "100%",
-    height: "100%",
-  },
-  qrFooterText: {
-    fontSize: 9,
-    color: "#6B7280",
-    textAlign: "center",
-    lineHeight: 13,
-  },
-  bottomActions: {
-    alignItems: "center",
-    marginTop: 24,
-    gap: 12,
-  },
-  simulateBtn: {
-    width: "100%",
-    height: 48,
-    backgroundColor: "#FBBF24",
+  container: { flex: 1, backgroundColor: "#F7FAF8" },
+  scrollContent: { padding: 16, gap: 12, paddingBottom: 24 },
+  secureBanner: {
+    backgroundColor: "#E8F5EE",
+    borderWidth: 1,
+    borderColor: "#C8E6D3",
     borderRadius: 16,
+    padding: 12,
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#FBBF24",
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 3 },
   },
-  simulateBtnText: {
-    color: "#111827",
-    fontSize: 12,
-    fontWeight: "900",
-  },
-  backBtn: {
-    paddingVertical: 8,
-  },
-  backBtnText: {
-    color: "#A7F3D0",
-    fontSize: 12,
-    fontWeight: "700",
-  },
-  errorContainer: {
-    flex: 1,
-    backgroundColor: "#1B7A4E",
+  secureIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 12,
+    backgroundColor: "#FFFFFF",
     alignItems: "center",
     justifyContent: "center",
   },
-  errorBody: {
-    alignItems: "center",
-    gap: 8,
+  secureCopy: { flex: 1, marginLeft: 10 },
+  secureTitle: { color: "#14532D", fontSize: 11, fontWeight: "900" },
+  secureSubtitle: { color: "#4B7F60", fontSize: 9, fontWeight: "600", marginTop: 2 },
+  liveBadge: { flexDirection: "row", alignItems: "center", gap: 4 },
+  liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: "#16A34A" },
+  liveBadgeText: { color: "#15803D", fontSize: 8, fontWeight: "900" },
+  invoiceCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    padding: 16,
   },
-  errorText: {
-    color: "#FFFFFF",
-    fontSize: 12,
-    fontWeight: "700",
-  },
+  invoiceHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  merchantIdentity: { flexDirection: "row", alignItems: "center", flex: 1 },
+  merchantIcon: { width: 34, height: 34, borderRadius: 12, backgroundColor: "#E8F5EE", alignItems: "center", justifyContent: "center" },
+  merchantCopy: { marginLeft: 9, flex: 1 },
+  merchantLabel: { color: "#9CA3AF", fontSize: 8, fontWeight: "800", textTransform: "uppercase" },
+  merchantName: { color: "#111827", fontSize: 12, fontWeight: "900", marginTop: 2 },
+  qrisWordmark: { color: "#1B7A4E", fontSize: 17, fontWeight: "900", letterSpacing: -1 },
+  amountBlock: { alignItems: "center", paddingVertical: 18, borderBottomWidth: 1, borderBottomColor: "#F3F4F6", marginBottom: 14 },
+  amountLabel: { color: "#6B7280", fontSize: 10, fontWeight: "700" },
+  amountValue: { color: "#111827", fontSize: 26, fontWeight: "900", marginTop: 4 },
+  planPill: { backgroundColor: "#FFF7ED", borderRadius: 8, paddingHorizontal: 9, paddingVertical: 4, marginTop: 7 },
+  planPillText: { color: "#C2410C", fontSize: 9, fontWeight: "900" },
+  remainingCard: { backgroundColor: "#FFFBEB", borderWidth: 1, borderColor: "#FDE68A", borderRadius: 14, padding: 11, marginBottom: 14, gap: 5 },
+  remainingRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  remainingLabel: { color: "#92400E", fontSize: 10, fontWeight: "700" },
+  remainingValue: { color: "#78350F", fontSize: 10, fontWeight: "800" },
+  remainingValueAccent: { color: "#B45309", fontSize: 11, fontWeight: "900" },
+  remainingHint: { color: "#A16207", fontSize: 9, lineHeight: 13, marginTop: 2 },
+  qrFrame: { alignSelf: "center", borderWidth: 1, borderColor: "#E5E7EB", borderRadius: 18, padding: 12, backgroundColor: "#FFFFFF", alignItems: "center" },
+  qrInner: { width: 214, height: 214, padding: 4, backgroundColor: "#FFFFFF" },
+  qrSvg: { width: "100%", height: "100%" },
+  qrTag: { flexDirection: "row", alignItems: "center", gap: 5, marginTop: 9 },
+  qrTagText: { color: "#111827", fontSize: 8, fontWeight: "900", letterSpacing: 1 },
+  scanHint: { color: "#6B7280", fontSize: 10, lineHeight: 15, textAlign: "center", marginTop: 14, paddingHorizontal: 12 },
+  transactionRow: { borderTopWidth: 1, borderTopColor: "#F3F4F6", marginTop: 16, paddingTop: 13, flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  transactionLabel: { color: "#9CA3AF", fontSize: 8, fontWeight: "900", letterSpacing: 0.6 },
+  transactionValue: { color: "#374151", fontSize: 10, fontWeight: "800", marginTop: 3, letterSpacing: 0.5 },
+  copyButton: { flexDirection: "row", alignItems: "center", gap: 5, borderWidth: 1, borderColor: "#B7DCC5", borderRadius: 9, paddingHorizontal: 9, paddingVertical: 6 },
+  copyButtonText: { color: "#1B7A4E", fontSize: 9, fontWeight: "900" },
+  expiryCard: { backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#E5E7EB", borderRadius: 16, padding: 12, flexDirection: "row", alignItems: "center" },
+  expiryIcon: { width: 34, height: 34, borderRadius: 12, backgroundColor: "#FFF7ED", alignItems: "center", justifyContent: "center" },
+  expiryCopy: { flex: 1, marginLeft: 9 },
+  expiryTitle: { color: "#374151", fontSize: 11, fontWeight: "900" },
+  expirySubtitle: { color: "#9CA3AF", fontSize: 9, fontWeight: "600", marginTop: 2 },
+  expiryTimer: { color: "#B45309", fontSize: 15, fontWeight: "900", letterSpacing: 0.5 },
+  expiryTimerExpired: { color: "#B91C1C" },
+  instructionCard: { backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#E5E7EB", borderRadius: 18, padding: 14, gap: 11 },
+  instructionTitle: { color: "#111827", fontSize: 12, fontWeight: "900", marginBottom: 2 },
+  instructionRow: { flexDirection: "row", alignItems: "flex-start" },
+  instructionNumber: { width: 20, height: 20, borderRadius: 10, backgroundColor: "#E8F5EE", alignItems: "center", justifyContent: "center", marginRight: 9 },
+  instructionNumberText: { color: "#1B7A4E", fontSize: 9, fontWeight: "900" },
+  instructionText: { flex: 1, color: "#6B7280", fontSize: 10, lineHeight: 15, fontWeight: "600" },
+  bottomBar: { backgroundColor: "#FFFFFF", borderTopWidth: 1, borderTopColor: "#E5E7EB", padding: 14, gap: 9 },
+  primaryButton: { height: 48, borderRadius: 14, backgroundColor: "#1B7A4E", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
+  primaryButtonDisabled: { opacity: 0.7 },
+  primaryButtonText: { color: "#FFFFFF", fontSize: 12, fontWeight: "900" },
+  secondaryButton: { height: 34, alignItems: "center", justifyContent: "center" },
+  secondaryButtonText: { color: "#6B7280", fontSize: 11, fontWeight: "800" },
+  errorContainer: { flex: 1, backgroundColor: "#FFFFFF" },
+  errorBody: { flex: 1, alignItems: "center", justifyContent: "center" },
+  errorText: { fontSize: 12, color: "#9CA3AF", fontWeight: "600" },
 });

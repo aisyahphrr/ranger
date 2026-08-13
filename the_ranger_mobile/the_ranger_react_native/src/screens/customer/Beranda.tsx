@@ -33,7 +33,7 @@ import {
   Heart,
 } from "lucide-react-native";
 import { rp } from "../../utils/formatters";
-import { PRODUCTS } from "../../constants/mockData";
+import { PRODUCTS, RESTAURANTS } from "../../constants/mockData";
 import { Screen, Nav, OrderItem, CartItem, Product, CustomerAddress } from "../../types";
 
 // Import other customer screens
@@ -163,7 +163,50 @@ export const Beranda: React.FC<BerandaProps> = ({
       return;
     }
     setCartModalVisible(false);
-    navigate("c_checkout");
+
+    // Check if the first item in the cart is a catering item
+    const firstItem = cart[0];
+    const isCateringItem = RESTAURANTS.some(r => r.name === firstItem.store);
+
+    if (isCateringItem) {
+      const matchedMerchant = RESTAURANTS.find(r => r.name === firstItem.store) || RESTAURANTS[0];
+      setSelectedCateringMerchant(matchedMerchant);
+
+      // Create a mock product object representing the first package
+      const matchedProduct: Product = {
+        id: firstItem.id,
+        name: firstItem.name,
+        store: firstItem.store,
+        price: firstItem.price,
+        rating: 4.8,
+        sold: 100,
+        img: firstItem.img,
+        liked: false,
+        cat: firstItem.id === 103 || firstItem.id === 202 || firstItem.name.toLowerCase().includes("tumpeng") ? "Tumpeng" : "Nasi Box",
+      };
+
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const tomorrowDay = String(tomorrow.getDate()).padStart(2, "0");
+      const tomorrowMonth = String(tomorrow.getMonth() + 1).padStart(2, "0");
+      const tomorrowYear = tomorrow.getFullYear();
+      const tomorrowFormatted = `${tomorrowDay}/${tomorrowMonth}/${tomorrowYear}`;
+
+      const poDetails = {
+        merchant: matchedMerchant,
+        package: matchedProduct,
+        paxCount: firstItem.qty,
+        bookingDate: tomorrowFormatted,
+        note: "",
+        totalPrice: firstItem.price * firstItem.qty,
+      };
+
+      setSelectedProduct(matchedProduct);
+      setSelectedCateringPO(poDetails);
+      navigate("c_catering_detail");
+    } else {
+      navigate("c_checkout");
+    }
   };
 
   const handleToggleLike = (id: number) => {
@@ -196,6 +239,9 @@ export const Beranda: React.FC<BerandaProps> = ({
   React.useEffect(() => {
     if (["c_marketplace", "c_catering", "c_laundry", "c_kos", "c_product_detail", "c_checkout", "c_order_success", "c_tracking", "c_catering_detail", "c_catering_payment", "c_catering_qris"].includes(currentScreen)) {
       setCurrentTab(0);
+    }
+    if (currentScreen === "c_catering" || currentScreen === "c_home") {
+      setSelectedCateringPO(null);
     }
   }, [currentScreen]);
 
@@ -239,6 +285,7 @@ export const Beranda: React.FC<BerandaProps> = ({
                 selectedMerchant={selectedCateringMerchant}
                 setSelectedCateringPO={setSelectedCateringPO}
                 selectedProduct={selectedProduct}
+                selectedCateringPO={selectedCateringPO}
               />
             );
           case "c_catering_payment":
@@ -252,6 +299,7 @@ export const Beranda: React.FC<BerandaProps> = ({
                 setOrders={setOrders}
                 setSelectedOrderId={setSelectedOrderId}
                 setNotifications={setNotifications}
+                setSelectedCateringPO={setSelectedCateringPO}
               />
             );
           case "c_catering_qris":
